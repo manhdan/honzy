@@ -202,17 +202,17 @@ const CAM_DEFAULT = Object.assign({}, CAM);
 const CAM_META = [['deadX', 0, 80, 1, 'Camera: vùng chết ngang'], ['deadY', 0, 80, 1, 'Camera: vùng chết dọc'], ['smooth', 2, 30, 0.5, 'Camera: độ nhanh']];
 
 // Phím: hành động -> danh sách mã phím (KeyboardEvent.code). Tối đa 3 phím mỗi hành động. Lưu ở localStorage (03_input).
-//   Bố trí theo yêu cầu (2026-10-25): Q nhảy · W roi/ném · E bom · R dây · 1 (giữ) chạy nhanh · 2 nhặt / đặt xuống / mở thùng.
+//   Bố trí (lần 49): chỉ MỘT phím mỗi hành động — Q nhảy · W roi/ném · E bom · R dây · Shift chạy nhanh · Space nhặt / đặt xuống / mở thùng.
 //   Phím phụ giữ kiểu Spelunky Classic (Z X A S, Shift, C) để ai quen vẫn chơi được. ↑ cạnh thang = leo, ↓ = ngồi, ↓ + W = nhặt.
 const KEYMAP = {
     left: ['ArrowLeft'], right: ['ArrowRight'],
     up: ['ArrowUp'], down: ['ArrowDown'],
-    jump: ['KeyQ', 'KeyZ', 'Space'],
-    attack: ['KeyW', 'KeyX'],          // roi; đang cầm đồ = ném (↑ ném cao, ↓ đặt xuống)
-    bomb: ['KeyE', 'KeyA'],
-    rope: ['KeyR', 'KeyS'],
-    run: ['Digit1', 'ShiftLeft', 'ShiftRight'],
-    use: ['Digit2', 'KeyC']            // nhặt đồ dưới chân / đặt đồ đang cầm xuống / mở thùng gỗ
+    jump: ['KeyQ'],
+    attack: ['KeyW'],          // roi; đang cầm đồ = ném (↑ ném cao, ↓ đặt xuống)
+    bomb: ['KeyE'],
+    rope: ['KeyR'],
+    run: ['ShiftLeft', 'ShiftRight'],
+    use: ['Space']            // nhặt đồ dưới chân / đặt đồ đang cầm xuống / mở thùng gỗ
 };
 const KEYMAP_DEFAULT = {};
 for (const k in KEYMAP) KEYMAP_DEFAULT[k] = KEYMAP[k].slice();
@@ -224,9 +224,9 @@ const KEY_ACTIONS = [
     { id: 'use', label: 'Nhặt / đặt / mở thùng', need: false }
 ];
 // Phím không cho gán: Esc, Tab, F1–F12, Ctrl/Alt/Meta và phím debug của 17_debug
-const KEY_DEBUG_CODES = ['KeyH', 'KeyJ', 'KeyI', 'KeyT', 'KeyP', 'KeyN', 'KeyU', 'KeyG', 'KeyM', 'KeyL', 'KeyO', 'KeyB', 'KeyK', 'Digit0', 'Digit9'];
+const KEY_DEBUG_CODES = ['KeyJ', 'KeyI', 'KeyT', 'KeyP', 'KeyN', 'KeyG', 'KeyM', 'KeyO', 'KeyB', 'Digit0', 'Digit9'];
 // Tuỳ chọn người chơi. autoRun = luôn chạy nhanh (giữ nút chạy thì đi chậm) — SC mặc định TẮT (phải giữ Shift)
-const SETTINGS = { autoRun: false, fit: true, shake: true, pad: true, assist: true, easy: false };      // easy (lần 27): chết thì hồi sinh ngay tại màn đó với đầy máu
+const SETTINGS = { autoRun: false, fit: true, shake: true, pad: false, assist: true, easy: false };      // easy (lần 27): chết thì hồi sinh ngay tại màn đó với đầy máu
 // Hỗ trợ nhảy kiểu Celeste (lần 22; SC KHÔNG có — tắt bằng SETTINGS.assist để về đúng SC): coyote = còn nhảy được sau khi bước hụt mép, buffer = nhớ phím nhảy
 //   bấm sớm trước khi chạm đất, corner = đầu chạm nhẹ góc ô khi nhảy lên thì tự nhích ngang ≤ corner px để vọt qua.
 const ASSIST = { coyote: 0.083, buffer: 0.1, corner: 3 };
@@ -584,7 +584,7 @@ const OBST_AIR = [
 //   inp.lock(true) khi mở menu: bỏ qua phím cho game (menu tự nghe keydown). inp.name/label/fill dùng để hiện tên phím trong chữ hướng dẫn.
 // Tay cầm: 03a_gamepad.js (phát lại thành phím nên dùng chung lớp này). Cảm ứng: chưa làm.
 
-const INP_STORE = 'spGD2_controls_v2';   // v2: bố trí Q W E R 1 2 (đổi khoá để phím cũ đã lưu không đè bố trí mới)         // khoá riêng cho dự án này (không lẫn với phím của Metroidvania)
+const INP_STORE = 'spGD2_controls_v3';   // v2: bố trí Q W E R 1 2 (đổi khoá để phím cũ đã lưu không đè bố trí mới)         // khoá riêng cho dự án này (không lẫn với phím của Metroidvania)
 const INP_MAX_KEYS = 3;                       // số phím tối đa mỗi hành động
 
 const inp = (() => {
@@ -1204,7 +1204,7 @@ function camUpdate(level, t, dt) {
     if (fy < cam.cy - CAM.deadY) cam.cy = fy + CAM.deadY; else if (fy > cam.cy + CAM.deadY) cam.cy = fy - CAM.deadY;
     camClampCenter(level);
     const k = 1 - Math.exp(-CAM.smooth * dt);
-    cam.x += (cam.cx - VIEW_W / 2 - cam.x) * k;
+    cam.x = cam.cx - VIEW_W / 2;      // lần 49: ngang bám CỨNG trong vùng chết — trước đây làm mượt ngang gây trễ rồi "trượt" thêm khi người chơi dừng lại
     cam.y += (cam.cy - VIEW_H / 2 - cam.y) * k;
 }
 
@@ -4124,7 +4124,7 @@ function statusDrawHud(y) {
     return y;
 }
 
-const CORPSE_LEN = { bat: 0.5, flyer: 0.5, spider: 0.55, hopper: 0.6 };      // lần 44: quái nhỏ → xác ngắn hơn
+const CORPSE_LEN = { bat: 0.5 };      // lần 48: chỉ dơi tím nhỏ → xác ngắn; các quái khác giữ xác đầy đủ
 // 11_enemies — quái (GĐ1: 2 loại đầu để thử tương tác; đủ bộ vùng 1 ở GĐ4/GĐ6). Mọi quái là Thing (creature) => chịu chung nguồn sát thương.
 //   Chiến đấu kiểu Spelunky (D3): quái thường 1 máu, chết sau 1 đòn roi / 1 lần đạp / 1 vật ném; KHÔNG có điềm báo dài, hitstop hay đẩy lùi kiểu Hollow Knight.
 //   Rắn (SC oSnake): bò 1 px/khung (30 px/s), quay đầu ở tường và mép vực, thỉnh thoảng đứng nghỉ (SC: 1/100 mỗi khung, nghỉ 20–50 khung).
@@ -6963,8 +6963,6 @@ function menuItems(t) {
         const it = [];
         if (menuCanResume()) it.push({ text: 'Tiếp tục', act: titleClose });
         it.push({ text: 'Ván mới', act: () => { titleClose(); newRun(); } });
-        it.push({ text: 'Chơi lại cùng seed', act: () => { titleClose(); restartRun(); } });
-        it.push({ text: 'Ván mới với seed…', act: go('seed') });
         it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Hướng dẫn', act: go('help') });
         return it;
     }
@@ -7033,7 +7031,7 @@ function drawTitle() {
         L('↓ cúi (né tên) · ↓ + ' + inp.label('attack', 1) + ' nhặt · trên không ↓ + ' + inp.label('attack', 1) + ' = pogo', 64);
         L('Cứu công chúa/thú cưng: cầm tới cửa ra bấm ↑ (+1 máu).', 82, '#ffe9a8');
         L('Cửa hàng: nhặt hàng khi đủ vàng. Trộm = bị truy nã!', 94, '#ffe9a8');
-        L('Debug: H hitbox · G tinh chỉnh · J xem cả level · K ván mới · U cùng seed', 116, '#555f7c');
+        L('Debug: G tinh chỉnh · J xem cả level', 116, '#555f7c');
     }
     const items = menuItems(t), y0 = t.page === 'main' || t.page === 'opts' || t.page === 'keys' ? 36 : 118;
     items.forEach((it, i) => {
@@ -7391,7 +7389,7 @@ window.addEventListener('keydown', e => {
 
 // 17_debug — công cụ debug: phím tắt, lớp phủ thông tin, hitbox, bảng tinh chỉnh (giữ khung từ dự án cũ)
 //   H hitbox (+ cảm biến bẫy, đòn roi) · I thông tin · T đổi tốc độ (1→0.25→0.5→2→4) · P tạm dừng · N 1 bước (khi tạm dừng)
-//   U chơi lại cùng seed · K ván mới seed mới · G bảng tinh chỉnh (PHYS + WHIP + ITEM + TRAP + CAM) · M bất tử · L hồi đầy máu
+//   U chơi lại cùng seed · G bảng tinh chỉnh (PHYS + WHIP + ITEM + TRAP + CAM) · M bất tử
 //   B thêm 10 bom + 10 dây · O sao chép báo cáo hiệu năng · 0 phòng thử nghiệm · 9 nhảy sang level kế · J xem toàn bộ level (bản đồ)
 
 const dbg = { hitbox: false, info: false, overview: false, panel: null, toast: '', toastT: 0 };     // I = bật bảng thông tin (mặc định tắt: màn 320×240 nhỏ)
@@ -7410,16 +7408,12 @@ function dbgInit() {
         if (e.repeat || game.title || (e.target && e.target.tagName === 'INPUT')) return;
         const p = game.player;
         switch (e.code) {
-            case 'KeyH': dbg.hitbox = !dbg.hitbox; dbgToast('Hitbox ' + (dbg.hitbox ? 'BẬT' : 'TẮT')); break;
             case 'KeyI': dbg.info = !dbg.info; break;
             case 'KeyT': { const i = (DBG_SCALES.indexOf(game.timeScale) + 1) % DBG_SCALES.length; game.timeScale = DBG_SCALES[i]; dbgToast('Tốc độ x' + game.timeScale); break; }
             case 'KeyP': game.paused = !game.paused; dbgToast(game.paused ? 'Tạm dừng (N = 1 bước; bỏ tạm dừng thì N = sang level kế)' : 'Tiếp tục'); break;
             case 'KeyN': if (game.paused) game.stepOnce = true; else dbgSkipLevel(); break;
-            case 'KeyU': restartRun(); dbgToast('Chơi lại (seed ' + game.seed + ')'); break;
-            case 'KeyK': newRun(); dbgToast('Ván mới (seed ' + game.seed + ')'); break;
             case 'KeyG': dbgTogglePanel(); break;
             case 'KeyM': game.god = !game.god; dbgToast('Bất tử ' + (game.god ? 'BẬT (hiện [GOD] ở bảng I)' : 'TẮT')); break;
-            case 'KeyL': if (!p.dead) { p.hp = Math.max(p.hp, ITEM.startHp); dbgToast('Hồi đầy máu'); } break;
             case 'KeyB': p.bombs += 10; p.ropes += 10; dbgToast('+10 bom, +10 dây'); break;
             case 'KeyO': dbgCopyPerf(); break;
             case 'Digit0': loadTestRoom(); dbgToast('Phòng thử nghiệm'); break;
