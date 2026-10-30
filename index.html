@@ -836,6 +836,7 @@ if (typeof window !== 'undefined' && window.addEventListener) {
 //   Phát: sndPlay('tên', { x: toạ độ thế giới (giảm âm theo khoảng cách tới người chơi + lệch trái/phải), vol, p }). Không có AudioContext (test Node) hoặc chưa được phép phát thì không làm gì.
 //   Trình duyệt chỉ cho phát sau cử chỉ người dùng: AudioContext tạo ở lần bấm phím / chạm đầu tiên (sndUnlock). Âm lượng + tắt tiếng chỉnh ở menu Esc, lưu localStorage riêng (SND_STORE), không nằm chung với phím.
 //   Mỗi tiếng có thời lượng tối đa, khoảng cách tối thiểu giữa 2 lần phát (tránh dồn tiếng khi nhiều quái cùng làm một việc) và giới hạn số giọng đồng thời.
+//   Bước 8: SND_TUNE (bảng chỉnh âm từ tools/sound_tuner.html); hàm sndTone / sndNoise là lớp bọc áp hệ số chỉnh, bản dựng thật là sndToneRaw / sndNoiseRaw.
 //   Tiếng của đòn quái luôn phát ĐÚNG lúc bắt đầu điềm báo (windup) rồi mới tới tiếng ra đòn — người chơi nghe được trước khi đòn tới.
 
 const SND_STORE = 'mvGD7_audio_v1';
@@ -866,7 +867,7 @@ function sndEnv(ac, out, t, dur, vol, att) {          // bao biên độ: lên n
     g.connect(out); return g;
 }
 // o: f (Hz đầu), f2 (Hz cuối, tuỳ chọn), dur, vol, type, att, lp (cắt trên, tuỳ chọn), vib (độ rung tần số Hz, tuỳ chọn)
-function sndTone(ac, out, t, o) {
+function sndToneRaw(ac, out, t, o) {
     const osc = ac.createOscillator(); osc.type = o.type || 'sine';
     // lần 28: âm kéo dài (≥0.3s) không xuống dưới 100Hz — chỉ cú đập ngắn mới được có sub-bass
     if (o.dur >= 0.3) { o = Object.assign({}, o); o.f = Math.max(o.f, 100); if (o.f2) o.f2 = Math.max(o.f2, 100); }
@@ -876,7 +877,7 @@ function sndTone(ac, out, t, o) {
     osc.connect(sndEnv(ac, dst, t, o.dur, o.vol, o.att)); osc.start(t); osc.stop(t + o.dur + 0.03);
 }
 // o: type (bandpass / lowpass / highpass), f, f2, q, dur, vol, att, off (vị trí bắt đầu trong bộ đệm nhiễu)
-function sndNoise(ac, out, t, o) {
+function sndNoiseRaw(ac, out, t, o) {
     const src = ac.createBufferSource(); src.buffer = sndNoiseBuf(ac);
     const flt = ac.createBiquadFilter(); flt.type = o.type || 'bandpass'; flt.Q.value = o.q || 1;
     flt.frequency.setValueAtTime(o.f, t); if (o.f2) flt.frequency.exponentialRampToValueAtTime(Math.max(10, o.f2), t + o.dur);
@@ -884,6 +885,26 @@ function sndNoise(ac, out, t, o) {
     if (o.dur >= 0.3) { const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 100; flt.connect(hp); hp.connect(sndEnv(ac, out, t, o.dur, o.vol, o.att)); }   // nhiễu dài: bỏ dải dưới 100Hz (ù)
     else flt.connect(sndEnv(ac, out, t, o.dur, o.vol, o.att));
     src.start(t, o.off !== undefined ? o.off : (Math.floor(t * 997) % 15) / 10, o.dur + 0.05);
+}
+
+// Lớp bọc (bước 8): trong lúc dựng một tiếng có SND_TUNE (_sndCur != null) áp các hệ số chỉnh âm; ngoài đó (nhạc nền, test) chạy thẳng như cũ.
+let _sndCur = null;          // { tn: mục SND_TUNE, t0: giờ bắt đầu tiếng, i: chỉ số lớp đang dựng }
+const _snv = v => v === undefined ? 1 : v;
+function sndTone(ac, out, t, o) {
+    const c = _sndCur; if (!c) { sndToneRaw(ac, out, t, o); return; }
+    const tn = c.tn, L = (tn.layers && tn.layers[c.i]) || {}; c.i++;
+    const pf = _snv(tn.pitch) * _snv(L.freq), vol = o.vol * _snv(tn.tone) * _snv(L.vol); if (vol <= 0.0001) return;
+    const o2 = Object.assign({}, o); o2.vol = vol; o2.f = o.f * pf; if (o.f2) o2.f2 = o.f2 * pf;
+    o2.dur = o.dur * _snv(tn.dur); o2.att = (o.att || 0.004) * _snv(tn.att); if (o.lp) o2.lp = o.lp * _snv(tn.bright);
+    sndToneRaw(ac, out, c.t0 + (t - c.t0) * _snv(tn.dur), o2);
+}
+function sndNoise(ac, out, t, o) {
+    const c = _sndCur; if (!c) { sndNoiseRaw(ac, out, t, o); return; }
+    const tn = c.tn, L = (tn.layers && tn.layers[c.i]) || {}; c.i++;
+    const ff = _snv(tn.bright) * _snv(L.freq), vol = o.vol * _snv(tn.noise) * _snv(L.vol); if (vol <= 0.0001) return;
+    const o2 = Object.assign({}, o); o2.vol = vol; o2.f = o.f * ff; if (o.f2) o2.f2 = o.f2 * ff;
+    o2.dur = o.dur * _snv(tn.dur); o2.att = (o.att || 0.004) * _snv(tn.att);
+    sndNoiseRaw(ac, out, c.t0 + (t - c.t0) * _snv(tn.dur), o2);
 }
 
 // ---------- danh mục hiệu ứng: tên: [hàm dựng, thời lượng tối đa (s), khoảng cách tối thiểu giữa 2 lần (s), ưu tiên (2 = luôn được phát) ] ----------
@@ -948,9 +969,75 @@ const SND_DEFS = {
     queenCast: [(ac, o, t) => { [880, 1175, 1568].forEach((f, i) => sndTone(ac, o, t + i * 0.12, { f, f2: f * 1.5, dur: 0.5, vol: 0.12, type: 'triangle', att: 0.1 })); sndTone(ac, o, t, { f: 110, f2: 220, dur: 0.7, vol: 0.15, type: 'sawtooth', lp: 500, att: 0.4 }); }, 0.9, 0.5, 2],
     bossHurt: [(ac, o, t) => { sndTone(ac, o, t, { f: 200, f2: 90, dur: 0.3, vol: 0.3, type: 'sawtooth', lp: 700 }); sndNoise(ac, o, t, { f: 500, f2: 200, dur: 0.2, vol: 0.2 }); }, 0.35, 0.4, 1],
     bossDie:  [(ac, o, t) => { sndTone(ac, o, t, { f: 120, f2: 28, dur: 2.2, vol: 0.45 }); sndNoise(ac, o, t, { type: 'lowpass', f: 1500, f2: 60, dur: 2.2, vol: 0.35 }); for (let i = 0; i < 6; i++) sndNoise(ac, o, t + 0.25 * i, { type: 'lowpass', f: 1200, f2: 100, dur: 0.3, vol: 0.25 }); }, 2.4, 1, 2],
-    victory:  [(ac, o, t) => { [392, 523, 659, 784, 1047].forEach((f, i) => { sndTone(ac, o, t + i * 0.14, { f, dur: i === 4 ? 1.3 : 0.4, vol: 0.2, type: 'triangle' }); sndTone(ac, o, t + i * 0.14, { f: f / 2, dur: i === 4 ? 1.3 : 0.4, vol: 0.14 }); }); }, 1.9, 1, 2]
+    victory:  [(ac, o, t) => { [392, 523, 659, 784, 1047].forEach((f, i) => { sndTone(ac, o, t + i * 0.14, { f, dur: i === 4 ? 1.3 : 0.4, vol: 0.2, type: 'triangle' }); sndTone(ac, o, t + i * 0.14, { f: f / 2, dur: i === 4 ? 1.3 : 0.4, vol: 0.14 }); }); }, 1.9, 1, 2],
+    // --- âm MỚI (bước 8; thiết kế trong tools/sound_tuner.html, số liệu chỉnh nằm ở SND_TUNE) ---
+    //   Đang dùng: splash / splashBig (người chơi rơi xuống nước, 09_player) · reflect (chém phản đòn, 09_player) · arrowShot (quái Shooter bắn đạn, 11b_foes).
+    //   Cũng đã nối: fireIgnite / fireCrackle (13n_fire) · arrowShot / arrowHit (13b_traps, 13a_items) · throwFoe (10b_carry). Còn DỰ TRỮ (đã chỉnh, game chưa gọi): door, bossHurt — xem Roadmap.
+    splash:   [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1800 * p, f2: 500 * p, q: 0.9, dur: 0.28, vol: 0.34 }); sndNoise(ac, o, t, { type: 'highpass', f: 3500, q: 0.6, dur: 0.1, vol: 0.12 }); sndTone(ac, o, t, { f: 300 * p, f2: 120 * p, dur: 0.16, vol: 0.14 }); [0.08, 0.15, 0.23].forEach((d, i) => sndTone(ac, o, t + d, { f: (500 + i * 180) * p, f2: (800 + i * 290) * p, dur: 0.07, vol: 0.07 })); }, 0.45, 0.1, 0],
+    splashBig: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1400 * p, f2: 200 * p, q: 0.7, dur: 0.5, vol: 0.42 }); sndNoise(ac, o, t, { f: 2000 * p, f2: 600 * p, q: 0.8, dur: 0.3, vol: 0.3 }); sndNoise(ac, o, t + 0.02, { type: 'highpass', f: 3500, q: 0.6, dur: 0.18, vol: 0.14 }); sndTone(ac, o, t, { f: 120 * p, f2: 45 * p, dur: 0.35, vol: 0.3 }); [0.12, 0.2, 0.3, 0.4].forEach((d, i) => sndTone(ac, o, t + d, { f: (420 + i * 150) * p, f2: (700 + i * 240) * p, dur: 0.08, vol: 0.06 })); }, 0.6, 0.15, 1],
+    fireIgnite: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 300 * p, f2: 1400 * p, q: 0.7, dur: 0.35, vol: 0.32, att: 0.05 }); sndNoise(ac, o, t, { type: 'highpass', f: 2000, q: 0.5, dur: 0.3, vol: 0.1, att: 0.04 }); sndTone(ac, o, t, { f: 90 * p, f2: 200 * p, dur: 0.3, vol: 0.12, type: 'sawtooth', lp: 500, att: 0.06 }); }, 0.4, 0.2, 1],
+    fireCrackle: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 250 * p, q: 0.5, dur: 0.6, vol: 0.1, att: 0.1 }); [[0, 2100, 0.12], [0.07, 1500, 0.1], [0.19, 2800, 0.13], [0.26, 1800, 0.09], [0.4, 2400, 0.12], [0.47, 1300, 0.08]].forEach(([d, f, v]) => sndNoise(ac, o, t + d, { f: f * p, q: 1.6, dur: 0.03, vol: v })); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.5, vol: 0.025, att: 0.1 }); }, 0.65, 0.4, 0],
+    arrowShot: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1500 * p, f2: 3500 * p, q: 0.8, dur: 0.12, vol: 0.2 }); sndTone(ac, o, t, { f: 900 * p, f2: 300 * p, dur: 0.1, vol: 0.14, type: 'square', lp: 2500 }); sndTone(ac, o, t, { f: 180 * p, f2: 110 * p, dur: 0.12, vol: 0.16 }); }, 0.2, 0.1, 0],
+    arrowHit: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1500, f2: 400, q: 0.8, dur: 0.08, vol: 0.22 }); sndTone(ac, o, t, { f: 220 * p, f2: 120 * p, dur: 0.07, vol: 0.2, type: 'triangle' }); }, 0.12, 0.06, 0],
+    throwFoe: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 400 * p, f2: 1600 * p, q: 0.7, dur: 0.2, vol: 0.3 }); sndTone(ac, o, t, { f: 200 * p, f2: 110 * p, dur: 0.14, vol: 0.1, type: 'triangle' }); sndTone(ac, o, t, { f: 150 * p, f2: 90 * p, dur: 0.12, vol: 0.08, type: 'sawtooth', lp: 600 }); }, 0.25, 0.1, 0],
+    reflect:  [(ac, o, t, p) => { sndTone(ac, o, t, { f: 1760 * p, f2: 1500 * p, dur: 0.22, vol: 0.18, type: 'square', lp: 5000 }); sndTone(ac, o, t, { f: 2640 * p, dur: 0.16, vol: 0.1, type: 'square', lp: 5000 }); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.07, vol: 0.22 }); sndTone(ac, o, t + 0.03, { f: 880 * p, f2: 1320 * p, dur: 0.12, vol: 0.1, type: 'triangle' }); sndNoise(ac, o, t, { f: 600 * p, f2: 2600 * p, q: 0.8, dur: 0.1, vol: 0.25 }); }, 0.3, 0.06, 1]
 };
 const SND_NAMES = Object.keys(SND_DEFS);
+// ---------- chỉnh âm (bước 8; từ trang tools/sound_tuner.html, Dan chốt) ----------
+//   Mỗi tiếng có thể có: vol (âm lượng cả tiếng) · pitch (cao độ, nhân vào tần số các lớp tông) · dur (độ dài, nhân vào độ dài + độ trễ các lớp) · bright (độ sáng: nhân tần số lọc của nhiễu và lp của tông)
+//   · tone / noise (âm lượng riêng phần tông / phần nhiễu) · att (độ mở đầu, nhân vào att) · layers: { "chỉ số lớp": { vol, freq } } (chi tiết từng lớp, chưa dùng). Trường thiếu = 1 (không đổi).
+//   Áp dụng trong sndPlay (vol, dur) và lớp bọc sndTone / sndNoise (còn lại). Không có trong bảng = giữ nguyên tiếng gốc. Tiếng ghi chú "DỰ TRỮ" đã chỉnh sẵn nhưng game chưa gọi.
+const SND_TUNE = {
+    swing: { vol: 0.91, pitch: 1.3, bright: 0.59, tone: 0, att: 1.46 },
+    swingUp: { pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
+    hit: { vol: 0.67, bright: 3, tone: 0.49, att: 2 },
+    hitHeavy: { vol: 0.72, bright: 2.49, tone: 0.22, att: 1.79 },
+    clang: { vol: 0.96, pitch: 1.28, bright: 0.3, tone: 0.38, att: 0.37 },
+    dash: { vol: 0.64, pitch: 1.21, dur: 1.43, bright: 0.3, tone: 0.49, noise: 1.25, att: 3.36 },
+    jump: { vol: 0.8, pitch: 0.62, bright: 3, tone: 1.07, noise: 0.96, att: 0.84 },
+    djump: { vol: 1.69, pitch: 0.4, dur: 1.77, bright: 1.82, tone: 0.33, noise: 0, att: 1.05 },
+    land: { vol: 0.46, pitch: 0.83, bright: 3, tone: 0.18, noise: 0.4, att: 0.91 },
+    step: { vol: 1.26, bright: 0.54 },
+    hurt: { vol: 0.75, dur: 1.17, bright: 0.78, tone: 1.03, att: 1.05 },
+    dead: { vol: 0.83, dur: 1.05, tone: 1.03, noise: 0.89 },
+    st_burn: { vol: 0.32, pitch: 0.96, dur: 2.06, bright: 0.3, tone: 1.23, noise: 0.89, att: 2.44 },
+    st_slow: { vol: 0.32 },
+    st_stun: { bright: 0.3, tone: 0.67, noise: 1.34, att: 0.95 },
+    st_tick: { vol: 0.64, pitch: 0.96, dur: 2.42, bright: 1.05, tone: 0.74, att: 0.2 },
+    door: { vol: 1.18, dur: 1.38, tone: 0.71, noise: 1.16, att: 2.74 },          // DỰ TRỮ: chưa có chỗ gọi trong game (xem Roadmap)
+    crumble: { vol: 0.88, pitch: 0.57, dur: 1.43, bright: 0.83, tone: 0.96, noise: 2.01, att: 0.78 },
+    crumbleFall: { vol: 0.54 },
+    spike: { vol: 1.21, pitch: 1.11, dur: 1.94, bright: 0.95, tone: 0.92, noise: 1.07, att: 1.05 },
+    ui: { vol: 1.47, pitch: 1.17, dur: 1.55, bright: 1.72, tone: 0.6, noise: 0.98, att: 1.73 },
+    enemyDie: { vol: 0.32, pitch: 0.87, dur: 1.89, bright: 0.69, tone: 0.98, noise: 0.74, att: 1.73 },
+    shootWind: { vol: 0.54, pitch: 0.57, dur: 1.19, bright: 1.12, tone: 1.14, noise: 0.85, att: 1.39 },
+    shoot: { vol: 0.83, pitch: 1.06, dur: 1.48, bright: 1.19, tone: 0.74, noise: 1.07, att: 1.25 },
+    boltHit: { vol: 0.7, pitch: 0.51, bright: 1.19, tone: 0.92, att: 0.88 },
+    rushGo: { vol: 0.62, dur: 1.96, bright: 0.93, tone: 0.94, att: 1.79 },
+    hopGo: { pitch: 0.91, dur: 2.11, bright: 0.66, tone: 0.54, noise: 0.98, att: 2.2 },
+    hopLand: { vol: 0.56, bright: 2.42 },
+    mortarWind: { pitch: 0.91, bright: 0.95, tone: 0.27, att: 1.32 },
+    mortarShot: { pitch: 1.06, dur: 1.34, bright: 1.05, tone: 0.8, noise: 1.03, att: 0.61 },
+    boom: { vol: 0.86, pitch: 0.4, dur: 2.25, bright: 0.9, tone: 1.21, noise: 1.09, att: 1.69 },
+    bossRoar: { vol: 0.43, pitch: 0.96, dur: 0.98, tone: 0.94, att: 1.76 },
+    bossWind: { pitch: 0.89 },
+    bossSlam: { vol: 0.86 },
+    rock: { vol: 0.86, dur: 0.47, bright: 1.82, tone: 0.98, noise: 1.07, att: 0.74 },
+    shard: { vol: 1.37 },
+    shardBreak: { vol: 1.18 },
+    queenCast: { dur: 2.45, bright: 0.76, tone: 0.96, noise: 0, att: 0.84 },
+    bossHurt: { vol: 0.46, dur: 2.37, bright: 0.83, noise: 0.49, att: 1.05 },          // DỰ TRỮ: chưa có chỗ gọi trong game (xem Roadmap)
+    bossDie: { bright: 1.12, att: 1.08 },
+    victory: { dur: 1.07 },
+    splash: { vol: 0.64, pitch: 0.4, dur: 1.96, bright: 0.3, tone: 1.09, noise: 0.76, att: 0.2 },
+    splashBig: { vol: 0.62, pitch: 0.4, dur: 1.75, bright: 0.3, tone: 0.94, noise: 0.94, att: 1.29 },
+    fireIgnite: { vol: 0.11, pitch: 0.4, dur: 1.05, bright: 0.98, tone: 1.25, noise: 0.89, att: 1.66 },
+    fireCrackle: { pitch: 0.66, dur: 1.29, bright: 0.95, tone: 1.27, noise: 0.67, att: 0.54 },
+    arrowShot: { vol: 0.59, dur: 1.77, bright: 0.59, noise: 0.96, att: 1.08 },
+    arrowHit: { vol: 0.62 },
+    throwFoe: { vol: 0.72, pitch: 1.19, dur: 1.34, bright: 0.81, tone: 1.03, noise: 1.36, att: 0.84 },
+    reflect: { vol: 0.8, pitch: 1.04, bright: 1.51, tone: 0.54, att: 0.4 },
+};
 
 // ---------- phát ----------
 function sndOn() { return !!sndCtx && sndCtx.state === 'running' && !SND.muted && SND.master > 0; }
@@ -970,15 +1057,17 @@ function sndPlay(name, o) {
     o = o || {}; const now = sndCtx.currentTime;
     if (now - (_sndLast[name] === undefined ? -9 : _sndLast[name]) < d[2]) { sndStats.dropped++; return false; }
     const sp = sndSpatial(o.x); if (!sp) return false;
-    const vol = (o.vol === undefined ? 1 : o.vol) * sp.vol; if (vol < 0.02) return false;
+    const tn = SND_TUNE[name] || null;          // chỉnh âm (bước 8)
+    const vol = (o.vol === undefined ? 1 : o.vol) * sp.vol * (tn ? _snv(tn.vol) : 1); if (vol < 0.02) return false;
     while (_sndEnds.length && _sndEnds[0] <= now) _sndEnds.shift();
     if (_sndEnds.length >= (d[3] >= 2 ? SND_MAX_VOICES + 10 : SND_MAX_VOICES)) { sndStats.dropped++; return false; }
     _sndLast[name] = now;
-    const dly = o.delay || 0; _sndEnds.push(now + dly + d[1] + 0.05); _sndEnds.sort((a, b) => a - b);
+    const dly = o.delay || 0; _sndEnds.push(now + dly + d[1] * (tn ? _snv(tn.dur) : 1) + 0.05); _sndEnds.sort((a, b) => a - b);
     sndStats.played[name] = (sndStats.played[name] || 0) + 1;
     const vg = sndCtx.createGain(); vg.gain.value = vol;
     if (sndCtx.createStereoPanner && sp.pan) { const pn = sndCtx.createStereoPanner(); pn.pan.value = sp.pan; vg.connect(pn); pn.connect(sndMaster); } else vg.connect(sndMaster);
-    try { d[0](sndCtx, vg, now + 0.005 + dly, o.p || 1); } catch (e) { sndStats.err = String(e); return false; }
+    _sndCur = tn ? { tn, t0: now + 0.005 + dly, i: 0 } : null;
+    try { d[0](sndCtx, vg, now + 0.005 + dly, o.p || 1); } catch (e) { sndStats.err = String(e); return false; } finally { _sndCur = null; }
     return true;
 }
 const sndPitch = () => 0.94 + Math.random() * 0.12;      // biến thiên cao độ nhẹ cho đỡ lặp
@@ -3715,7 +3804,7 @@ class Player extends Thing {
         const wet = level.inWater(this);
         if (wet) {                                        // nước (13g_water): trọng lực nhẹ, chìm chậm, chạy chậm; bấm nhảy khi lơ lửng = đạp nước
             this.vx *= scFric(WATER.fric, dt); this.fallT = 0;
-            if (!this.wasWet) { level.spawnBurst(this.cx, this.y + this.h * 0.5, 6, '#9ad0ff', 70); sndPlay('rock', { x: this.cx, vol: 0.4, p: 1.8 }); }
+            if (!this.wasWet) { level.spawnBurst(this.cx, this.y + this.h * 0.5, 6, '#9ad0ff', 70); sndPlay(this.vy > 200 ? 'splashBig' : 'splash', { x: this.cx }); }          // bước 8: rơi xuống nước (trước đây 'rock' nhỏ); vy > 200 px/s = rơi mạnh
             if (this.bufferT > 0 && !wasGround) { this.vy = WATER.stroke; this.bufferT = 0; this.jumpHeld = false; sndPlay('jump', { x: this.cx, vol: 0.5, p: 0.8 }); }
             this.vy = Math.min(this.vy + PHYS.gravity * WATER.grav * dt, WATER.fallMax); this.exitT = WATER.exitT;
         } else if (this.exitT > 0 && this.vy < 0) {          // vừa ra khỏi nước và còn đang đi lên: giữ trọng lực nhẹ thêm WATER.exitT giây (đạp nước đưa được lên mép khối đất cao hơn mặt nước 1 chút)
@@ -3988,7 +4077,7 @@ class Player extends Thing {
     whipStart(dir, power) {          // power = true: đòn nạp (H4c)
         this.whipT = power ? WHIP.chargeSkip : 0; this.whipDir = dir ? 1 : 0; this.whipHits = new Set(); this.whipBuf = 0;
         this.whipPower = !!power; this.whipFireDone = false; this.chargeT = -1; this.chargeArm = !power; this.chargeDir = this.whipDir;          // chỉ nhát thường mới mở được nạp; đòn nạp xong không tự nạp tiếp
-        sndPlay('swing', power ? { x: this.cx, p: 0.75 } : { x: this.cx });
+        sndPlay(this.whipDir ? 'swingUp' : 'swing', power ? { x: this.cx, p: 0.75 } : { x: this.cx });          // bước 8: chém lên có tiếng riêng (swingUp)
     }
     // H4c: nạp đòn. Bắt đầu ở update (nhát thường hết mà còn giữ nút chém); ở đây: đếm, báo đầy, thả nút thì tung đòn mạnh (đầy) hoặc huỷ (chưa đầy). Không nạp khi leo / bám / cầm vật / choáng / chết / dùng bom, dây, vũ khí khác.
     chargeStep(level, dt) {
@@ -4161,7 +4250,7 @@ function whipReflect(level, p, e, b) {
         else if (e.kind === 'fireball') e.life = Math.max(e.life, 1.0);
         else e.age = Math.min(e.age, e.def.flightT * 0.5);                              // đạn pháo: cho bay thêm một đoạn trước khi nổ
     }
-    sndPlay('hit', { x: e.cx, p: 1.6 });
+    sndPlay('reflect', { x: e.cx });          // bước 8: tiếng riêng cho chém phản đòn (trước đây dùng 'hit' cao ×1,6)
     level.spawnBurst(e.cx, e.cy, 5, '#fff3b0', 90);
     return true;
 }
@@ -4529,7 +4618,8 @@ function carryThrow(p, t, up, down) {
         if (down) t.vx *= 0.1;
     }
     if (t.onThrown) t.onThrown(p, !!t.noThrow || (down && p.onGround));      // tham số 2: true = chỉ đặt nhẹ xuống (không phải ném thật)
-    sndPlay('rock', { x: p.cx });
+    const heavy = t.kind === 'corpse' || t.kind === 'princess' || t instanceof Enemy;          // bước 8: ném quái / xác / công chúa-thú cưng = throwFoe; đá, bình, bom… giữ 'rock'; đặt nhẹ xuống cũng giữ 'rock'
+    sndPlay(heavy && !t.noThrow && !(down && p.onGround) ? 'throwFoe' : 'rock', { x: p.cx });
 }
 // Đánh rơi (choáng / chết): vật văng nhẹ theo người
 function carryDrop(p) {
@@ -4916,7 +5006,7 @@ class Foe extends Enemy {
         this.vx = this.facing * speed;
     }
     edgeAhead(level) { const f = this.facing, aheadX = f > 0 ? this.x + this.w + 2 : this.x - 2; return level.solidAt(aheadX, this.y + this.h - 2) || !level.solidAt(aheadX, this.y + this.h + 1); }
-    warnOn() { this.warnT = 0.001; sndPlay('alert', { x: this.cx, vol: 0.5, p: 1.2 }); }
+    warnOn(wind) { this.warnT = 0.001; if (wind) sndPlay(wind, { x: this.cx }); else sndPlay('alert', { x: this.cx, vol: 0.5, p: 1.2 }); }          // bước 8: wind = tiếng điềm báo riêng của loại quái (thay 'alert')
     update(level, dt) {
         this.timers(dt);
         if (this.holder) { this.followHolder(); return; }
@@ -4972,8 +5062,8 @@ class Rusher extends Foe {
     constructor(x, y) { super('rusher', x, y); }
     think(level, dt) {
         const d = this.def;
-        if (this.st === 'walk') { if (this.onGround) this.patrol(level, d.speed); if (this.onGround && this.sees(level, true)) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.warnOn(); } }
-        else if (this.st === 'warn') { this.vx = 0; if ((this.t -= dt) <= 0) { this.st = 'lunge'; this.t = d.lungeT; } }
+        if (this.st === 'walk') { if (this.onGround) this.patrol(level, d.speed); if (this.onGround && this.sees(level, true)) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.warnOn('rushWind'); } }
+        else if (this.st === 'warn') { this.vx = 0; if ((this.t -= dt) <= 0) { this.st = 'lunge'; this.t = d.lungeT; sndPlay('rushGo', { x: this.cx }); } }
         else if (this.st === 'lunge') { this.vx = this.facing * d.lungeSpeed; if ((this.t -= dt) <= 0 || (this.onGround && this.edgeAhead(level))) { this.st = 'rest'; this.t = d.rest; this.vx = 0; } }
         else { this.vx = 0; if ((this.t -= dt) <= 0) this.st = 'walk'; }
     }
@@ -4983,9 +5073,9 @@ class Hopper extends Foe {
     constructor(x, y) { super('hopper', x, y); }
     think(level, dt) {
         const d = this.def;
-        if (this.st === 'walk') { if (this.onGround) this.patrol(level, d.speed); if (this.onGround && this.sees(level, false)) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.face(); this.warnOn(); } }
-        else if (this.st === 'warn') { this.vx = 0; if ((this.t -= dt) <= 0) { this.st = 'leap'; this.t = 0.12; this.vx = this.facing * d.leapVx; this.vy = d.leapVy; this.onGround = false; } }
-        else if (this.st === 'leap') { if ((this.t -= dt) <= 0 && this.onGround) { this.st = 'rest'; this.t = d.rest; this.vx = 0; } }
+        if (this.st === 'walk') { if (this.onGround) this.patrol(level, d.speed); if (this.onGround && this.sees(level, false)) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.face(); this.warnOn('hopWind'); } }
+        else if (this.st === 'warn') { this.vx = 0; if ((this.t -= dt) <= 0) { this.st = 'leap'; this.t = 0.12; this.vx = this.facing * d.leapVx; this.vy = d.leapVy; this.onGround = false; sndPlay('hopGo', { x: this.cx }); } }
+        else if (this.st === 'leap') { if ((this.t -= dt) <= 0 && this.onGround) { this.st = 'rest'; this.t = d.rest; this.vx = 0; sndPlay('hopLand', { x: this.cx }); } }
         else { this.vx = 0; if ((this.t -= dt) <= 0) this.st = 'walk'; }
     }
     deco(ctx, x, y) { ctx.fillStyle = '#2a8a7a'; ctx.fillRect(x + 1, y + this.h - 4, 3, 2); ctx.fillRect(x + this.w - 4, y + this.h - 4, 3, 2); }
@@ -5002,7 +5092,7 @@ class Guard extends Foe {
     // khiên: chặn roi / tên / vật ném từ PHÍA TRƯỚC (trừ lúc nghỉ). Nổ, đạp đầu, đòn từ sau vẫn trúng.
     hurt(src) {
         if (this.st !== 'rest' && (src.kind === DMG.WHIP || src.kind === DMG.ARROW || src.kind === DMG.IMPACT) && src.x !== undefined && Math.sign(src.x - this.cx) === this.facing) {
-            sndPlay('spike', { x: this.cx, vol: 0.5, p: 1.8 }); this.lastBlockT = game.time; return false;
+            sndPlay('clang', { x: this.cx }); this.lastBlockT = game.time; return false;          // bước 8: đỡ đòn = keng (trước đây mượn 'spike' p 1,8, mà 'spike' đã chỉnh dài / to)
         }
         return super.hurt(src);
     }
@@ -5026,9 +5116,10 @@ class Bolt extends Thing {
     update(level, dt) {
         this.timers(dt); this.x += this.vx * dt; this.y += this.vy * dt;
         const p = game.player;
-        if ((this.life -= dt) <= 0 || level.solidAt(this.cx, this.cy)) { level.spawnBurst(this.cx, this.cy, 3, '#7fe0ff', 50); this.alive = false; return; }
+        const gone = (this.life -= dt) <= 0, wall = !gone && level.solidAt(this.cx, this.cy);
+        if (gone || wall) { level.spawnBurst(this.cx, this.cy, 3, '#7fe0ff', 50); if (wall) sndPlay('boltHit', { x: this.cx, vol: 0.7 }); this.alive = false; return; }          // bước 8: đạn đâm tường có tiếng
         if (foeFriendlyFire(this, { kind: DMG.ARROW, vx: this.vx, by: this }, this.owner)) { this.alive = false; return; }
-        if (p && !p.dead && this.owner !== p && overlapBox(this, p)) { if (p.hurt({ kind: DMG.ARROW, dmg: 1, x: this.cx, y: this.cy, vx: this.vx, by: this })) { p.knock(Math.sign(this.vx) * 60, -80); const st = statusOf(this.owner); if (st && !p.dead) statusApply(p, st); } this.alive = false; }
+        if (p && !p.dead && this.owner !== p && overlapBox(this, p)) { if (p.hurt({ kind: DMG.ARROW, dmg: 1, x: this.cx, y: this.cy, vx: this.vx, by: this })) { sndPlay('boltHit', { x: this.cx });  p.knock(Math.sign(this.vx) * 60, -80); const st = statusOf(this.owner); if (st && !p.dead) statusApply(p, st); } this.alive = false; }
     }
     draw(ctx, alpha) { if (ITEM_HP) { drawBoltHp(this, ctx, alpha); return; } const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)); ctx.fillStyle = '#bff4ff'; ctx.fillRect(x, y, 6, 6); ctx.fillStyle = '#2a8fb0'; ctx.fillRect(x + 1, y + 1, 4, 4); ctx.fillStyle = '#fff'; ctx.fillRect(x + 2, y + 2, 2, 2); }
 }
@@ -5041,7 +5132,7 @@ class Shooter extends Foe {
             this.face();
             if ((this.t -= dt) <= 0) {
                 const p = game.player, a = Math.atan2(p.cy - this.cy, p.cx - this.cx);
-                entAdd(new Bolt(this.cx + this.facing * 6, this.cy, Math.cos(a) * d.shotSpeed, Math.sin(a) * d.shotSpeed, d.shotLife, this)); sndPlay('arrow', { x: this.cx, vol: 0.5, p: 1.6 });
+                entAdd(new Bolt(this.cx + this.facing * 6, this.cy, Math.cos(a) * d.shotSpeed, Math.sin(a) * d.shotSpeed, d.shotLife, this)); sndPlay('arrowShot', { x: this.cx });          // bước 8: tên 'arrow' chưa từng tồn tại (im lặng); dùng tiếng bắn tên đã chỉnh, bỏ vol / p mượn tạm
                 this.st = 'walk'; this.cd = d.cooldown;
             }
         }
@@ -5074,11 +5165,11 @@ class Mortar extends Foe {
         const d = this.def, p = game.player; this.vx = 0;
         if (this.st === 'walk') {
             this.face();
-            if ((this.cd -= dt) <= 0 && p && !p.dead && Math.abs(p.cx - this.cx) >= d.minRange && this.sees(level, false)) { this.st = 'warn'; this.t = d.windup; this.tx = p.cx; this.ty = this.floorBelow(level, p.cx, p.y + p.h); this.warnOn(); }
+            if ((this.cd -= dt) <= 0 && p && !p.dead && Math.abs(p.cx - this.cx) >= d.minRange && this.sees(level, false)) { this.st = 'warn'; this.t = d.windup; this.tx = p.cx; this.ty = this.floorBelow(level, p.cx, p.y + p.h); this.warnOn('mortarWind'); }
         } else if (this.st === 'warn') {
             if ((this.t -= dt) <= 0) {
                 const T = d.flightT, sx = this.cx, sy = this.y;
-                entAdd(new Shell(sx, sy, (this.tx - sx) / T, (this.ty - sy) / T - 0.5 * d.lobGrav * T, this.tx, this.ty, d, this)); sndPlay('rock', { x: this.cx, vol: 0.5, p: 0.7 });
+                entAdd(new Shell(sx, sy, (this.tx - sx) / T, (this.ty - sy) / T - 0.5 * d.lobGrav * T, this.tx, this.ty, d, this)); sndPlay('mortarShot', { x: this.cx });          // bước 8: trước đây 'rock' vol 0,5 p 0,7
                 this.st = 'walk'; this.cd = d.cooldown;
             }
         }
@@ -6321,7 +6412,8 @@ class Arrow extends Thing {
         super.physStep(level, dt);
         if (Math.abs(this.vx) > 1) this.facing = Math.sign(this.vx);
     }
-    onHitTarget(level, t) { this.flying = false; }
+    onHitTarget(level, t) { if (this.flying) sndPlay('arrowHit', { x: this.cx }); this.flying = false; }          // bước 8: tên cắm trúng (chỉ khi còn đang bay)
+    onWall(level, v) { if (this.flying && Math.abs(v) > 120) sndPlay('arrowHit', { x: this.cx, vol: 0.8 }); }          // bước 8: tên đâm tường
     draw(ctx, alpha) {
         if (!this.flying && !this.holder && this.age > TRAP.arrowLife - 3 && Math.floor(this.age * 8) % 2) return;          // 3 giây cuối nhấp nháy báo sắp tan
         if (ITEM_HP) { drawArrowHp(this, ctx, alpha); return; }
@@ -6476,7 +6568,7 @@ function trapFire(level, tr) {
     tr.fired = true; tr.cd = TRAP.rearmT;
     const face = tr.dir > 0 ? (tr.c + 1) * TILE + 1 : tr.c * TILE - 9, y = tr.r * TILE + TILE / 2 - 1;
     const a = entAdd(new Arrow(face, y, tr.dir)); a.vx = tr.dir * TRAP.arrowV; a.vy = 0; a.thrower = null;
-    sndPlay('shoot', { x: face });
+    sndPlay('arrowShot', { x: face });          // bước 8: tiếng bắn tên riêng (trước đây 'shoot' chung với súng)
 }
 
 // Báo trước: khối bẫy lóe đỏ + chấm than phía trước mặt bẫy (vẽ động, ngoài bộ nhớ đệm ô)
@@ -6513,7 +6605,7 @@ class ArrowBox extends Thing {
         if (boxHitsSolid(level, face, y, 8, 3)) return;          // sát tường: không bắn
         this.cd = TRAP.rearmT;
         const a = entAdd(new Arrow(face, y, d)); a.vx = d * TRAP.arrowV; a.vy = 0; a.thrower = null;
-        sndPlay('shoot', { x: face });
+        sndPlay('arrowShot', { x: face });
     }
     update(level, dt) {
         super.update(level, dt);
@@ -7478,10 +7570,11 @@ class Oil extends Thing {
     }
 }
 class Fire extends Thing {
-    constructor(x, y, w) { super(x, y, w, 11, { kind: 'fire', mass: 0, gravity: 0, dmgFrom: [], triggersTraps: false, col: '#ff8a2a' }); this.age = 0; }
+    constructor(x, y, w) { super(x, y, w, 11, { kind: 'fire', mass: 0, gravity: 0, dmgFrom: [], triggersTraps: false, col: '#ff8a2a' }); this.age = 0; this.crackT = 0.35; }          // crackT: đếm tới lần lách tách kế (bước 8)
     light() { return { r: 26, col: '#ff8a2a', a: 0.55 }; }
     physStep() {}
     update(level, dt) {
+        if ((this.crackT -= dt) <= 0) { this.crackT = 0.7; sndPlay('fireCrackle', { x: this.cx }); }          // bước 8: lửa cháy lách tách (tiếng ngắn ~0,65 s, phát lặp)
         if ((this.age += dt) > FIRE.life || level.inWater(this)) { if (this.alive) level.spawnBurst(this.cx, this.cy, 3, level.inWater(this) ? '#cfe8ff' : '#6a6a6a', 40); this.alive = false; }
     }
     draw(ctx, alpha) {
@@ -7498,7 +7591,7 @@ class Fire extends Thing {
 function oilSpill(cx, bottom) { return entAdd(new Oil(cx - 11, bottom - 3)); }
 function oilIgnite(o) {
     if (!o.alive) return; o.alive = false;
-    const f = entAdd(new Fire(o.x, o.y - 8, o.w)); sndPlay('st_burn', { x: o.cx, p: 1.3, vol: 0.5 }); return f;
+    const f = entAdd(new Fire(o.x, o.y - 8, o.w)); sndPlay('fireIgnite', { x: o.cx }); return f;          // bước 8: lửa bùng (trước đây 'st_burn' p 1,3)
 }
 function entBurning(e) { return e.creature && ((e.burnT > 0) || (e.st && typeof e.st === 'object' && e.st.burn > 0)); }
 function fireStep(L) {
