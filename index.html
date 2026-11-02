@@ -1016,10 +1016,199 @@ function sndNoise(ac, out, t, o) {
     sndNoiseRaw(ac, out, c.t0 + (t - c.t0) * _snv(tn.dur), o2);
 }
 
+// ---------- BỘ ÂM MỚI v0.92 (Dan gửi nguyên mã, viết theo kiểu "this.ctx / this.bus / this._now / this._p / this._noiseNode") ----------
+//   Giữ nguyên mã của Dan trong SFX2; sx(tên) bọc lại thành hàm dựng (ac, out, t, p) của SND_DEFS. KHÔNG đi qua SND_TUNE (không có mục chỉnh cho các tên này) nên nghe đúng như thiết kế.
+//   Ngẫu nhiên (Math.random) chỉ dùng cho ÂM THANH, không đụng rng chơi. Tiếng lửa bùng: 3 bản fire / fireA / fireB, đều đã hạ âm lượng đoạn bùng đầu (a, b, c) ~ một nửa; fireIgnite (tiếng thật dùng trong game) = bản FIRE_PICK.
+const FIRE_PICK = 'fireB';
+const SFX2 = {
+    swing(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.12);
+        const n = this._noiseNode(t, 0.28), bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+        bp.frequency.setValueAtTime(500 * p, t); bp.frequency.exponentialRampToValueAtTime(3200 * p, t + 0.09); bp.frequency.exponentialRampToValueAtTime(700 * p, t + 0.26);
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.38, t + 0.03); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        n.connect(bp).connect(g).connect(this.bus);
+        const n2 = this._noiseNode(t, 0.2), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass';
+        hp.frequency.setValueAtTime(2000 * p, t); hp.frequency.exponentialRampToValueAtTime(4000 * p, t + 0.18);
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.0001, t); g2.gain.linearRampToValueAtTime(0.12, t + 0.04); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        n2.connect(hp).connect(g2).connect(this.bus);
+    },
+    hitSmall(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.08);
+        const n = this._noiseNode(t, 0.12), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900 * p;
+        const g1 = this.ctx.createGain(); g1.gain.setValueAtTime(0.55, t); g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        n.connect(hp).connect(g1).connect(this.bus);
+        const osc = this.ctx.createOscillator(); osc.type = 'triangle';
+        osc.frequency.setValueAtTime(950 * p, t); osc.frequency.exponentialRampToValueAtTime(320 * p, t + 0.08);
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.35, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(g2).connect(this.bus); osc.start(t); osc.stop(t + 0.13);
+    },
+    hitArmored(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.04);
+        const partials = [{ f: 1180, a: 0.16, d: 0.32 }, { f: 1760, a: 0.13, d: 0.28 }, { f: 2490, a: 0.10, d: 0.22 }, { f: 3320, a: 0.08, d: 0.18 }, { f: 4180, a: 0.05, d: 0.14 }];
+        partials.forEach(({ f, a, d }) => {
+            const osc = this.ctx.createOscillator(); osc.type = 'square'; osc.frequency.value = f * p * (1 + (Math.random() - 0.5) * 0.03);
+            const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * p; bp.Q.value = 12;
+            const g = this.ctx.createGain(); g.gain.setValueAtTime(a, t); g.gain.exponentialRampToValueAtTime(0.0005, t + d);
+            osc.connect(bp).connect(g).connect(this.bus); osc.start(t); osc.stop(t + d + 0.02);
+        });
+        const n = this._noiseNode(t, 0.06), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3500 * p;
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        n.connect(hp).connect(g).connect(this.bus);
+        const osc = this.ctx.createOscillator(); osc.type = 'sine';
+        osc.frequency.setValueAtTime(180 * p, t); osc.frequency.exponentialRampToValueAtTime(90 * p, t + 0.1);
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.35, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        osc.connect(g2).connect(this.bus); osc.start(t); osc.stop(t + 0.15);
+    },
+    hitBigHigh1(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.06);
+        const osc = this.ctx.createOscillator(); osc.type = 'sine';
+        osc.frequency.setValueAtTime(320 * p, t); osc.frequency.exponentialRampToValueAtTime(85 * p, t + 0.22);
+        const g1 = this.ctx.createGain(); g1.gain.setValueAtTime(0.78, t); g1.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.connect(g1).connect(this.bus); osc.start(t); osc.stop(t + 0.31);
+        const n = this._noiseNode(t, 0.26), lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2600 * p, t); lp.frequency.exponentialRampToValueAtTime(400, t + 0.22);
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.5, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+        n.connect(lp).connect(g2).connect(this.bus);
+        const n2 = this._noiseNode(t, 0.07), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000 * p;
+        const g3 = this.ctx.createGain(); g3.gain.setValueAtTime(0.32, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        n2.connect(hp).connect(g3).connect(this.bus);
+    },
+    throwGas(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.08);
+        const n = this._noiseNode(t, 0.35), bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.2;
+        bp.frequency.setValueAtTime(700 * p, t); bp.frequency.exponentialRampToValueAtTime(2400 * p, t + 0.1); bp.frequency.exponentialRampToValueAtTime(450 * p, t + 0.32);
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.3, t + 0.03); g.gain.exponentialRampToValueAtTime(0.001, t + 0.33);
+        n.connect(bp).connect(g).connect(this.bus);
+        [1450, 2100].forEach((f, i) => {
+            const osc = this.ctx.createOscillator(); osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f * p, t + 0.05 + i * 0.03); osc.frequency.exponentialRampToValueAtTime(f * 0.75 * p, t + 0.22);
+            const gg = this.ctx.createGain(), st = t + 0.05 + i * 0.03;
+            gg.gain.setValueAtTime(0.0001, st); gg.gain.linearRampToValueAtTime(0.09, st + 0.01); gg.gain.exponentialRampToValueAtTime(0.001, st + 0.15);
+            osc.connect(gg).connect(this.bus); osc.start(st); osc.stop(st + 0.18);
+        });
+        const n2 = this._noiseNode(t + 0.04, 0.1), lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.0001, t + 0.04); g2.gain.linearRampToValueAtTime(0.18, t + 0.06); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        n2.connect(lp).connect(g2).connect(this.bus);
+    },
+    // --- lửa bùng: 3 bản; phần (a) đoạn bùng đầu + (b) whoosh + (c) rumble đã hạ ~ một nửa (Dan: «to quá»); (d) tép lửa lách tách giữ nguyên ---
+    _fireBody(t, dur, p, k) {
+        const n1 = this._noiseNode(t, dur), lp1 = this.ctx.createBiquadFilter(); lp1.type = 'lowpass';
+        lp1.frequency.setValueAtTime(180 * p, t); lp1.frequency.exponentialRampToValueAtTime(2800 * p, t + 0.18); lp1.frequency.exponentialRampToValueAtTime(900 * p, t + 0.55); lp1.frequency.exponentialRampToValueAtTime(420 * p, t + dur);
+        const g1 = this.ctx.createGain(); g1.gain.setValueAtTime(0.0001, t); g1.gain.linearRampToValueAtTime(0.55 * k, t + 0.05); g1.gain.exponentialRampToValueAtTime(0.3 * k, t + 0.5); g1.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        n1.connect(lp1).connect(g1).connect(this.bus);
+        const n2 = this._noiseNode(t, dur), lp2 = this.ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 200;
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.0001, t); g2.gain.linearRampToValueAtTime(0.5 * k, t + 0.2); g2.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        n2.connect(lp2).connect(g2).connect(this.bus);
+        for (let i = 0; i < 28; i++) {
+            const ct = t + 0.15 + Math.random() * (dur - 0.35), cd = 0.015 + Math.random() * 0.03, n = this._noiseNode(ct, cd), hp = this.ctx.createBiquadFilter();
+            hp.type = 'highpass'; hp.frequency.value = 1200 + Math.random() * 2800;
+            const g = this.ctx.createGain(), amp = 0.06 + Math.random() * 0.16;
+            g.gain.setValueAtTime(0.0001, ct); g.gain.linearRampToValueAtTime(amp, ct + 0.002); g.gain.exponentialRampToValueAtTime(0.001, ct + cd);
+            n.connect(hp).connect(g).connect(this.bus);
+        }
+    },
+    fire(opts = {}) {          // bản gốc: transient 0.7 → 0.3
+        const t = this._now(), dur = 1.9, p = this._p(opts, 0.05);
+        const n0 = this._noiseNode(t, 0.35), lp0 = this.ctx.createBiquadFilter(); lp0.type = 'lowpass';
+        lp0.frequency.setValueAtTime(3200, t); lp0.frequency.exponentialRampToValueAtTime(300, t + 0.32);
+        const g0 = this.ctx.createGain(); g0.gain.setValueAtTime(0.0001, t); g0.gain.linearRampToValueAtTime(0.3, t + 0.015); g0.gain.exponentialRampToValueAtTime(0.001, t + 0.33);
+        n0.connect(lp0).connect(g0).connect(this.bus);
+        this._fireBody(t, dur, p, 0.5);
+    },
+    fireA(opts = {}) {          // mềm, swell chậm: transient 0.28 → 0.15
+        const t = this._now(), dur = 1.9, p = this._p(opts, 0.05), durA = 0.55;
+        const n0 = this._noiseNode(t, durA), lp0 = this.ctx.createBiquadFilter(); lp0.type = 'lowpass';
+        lp0.frequency.setValueAtTime(150 * p, t); lp0.frequency.exponentialRampToValueAtTime(2200 * p, t + 0.22); lp0.frequency.exponentialRampToValueAtTime(700 * p, t + durA);
+        const g0 = this.ctx.createGain(); g0.gain.setValueAtTime(0.0001, t); g0.gain.linearRampToValueAtTime(0.15, t + 0.08); g0.gain.exponentialRampToValueAtTime(0.001, t + durA);
+        n0.connect(lp0).connect(g0).connect(this.bus);
+        this._fireBody(t, dur, p, 0.5);
+    },
+    fireB(opts = {}) {          // whump nhanh + cú trầm ngắn: transient 0.3 → 0.16, whump 0.22 → 0.12
+        const t = this._now(), dur = 1.9, p = this._p(opts, 0.05);
+        const n0 = this._noiseNode(t, 0.4), lp0 = this.ctx.createBiquadFilter(); lp0.type = 'lowpass';
+        lp0.frequency.setValueAtTime(2600 * p, t); lp0.frequency.exponentialRampToValueAtTime(350 * p, t + 0.4);
+        const g0 = this.ctx.createGain(); g0.gain.setValueAtTime(0.0001, t); g0.gain.linearRampToValueAtTime(0.16, t + 0.02); g0.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        n0.connect(lp0).connect(g0).connect(this.bus);
+        const whump = this.ctx.createOscillator(); whump.type = 'sine';
+        whump.frequency.setValueAtTime(160 * p, t); whump.frequency.exponentialRampToValueAtTime(55 * p, t + 0.18);
+        const gw = this.ctx.createGain(); gw.gain.setValueAtTime(0.0001, t); gw.gain.linearRampToValueAtTime(0.12, t + 0.015); gw.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        whump.connect(gw).connect(this.bus); whump.start(t); whump.stop(t + 0.26);
+        this._fireBody(t, dur, p, 0.5);
+    },
+    placeBomb(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.08);
+        const osc = this.ctx.createOscillator(); osc.type = 'sine';
+        osc.frequency.setValueAtTime(420 * p, t); osc.frequency.exponentialRampToValueAtTime(140 * p, t + 0.07);
+        const g1 = this.ctx.createGain(); g1.gain.setValueAtTime(0.5, t); g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(g1).connect(this.bus); osc.start(t); osc.stop(t + 0.11);
+        const n = this._noiseNode(t, 0.09), lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.32, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        n.connect(lp).connect(g2).connect(this.bus);
+        const n2 = this._noiseNode(t, 0.02), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000 * p;
+        const g3 = this.ctx.createGain(); g3.gain.setValueAtTime(0.2, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+        n2.connect(hp).connect(g3).connect(this.bus);
+    },
+    throwBomb(opts = {}) {
+        const t = this._now(), p = this._p(opts, 0.08);
+        const n = this._noiseNode(t, 0.3), bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.8;
+        bp.frequency.setValueAtTime(800 * p, t); bp.frequency.exponentialRampToValueAtTime(2300 * p, t + 0.09); bp.frequency.exponentialRampToValueAtTime(500 * p, t + 0.28);
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.28, t + 0.025); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        n.connect(bp).connect(g).connect(this.bus);
+        const osc = this.ctx.createOscillator(); osc.type = 'sine';
+        osc.frequency.setValueAtTime(1500 * p, t + 0.03); osc.frequency.exponentialRampToValueAtTime(2100 * p, t + 0.13); osc.frequency.exponentialRampToValueAtTime(750 * p, t + 0.3);
+        const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.0001, t + 0.03); g2.gain.linearRampToValueAtTime(0.07, t + 0.06); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.connect(g2).connect(this.bus); osc.start(t + 0.03); osc.stop(t + 0.32);
+        const n2 = this._noiseNode(t + 0.1, 0.03), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500 * p;
+        const g3 = this.ctx.createGain(); g3.gain.setValueAtTime(0.12, t + 0.1); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+        n2.connect(hp).connect(g3).connect(this.bus);
+    },
+    _coinNotes(notes, p, ta, tb, ra, rb) {          // phần chung của 3 tiếng nhặt vàng: mỗi nốt = sin + họa âm 2 (triangle)
+        const t = this._now();
+        notes.forEach(({ f, delay, amp, dur }) => {
+            const st = t + delay;
+            const osc = this.ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = f * p;
+            const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, st); g.gain.linearRampToValueAtTime(amp, st + ta); g.gain.exponentialRampToValueAtTime(0.001, st + dur);
+            osc.connect(g).connect(this.bus); osc.start(st); osc.stop(st + dur + 0.02);
+            const osc2 = this.ctx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.value = f * 2 * p;
+            const g2 = this.ctx.createGain(); g2.gain.setValueAtTime(0.0001, st); g2.gain.linearRampToValueAtTime(amp * ra, st + tb); g2.gain.exponentialRampToValueAtTime(0.001, st + dur * rb);
+            osc2.connect(g2).connect(this.bus); osc2.start(st); osc2.stop(st + dur);
+        });
+    },
+    coinMedium2(opts = {}) {          // thỏi bé
+        const p = this._p(opts, 0.03);
+        this._coinNotes([{ f: 1047, delay: 0, amp: 0.16, dur: 0.12 }, { f: 1397, delay: 0.05, amp: 0.18, dur: 0.26 }], p, 0.005, 0.005, 0.3, 0.7);
+    },
+    coin(opts = {}) {          // thỏi vừa
+        const t = this._now(), p = this._p(opts, 0.03);
+        this._coinNotes([{ f: 988, delay: 0, amp: 0.16, dur: 0.14 }, { f: 1319, delay: 0.055, amp: 0.18, dur: 0.24 }], p, 0.006, 0.005, 0.35, 0.7);
+        const n = this._noiseNode(t, 0.02), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5000;
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+        n.connect(hp).connect(g).connect(this.bus);
+    },
+    coinLarge1(opts = {}) {          // thỏi lớn
+        const t = this._now(), p = this._p(opts, 0.03);
+        this._coinNotes([{ f: 784, delay: 0, amp: 0.16, dur: 0.14 }, { f: 988, delay: 0.06, amp: 0.17, dur: 0.16 }, { f: 1319, delay: 0.14, amp: 0.2, dur: 0.38 }], p, 0.007, 0.006, 0.32, 0.75);
+        const subOsc = this.ctx.createOscillator(); subOsc.type = 'sine'; subOsc.frequency.value = 392 * p;
+        const subG = this.ctx.createGain(); subG.gain.setValueAtTime(0.0001, t + 0.14); subG.gain.linearRampToValueAtTime(0.06, t + 0.16); subG.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        subOsc.connect(subG).connect(this.bus); subOsc.start(t + 0.14); subOsc.stop(t + 0.42);
+        const n = this._noiseNode(t, 0.02), hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6000;
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+        n.connect(hp).connect(g).connect(this.bus);
+    }
+};
+// bọc một tiếng SFX2 thành hàm dựng của SND_DEFS: p của sndPlay là hệ số cao độ gốc, mỗi tiếng tự thêm độ lệch ngẫu nhiên nhỏ như mã của Dan
+function sx(name) {
+    return (ac, out, t, p) => {
+        const w = Object.create(SFX2); w.ctx = ac; w.bus = out; w._now = () => t; w._p = (o, j) => (p || 1) * (1 + (Math.random() * 2 - 1) * j);
+        w._noiseNode = (st, d) => { const s = ac.createBufferSource(); s.buffer = sndNoiseBuf(ac); s.loop = true; s.start(st, Math.random() * 1.5, d + 0.05); return s; };
+        SFX2[name].call(w, {});
+    };
+}
+
 // ---------- danh mục hiệu ứng: tên: [hàm dựng, thời lượng tối đa (s), khoảng cách tối thiểu giữa 2 lần (s), ưu tiên (2 = luôn được phát) ] ----------
 const SND_DEFS = {
     // --- người chơi ---
-    swing:    [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 600 * p, f2: 2600 * p, q: 0.8, dur: 0.12, vol: 0.4 }); sndTone(ac, o, t, { f: 320 * p, f2: 170 * p, dur: 0.09, vol: 0.06, type: 'triangle' }); }, 0.2, 0.08, 0],
+    swing:    [sx('swing'), 0.3, 0.06, 0],          // v0.92: bản mới của Dan (chém hụt)
     swingUp:  [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 900 * p, f2: 3600 * p, q: 0.8, dur: 0.12, vol: 0.36 }); sndTone(ac, o, t, { f: 420 * p, f2: 240 * p, dur: 0.09, vol: 0.05, type: 'triangle' }); }, 0.2, 0.08, 0],
     hit:      [(ac, o, t, p) => { sndTone(ac, o, t, { f: 170 * p, f2: 55 * p, dur: 0.13, vol: 0.5 }); sndNoise(ac, o, t, { f: 900, f2: 300, q: 1, dur: 0.06, vol: 0.3 }); sndTone(ac, o, t, { f: 1500 * p, f2: 900 * p, dur: 0.05, vol: 0.08, type: 'square' }); }, 0.2, 0.04, 1],
     hitHeavy: [(ac, o, t, p) => { sndTone(ac, o, t, { f: 120 * p, f2: 35 * p, dur: 0.22, vol: 0.6 }); sndNoise(ac, o, t, { f: 700, f2: 200, q: 1, dur: 0.1, vol: 0.35 }); sndTone(ac, o, t, { f: 880 * p, f2: 660 * p, dur: 0.18, vol: 0.1, type: 'triangle' }); }, 0.3, 0.05, 1],
@@ -1084,12 +1273,17 @@ const SND_DEFS = {
     //   Cũng đã nối: fireIgnite / fireCrackle (13n_fire) · arrowShot / arrowHit (13b_traps, 13a_items) · throwFoe (10b_carry). v0.68 đã nối nốt: door (cửa ra) · gate (đấu trường mở / còn khoá) · bossHurt (boss trúng đòn) · wallBreak (khối đá vỡ). Không còn tiếng dự trữ chưa nối — xem Roadmap.
     splash:   [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1800 * p, f2: 500 * p, q: 0.9, dur: 0.28, vol: 0.34 }); sndNoise(ac, o, t, { type: 'highpass', f: 3500, q: 0.6, dur: 0.1, vol: 0.12 }); sndTone(ac, o, t, { f: 300 * p, f2: 120 * p, dur: 0.16, vol: 0.14 }); [0.08, 0.15, 0.23].forEach((d, i) => sndTone(ac, o, t + d, { f: (500 + i * 180) * p, f2: (800 + i * 290) * p, dur: 0.07, vol: 0.07 })); }, 0.45, 0.1, 0],
     splashBig: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1400 * p, f2: 200 * p, q: 0.7, dur: 0.5, vol: 0.42 }); sndNoise(ac, o, t, { f: 2000 * p, f2: 600 * p, q: 0.8, dur: 0.3, vol: 0.3 }); sndNoise(ac, o, t + 0.02, { type: 'highpass', f: 3500, q: 0.6, dur: 0.18, vol: 0.14 }); sndTone(ac, o, t, { f: 120 * p, f2: 45 * p, dur: 0.35, vol: 0.3 }); [0.12, 0.2, 0.3, 0.4].forEach((d, i) => sndTone(ac, o, t + d, { f: (420 + i * 150) * p, f2: (700 + i * 240) * p, dur: 0.08, vol: 0.06 })); }, 0.6, 0.15, 1],
-    fireIgnite: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 300 * p, f2: 1400 * p, q: 0.7, dur: 0.35, vol: 0.32, att: 0.05 }); sndNoise(ac, o, t, { type: 'highpass', f: 2000, q: 0.5, dur: 0.3, vol: 0.1, att: 0.04 }); sndTone(ac, o, t, { f: 90 * p, f2: 200 * p, dur: 0.3, vol: 0.12, type: 'sawtooth', lp: 500, att: 0.06 }); }, 0.4, 0.2, 1],
+    fireIgnite: [sx(FIRE_PICK), 2.0, 0.1, 0],          // v0.92: lửa bùng (Dan chọn 1 trong fire / fireA / fireB qua FIRE_PICK), đã hạ đoạn bùng đầu
     fireCrackle: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 250 * p, q: 0.5, dur: 0.6, vol: 0.1, att: 0.1 }); [[0, 2100, 0.12], [0.07, 1500, 0.1], [0.19, 2800, 0.13], [0.26, 1800, 0.09], [0.4, 2400, 0.12], [0.47, 1300, 0.08]].forEach(([d, f, v]) => sndNoise(ac, o, t + d, { f: f * p, q: 1.6, dur: 0.03, vol: v })); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.5, vol: 0.025, att: 0.1 }); }, 0.65, 0.4, 0],
     arrowShot: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1500 * p, f2: 3500 * p, q: 0.8, dur: 0.12, vol: 0.2 }); sndTone(ac, o, t, { f: 900 * p, f2: 300 * p, dur: 0.1, vol: 0.14, type: 'square', lp: 2500 }); sndTone(ac, o, t, { f: 180 * p, f2: 110 * p, dur: 0.12, vol: 0.16 }); }, 0.2, 0.1, 0],
     arrowHit: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1500, f2: 400, q: 0.8, dur: 0.08, vol: 0.22 }); sndTone(ac, o, t, { f: 220 * p, f2: 120 * p, dur: 0.07, vol: 0.2, type: 'triangle' }); }, 0.12, 0.06, 0],
     throwFoe: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 400 * p, f2: 1600 * p, q: 0.7, dur: 0.2, vol: 0.3 }); sndTone(ac, o, t, { f: 200 * p, f2: 110 * p, dur: 0.14, vol: 0.1, type: 'triangle' }); sndTone(ac, o, t, { f: 150 * p, f2: 90 * p, dur: 0.12, vol: 0.08, type: 'sawtooth', lp: 600 }); }, 0.25, 0.1, 0],
-    reflect:  [(ac, o, t, p) => { sndTone(ac, o, t, { f: 1760 * p, f2: 1500 * p, dur: 0.22, vol: 0.18, type: 'square', lp: 5000 }); sndTone(ac, o, t, { f: 2640 * p, dur: 0.16, vol: 0.1, type: 'square', lp: 5000 }); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.07, vol: 0.22 }); sndTone(ac, o, t + 0.03, { f: 880 * p, f2: 1320 * p, dur: 0.12, vol: 0.1, type: 'triangle' }); sndNoise(ac, o, t, { f: 600 * p, f2: 2600 * p, q: 0.8, dur: 0.1, vol: 0.25 }); }, 0.3, 0.06, 1]
+    reflect:  [(ac, o, t, p) => { sndTone(ac, o, t, { f: 1760 * p, f2: 1500 * p, dur: 0.22, vol: 0.18, type: 'square', lp: 5000 }); sndTone(ac, o, t, { f: 2640 * p, dur: 0.16, vol: 0.1, type: 'square', lp: 5000 }); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.07, vol: 0.22 }); sndTone(ac, o, t + 0.03, { f: 880 * p, f2: 1320 * p, dur: 0.12, vol: 0.1, type: 'triangle' }); sndNoise(ac, o, t, { f: 600 * p, f2: 2600 * p, q: 0.8, dur: 0.1, vol: 0.25 }); }, 0.3, 0.06, 1],
+    // --- v0.92 (Dan): bộ âm mới ---
+    hitSmall: [sx('hitSmall'), 0.15, 0.04, 0], hitArmored: [sx('hitArmored'), 0.36, 0.04, 0], hitBigHigh1: [sx('hitBigHigh1'), 0.34, 0.04, 0],
+    throwGas: [sx('throwGas'), 0.4, 0.1, 0], placeBomb: [sx('placeBomb'), 0.13, 0.08, 0], throwBomb: [sx('throwBomb'), 0.34, 0.1, 0],
+    fire: [sx('fire'), 2.0, 0.1, 0], fireA: [sx('fireA'), 2.0, 0.1, 0], fireB: [sx('fireB'), 2.0, 0.1, 0],
+    coinMedium2: [sx('coinMedium2'), 0.34, 0.03, 0], coin: [sx('coin'), 0.32, 0.03, 0], coinLarge1: [sx('coinLarge1'), 0.5, 0.03, 0],
 };
 const SND_NAMES = Object.keys(SND_DEFS);
 // ---------- chỉnh âm (bước 8; từ trang tools/sound_tuner.html, Dan chốt) ----------
@@ -1097,7 +1291,6 @@ const SND_NAMES = Object.keys(SND_DEFS);
 //   · tone / noise (âm lượng riêng phần tông / phần nhiễu) · att (độ mở đầu, nhân vào att) · layers: { "chỉ số lớp": { vol, freq } } (chi tiết từng lớp, chưa dùng). Trường thiếu = 1 (không đổi).
 //   Áp dụng trong sndPlay (vol, dur) và lớp bọc sndTone / sndNoise (còn lại). Không có trong bảng = giữ nguyên tiếng gốc. Tiếng ghi chú "DỰ TRỮ" đã chỉnh sẵn nhưng game chưa gọi.
 const SND_TUNE = {
-    swing: { vol: 0.91, pitch: 1.3, bright: 0.59, tone: 0, att: 1.46 },
     swingUp: { pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
     hit: { vol: 0.67, bright: 3, tone: 0.49, att: 2 },
     hitHeavy: { vol: 0.72, bright: 2.49, tone: 0.22, att: 1.79 },
@@ -1140,7 +1333,6 @@ const SND_TUNE = {
     victory: { dur: 1.07 },
     splash: { vol: 0.64, pitch: 0.4, dur: 1.96, bright: 0.3, tone: 1.09, noise: 0.76, att: 0.2 },
     splashBig: { vol: 0.62, pitch: 0.4, dur: 1.75, bright: 0.3, tone: 0.94, noise: 0.94, att: 1.29 },
-    fireIgnite: { vol: 0.11, pitch: 0.4, dur: 1.05, bright: 0.98, tone: 1.25, noise: 0.89, att: 1.66 },
     fireCrackle: { pitch: 0.66, dur: 1.29, bright: 0.95, tone: 1.27, noise: 0.67, att: 0.54 },
     arrowShot: { vol: 0.59, dur: 1.77, bright: 0.59, noise: 0.96, att: 1.08 },
     arrowHit: { vol: 0.62 },
@@ -1164,9 +1356,10 @@ const SND_VI = {
     enemyDie: 'Quái chết', alert: 'Quái phát hiện', shootWind: 'Điềm báo bắn', shoot: 'Quái bắn', boltHit: 'Đạn trúng', rushWind: 'Điềm báo húc', rushGo: 'Quái húc', hopWind: 'Điềm báo nhảy', hopGo: 'Quái nhảy', hopLand: 'Quái đáp',
     diveWind: 'Điềm báo bổ nhào', diveGo: 'Quái bổ nhào', mortarWind: 'Điềm báo pháo', mortarShot: 'Bắn pháo', boom: 'Nổ',
     bossRoar: 'Boss gầm', bossWind: 'Boss điềm báo', bossSlam: 'Boss đập', bossRush: 'Boss lao', bossStep: 'Boss bước', rock: 'Đá / vật rơi', shard: 'Mảnh tinh thể', shardBreak: 'Mảnh vỡ', queenCast: 'Bà chúa niệm chú', bossHurt: 'Boss trúng đòn', bossDie: 'Boss chết', victory: 'Chiến thắng',
+    hitSmall: 'Chém trúng quái nhỏ', hitArmored: 'Chém trúng quái giáp / nhát đầu', hitBigHigh1: 'Chém quái to / nhát kết', throwGas: 'Ném bình', placeBomb: 'Đặt bom', throwBomb: 'Ném bom', fire: 'Lửa bùng (bản gốc)', fireA: 'Lửa bùng (bản A)', fireB: 'Lửa bùng (bản B)', coinMedium2: 'Nhặt vàng bé', coin: 'Nhặt vàng vừa', coinLarge1: 'Nhặt vàng lớn',
     splash: 'Rơi xuống nước', splashBig: 'Rơi xuống nước mạnh', fireIgnite: 'Dầu bốc cháy', fireCrackle: 'Lửa lách tách', arrowShot: 'Bắn tên', arrowHit: 'Tên trúng', throwFoe: 'Ném quái / xác', reflect: 'Phản đòn'
 };
-const SND_HERO = { swing: 1, swingUp: 1, hit: 1, hitHeavy: 1, dash: 1, jump: 1, djump: 1, land: 1, step: 1, hurt: 1, dead: 1, st_poison: 1, st_burn: 1, st_slow: 1, st_stun: 1, st_shock: 1, st_tick: 1, bench: 1, orb: 1, door: 1, unlock: 1, gate: 1, ui: 1, reflect: 1, splash: 1, splashBig: 1, victory: 1 };
+const SND_HERO = { hitSmall: 1, hitArmored: 1, hitBigHigh1: 1, throwGas: 1, placeBomb: 1, throwBomb: 1, coinMedium2: 1, coin: 1, coinLarge1: 1, swing: 1, swingUp: 1, hit: 1, hitHeavy: 1, dash: 1, jump: 1, djump: 1, land: 1, step: 1, hurt: 1, dead: 1, st_poison: 1, st_burn: 1, st_slow: 1, st_stun: 1, st_shock: 1, st_tick: 1, bench: 1, orb: 1, door: 1, unlock: 1, gate: 1, ui: 1, reflect: 1, splash: 1, splashBig: 1, victory: 1 };
 const _snt = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
 function sndLog(name, line) {
     line = line || (name.indexOf('amb_') === 0 ? 'env' : (SND_HERO[name] ? 'hero' : 'other'));
@@ -1253,6 +1446,14 @@ function sndFire(intensity, pan) {
     if (!_fireSnd || _fireSndCtx !== sndCtx) { try { _fireSnd = sndFireMake(sndCtx, sndMaster); _fireSndCtx = sndCtx; FIRE_SND.made++; } catch (e) { _fireSnd = null; return false; } }
     FIRE_SND.calls++; if (intensity > 0.04) sndLog('fireCrackle', 'env');
     _fireSnd.update(intensity * (typeof SND_TUNE !== 'undefined' && SND_TUNE.fireCrackle ? _snv(SND_TUNE.fireCrackle.vol) : 1), pan); return true;
+}
+// v0.92 (Dan): chọn tiếng chém trúng theo quái. hp0 = máu TRƯỚC đòn. Quái nhỏ (≤ 2 máu, không nặng) = hitSmall; quái có giáp (nặng như bọ đá) hoặc nhát ĐẦU vào con nhiều máu = hitArmored;
+//   nhát sau / nhát kết liễu con to = hitBigHigh1. Thứ không phải quái (không có máu) giữ 'hit' cũ.
+function hitSoundFor(e, hp0) {
+    const mx = e && e.maxHp; if (!(mx > 0) || !(hp0 > 0)) return 'hit';
+    const heavy = !!(e.def && e.def.heavy);
+    if (mx <= 2 && !heavy) return 'hitSmall';
+    return e.alive && (hp0 >= mx || heavy) ? 'hitArmored' : 'hitBigHigh1';
 }
 const sndPitch = () => 0.94 + Math.random() * 0.12;      // biến thiên cao độ nhẹ cho đỡ lặp
 
@@ -5088,7 +5289,7 @@ class Player extends Thing {
             const c = Math.floor(px / TILE), r = Math.floor(py / TILE);
             if (!level.isSolid(c, r) || !T_BREAKABLE[level.tile(c, r)]) continue;
             this.bombs--; const b = new Bomb(this.cx - 4, this.cy - 4); b.light(); entAdd(b); b.stick(level, c, r, side, this);
-            sndPlay('clang', { x: b.cx, p: 1.5, vol: 0.5 }); this.poseK = 'throw'; this.poseT = 0.2;
+            sndPlay('placeBomb', { x: b.cx }); this.poseK = 'throw'; this.poseT = 0.2;
             return true;
         }
         return false;
@@ -5411,12 +5612,13 @@ function playerWhipStep(level) {
         if (!(e.creature || e.breakOnImpact)) continue;
         if (!overlapBox(b, e) && !(b2 && overlapBox(b2, e))) continue;
         p.whipHits.add(e);
+        const hp0 = e.hp;
         if (e.hurt({ kind: DMG.WHIP, dmg: (p.weapon === 'machete' ? WPN.macheteDmg : WHIP.dmg) + (p.whipPower ? WHIP.chargeDmgAdd : 0), x: p.cx, y: p.cy, by: p })) {
             const kb = p.whipPower ? WHIP.chargeKbMul : 1;
             if (p.whipPower && p.blade === 'fire' && e.alive && e.creature && !e.boss && !(e.wetT > 0) && !level.inWater(e)) { const res = affinityOf(e, 'fire') === 'resist'; e.burnT = FIRE.burnT * (res ? ELEM.resMul : 1); e.burnRes = res; e.burnTick = FIRE.burnTick; e.burnDmg = BLADE.fireBurn; }          // v0.79: quái kháng lửa cháy nửa thời gian          // v0.75: kiếm lửa = cháy LỚN (4 máu); quái trong lưỡi chém bắt lửa (13n_fire.fireStep lo nhịp cháy + châm dầu)
             if (p.whipPower && p.blade) bladeHit(level, p, e);          // v0.45: kiếm hệ băng / sét / độc (13s_blade); lửa ở dòng trên
             if (!(e.def && e.def.heavy)) { if (b.up) e.vy -= 80 * kb; else e.vx += p.facing * 60 * kb; }          // chém lên hất lên, chém ngang hất ra (v0.88: bọ đá nặng không bị hất)
-            sndPlay('hit', { x: e.cx });
+            sndPlay(hitSoundFor(e, hp0), { x: e.cx });          // v0.92: nhỏ / giáp / to
             level.spawnBurst(e.cx, e.cy, 4, e.creature ? '#d23a3a' : e.col, 70);
         }
     }
@@ -5636,15 +5838,7 @@ function abilityTrialDraw() {
     ctx.globalAlpha = 1; return true;
 }
 function abilityDrawHud() {
-    let y = 26; const p = game.player;
-    for (const id of ['doubleJump', 'dash']) {
-        if (!abilityHas(id)) continue;
-        const sh = id === 'dash' && abilityHas('shadowDash');
-        const k = id === 'dash' ? inp.label('dash', 1) : inp.label('jump', 1) + '×2';
-        const ok = !p ? true : id === 'dash' ? (p.dashCd <= 0 && (p.onGround || !p.dashUsed)) : (!p.djUsed || p.onGround);
-        abilityIconDraw(id, VIEW_W - 16, y, ok, sh);
-        drawText((sh ? ABILITY_DEFS.shadowDash : ABILITY_DEFS[id]).short + ' · ' + k, VIEW_W - 18, y, '#9fd0ff', 'right'); y += 10;
-    }
+    // v0.92 (Dan): bỏ biểu tượng nhảy đôi / lướt ở góc phải trên (đã có màn mở khoá thông báo)
     const L = game.learn;
     if (!L) return;
     if (L.trial) return;          // v0.91: màn mở khoá được vẽ ở cuối drawHud (abilityTrialDraw)
@@ -5754,9 +5948,10 @@ function dmgContacts(level) {
         // Đạp đầu: người chơi đang rơi và chân ở nửa trên của quái
         if (p.vy > 0 && p.py + p.h <= e.py + e.h * 0.5 + 2) {
             const dmg = (Math.floor(p.fallT / PHYS.stunFallT) + 1) * (gearHas(p, 'spike') ? GEAR.spikeStomp : 1);   // SC: hp −= 1 × (floor(fallTimer/16) + 1)
+            const hp0 = e.hp;
             if (e.hurt({ kind: DMG.STOMP, dmg, x: p.cx, y: p.y + p.h, by: p })) {
                 p.vy = ITEM.stompVy - 0.2 * p.vy; p.fallT = 0; p.jumpHeld = false;
-                sndPlay('hit', { x: e.cx }); level.spawnBurst(e.cx, e.y, 5, '#d23a3a', 70);
+                sndPlay(hitSoundFor(e, hp0), { x: e.cx }); level.spawnBurst(e.cx, e.y, 5, '#d23a3a', 70);
             }
             continue;
         }
@@ -5861,7 +6056,9 @@ function carryThrow(p, t, up, down) {
     }
     if (t.onThrown) t.onThrown(p, !!t.noThrow || (down && p.onGround));      // tham số 2: true = chỉ đặt nhẹ xuống (không phải ném thật)
     const heavy = t.kind === 'corpse' || t.kind === 'princess' || t instanceof Enemy;          // bước 8: ném quái / xác / công chúa-thú cưng = throwFoe; đá, bình, bom… giữ 'rock'; đặt nhẹ xuống cũng giữ 'rock'
-    sndPlay(heavy && !t.noThrow && !(down && p.onGround) ? 'throwFoe' : 'rock', { x: p.cx });
+    const thrown = !t.noThrow && !(down && p.onGround);
+    // v0.92 (Dan): bom ném = throwBomb, đặt xuống đất = placeBomb; bình ném = throwGas (đặt nhẹ giữ 'rock')
+    sndPlay(t instanceof Bomb ? (thrown ? 'throwBomb' : 'placeBomb') : t.kind && /flask$/.test(t.kind) && thrown ? 'throwGas' : heavy && thrown ? 'throwFoe' : 'rock', { x: p.cx });
 }
 // Đánh rơi (choáng / chết): vật văng nhẹ theo người
 function carryDrop(p) {
@@ -7098,7 +7295,7 @@ class Boss extends Enemy {
         const af = el ? affinityOf(this, el) : null;
         if (el) { if (af === 'weak') { dmg *= ELEM.bossWeak; level.spawnBurst(this.cx, this.cy, 10, BLADE[el].col, 140); } else if (af === 'resist') dmg *= ELEM.resMul; }
         this.hp -= dmg; if (af) dmgPop(this, dmg, af, el); this.flashT = 0.12; this.hitCd = k === DMG.EXPLOSION ? 0.8 : 0.25; this.lastHurt = src;
-        level.spawnBurst(this.cx, this.cy, 8, this.def.col, 110); sndPlay('hitHeavy', { x: this.cx }); sndPlay('bossHurt', { x: this.cx, p: this.phase === 2 ? 0.85 : 1 });          // v0.68: boss rên khi trúng đòn
+        level.spawnBurst(this.cx, this.cy, 8, this.def.col, 110); sndPlay('hitBigHigh1', { x: this.cx }); sndPlay('bossHurt', { x: this.cx, p: this.phase === 2 ? 0.85 : 1 });          // v0.68: boss rên khi trúng đòn
         if (this.hp <= 0) { this.hp = 0; this.die(src); }
         else if (this.phase === 1 && this.hp <= this.maxHp * this.def.phase2) this.enterPhase2(level);
         return true;
@@ -8162,7 +8359,8 @@ class Bomb extends Thing {
     }
     onPicked(p) { this.stuck = null; }
     onWall(level, v) { if (this.safeT > 0) this.vx = 0; }          // lần 29: vừa ném đã đụng tường (ném sát vách) => rơi xuống ngay chân tường, không nảy ngược ra
-    light() { this.fused = true; this.fuseT = 0; sndPlay('ui', { x: this.cx, p: 0.6 }); }
+    light() { this.fused = true; this.fuseT = 0; }          // v0.92: tiếng đặt / ném do người chơi phát (placeBomb / throwBomb)
+    onLand(level, v) { if (v > 70) sndPlay('rock', { x: this.cx, vol: 0.6 }); }          // v0.92 (Dan): bom rơi xuống = tiếng hòn đá rơi
     chain() { if (!this.fused) this.light(); this.fuseT = Math.max(this.fuseT, ITEM.bombFuse + ITEM.bombFuse2 - 0.1); }
     update(level, dt) {
         super.update(level, dt);
@@ -8224,7 +8422,7 @@ class Gold extends Thing {
     update(level, dt) {
         super.update(level, dt); this.age += dt;
         const p = game.player;
-        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; this.alive = false; sndPlay('ui', { x: this.cx, p: 1.6 }); }
+        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; this.alive = false; sndPlay(this.value >= 100 ? 'coinLarge1' : this.value >= 50 ? 'coin' : 'coinMedium2', { x: this.cx }); }          // v0.92: bé / vừa / lớn
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawGoldHp(this, ctx, alpha); return; }
@@ -11244,7 +11442,7 @@ function muiDrawMenu(t, themeName) {
     items.forEach((it, i) => {
         const sel = i === t.sel, ry = y + i * rh, kind = it.kind || 'btn';
         if (kind === 'btn') {
-            const bw = Math.min(pw - 40, 170), bx = Math.round(cx - bw / 2), bh = Math.min(16, rh - 2);
+            const bw = t.page === 'diff' ? Math.round(Math.min(pw - 40, 170) * 0.75) : Math.min(pw - 40, 170), bx = Math.round(cx - bw / 2), bh = Math.min(16, rh - 2);
             muiButton(bx, ry, bw, bh, it.text, sel);
             hit.push({ x: bx, y: ry, w: bw, h: bh, i });
             return;
