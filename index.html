@@ -1292,8 +1292,9 @@ const SND_NAMES = Object.keys(SND_DEFS);
 //   · tone / noise (âm lượng riêng phần tông / phần nhiễu) · att (độ mở đầu, nhân vào att) · layers: { "chỉ số lớp": { vol, freq } } (chi tiết từng lớp, chưa dùng). Trường thiếu = 1 (không đổi).
 //   Áp dụng trong sndPlay (vol, dur) và lớp bọc sndTone / sndNoise (còn lại). Không có trong bảng = giữ nguyên tiếng gốc. Tiếng ghi chú "DỰ TRỮ" đã chỉnh sẵn nhưng game chưa gọi.
 const SND_TUNE = {
-    swing: { vol: 0.5 },          // v0.94 (Dan): chém hụt còn 50% âm lượng (tiếng mới của v0.92 giữ nguyên hình dạng)
-    swingUp: { vol: 0.5, pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
+    placeBomb: { vol: 0.75 },          // v0.94: đặt bom còn 75%
+    swing: { vol: 0.375 },          // v0.94 (Dan): chém hụt 50% rồi 75% nữa = 0.375 so với gốc (tiếng mới của v0.92 giữ nguyên hình dạng)
+    swingUp: { vol: 0.375, pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
     hit: { vol: 0.67, bright: 3, tone: 0.49, att: 2 },
     hitHeavy: { vol: 0.72, bright: 2.49, tone: 0.22, att: 1.79 },
     clang: { vol: 0.96, pitch: 1.28, bright: 0.3, tone: 0.38, att: 0.37 },
@@ -5641,7 +5642,7 @@ function whipLaunch(level, p, e, b) {
     e.thrower = p; e.safeT = 10 / 30; e.hitSet = null; if (!b.up) p.slashFlick = true;          // v0.77: chém xác / đá → vệt chém hất từ dưới lên
     if (b.up) { e.vx = p.facing * WHIP.launchUpVx * mul; e.vy = WHIP.launchUpVy * mul; }
     else { e.vx = p.facing * WHIP.launchVx * mul; e.vy = WHIP.launchVy * mul; }
-    sndPlay('hitSmall', { x: e.cx });          // v0.94: chém trúng đá / xác = tiếng hitSmall mới
+    sndPlay('hit', { x: e.cx });          // v0.94: chém trúng đá / xác = tiếng 'hit'; quái nhỏ (1 hit) cũng dùng đúng tiếng này (hitSoundFor)
     level.spawnBurst(e.cx, e.cy, 3, e.col, 60);
     return true;
 }
