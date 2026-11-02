@@ -1018,8 +1018,8 @@ function sndNoise(ac, out, t, o) {
 
 // ---------- BỘ ÂM MỚI v0.92 (Dan gửi nguyên mã, viết theo kiểu "this.ctx / this.bus / this._now / this._p / this._noiseNode") ----------
 //   Giữ nguyên mã của Dan trong SFX2; sx(tên) bọc lại thành hàm dựng (ac, out, t, p) của SND_DEFS. KHÔNG đi qua SND_TUNE (không có mục chỉnh cho các tên này) nên nghe đúng như thiết kế.
-//   Ngẫu nhiên (Math.random) chỉ dùng cho ÂM THANH, không đụng rng chơi. Tiếng lửa bùng: 3 bản fire / fireA / fireB, đều đã hạ âm lượng đoạn bùng đầu (a, b, c) ~ một nửa; fireIgnite (tiếng thật dùng trong game) = bản FIRE_PICK.
-const FIRE_PICK = 'fireB';
+//   Ngẫu nhiên (Math.random) chỉ dùng cho ÂM THANH, không đụng rng chơi. Tiếng lửa bùng: 3 bản fire / fireA / fireB, đều đã hạ âm lượng đoạn bùng đầu (a, b, c) ~ một nửa; fireIgnite (tiếng thật dùng trong game) = bản FIRE_VARIANTS.
+const FIRE_VARIANTS = ['fire', 'fireA', 'fireB'];          // v0.93 (Dan): mỗi lần bùng lửa chọn NGẪU NHIÊN 1 trong 3 bản
 const SFX2 = {
     swing(opts = {}) {
         const t = this._now(), p = this._p(opts, 0.12);
@@ -1254,6 +1254,7 @@ const SND_DEFS = {
     diveGo:   [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 3500, f2: 800, q: 1, dur: 0.25, vol: 0.28 }); sndTone(ac, o, t, { f: 1400 * p, f2: 400 * p, dur: 0.2, vol: 0.12, type: 'triangle' }); }, 0.3, 0.2, 1],
     mortarWind: [(ac, o, t, p) => { sndTone(ac, o, t, { f: 140 * p, f2: 300 * p, dur: 0.5, vol: 0.13, type: 'square', lp: 700, att: 0.3 }); sndNoise(ac, o, t, { type: 'highpass', f: 3000, dur: 0.5, vol: 0.05, att: 0.4 }); }, 0.55, 0.5, 0],
     mortarShot: [(ac, o, t, p) => { sndTone(ac, o, t, { f: 120 * p, f2: 45 * p, dur: 0.2, vol: 0.4 }); sndTone(ac, o, t + 0.04, { f: 900 * p, f2: 400 * p, dur: 0.3, vol: 0.08, type: 'triangle' }); sndNoise(ac, o, t, { type: 'lowpass', f: 1500, f2: 300, dur: 0.12, vol: 0.25 }); }, 0.4, 0.2, 1],
+    bombBoom: [(ac, o, t, p) => { sndTone(ac, o, t, { f: 170 * p, f2: 44 * p, dur: 0.55, vol: 0.62 }); sndTone(ac, o, t, { f: 240 * p, f2: 95 * p, dur: 0.28, vol: 0.26, type: 'triangle' }); sndNoise(ac, o, t, { type: 'lowpass', f: 900, f2: 110, dur: 0.32, vol: 0.34 }); sndNoise(ac, o, t + 0.01, { type: 'bandpass', f: 190, f2: 120, q: 9, dur: 0.55, vol: 0.34 }); }, 0.65, 0.1, 1],          // v0.94: "bòm" rỗng rỗng của bom (thân trầm + vang ống bandpass)
     boom:     [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1800, f2: 90, dur: 0.4, vol: 0.5 }); sndTone(ac, o, t, { f: 100 * p, f2: 30 * p, dur: 0.4, vol: 0.45 }); }, 0.5, 0.1, 1],
     // --- boss ---
     bossRoar: [(ac, o, t) => { sndTone(ac, o, t, { f: 70, f2: 150, dur: 0.9, vol: 0.4, type: 'sawtooth', lp: 500, att: 0.25 }); sndNoise(ac, o, t, { type: 'lowpass', f: 300, f2: 900, dur: 0.9, vol: 0.2, att: 0.25 }); sndTone(ac, o, t + 0.3, { f: 55, f2: 40, dur: 0.8, vol: 0.4 }); }, 1.1, 0.5, 2],
@@ -1273,7 +1274,7 @@ const SND_DEFS = {
     //   Cũng đã nối: fireIgnite / fireCrackle (13n_fire) · arrowShot / arrowHit (13b_traps, 13a_items) · throwFoe (10b_carry). v0.68 đã nối nốt: door (cửa ra) · gate (đấu trường mở / còn khoá) · bossHurt (boss trúng đòn) · wallBreak (khối đá vỡ). Không còn tiếng dự trữ chưa nối — xem Roadmap.
     splash:   [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1800 * p, f2: 500 * p, q: 0.9, dur: 0.28, vol: 0.34 }); sndNoise(ac, o, t, { type: 'highpass', f: 3500, q: 0.6, dur: 0.1, vol: 0.12 }); sndTone(ac, o, t, { f: 300 * p, f2: 120 * p, dur: 0.16, vol: 0.14 }); [0.08, 0.15, 0.23].forEach((d, i) => sndTone(ac, o, t + d, { f: (500 + i * 180) * p, f2: (800 + i * 290) * p, dur: 0.07, vol: 0.07 })); }, 0.45, 0.1, 0],
     splashBig: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1400 * p, f2: 200 * p, q: 0.7, dur: 0.5, vol: 0.42 }); sndNoise(ac, o, t, { f: 2000 * p, f2: 600 * p, q: 0.8, dur: 0.3, vol: 0.3 }); sndNoise(ac, o, t + 0.02, { type: 'highpass', f: 3500, q: 0.6, dur: 0.18, vol: 0.14 }); sndTone(ac, o, t, { f: 120 * p, f2: 45 * p, dur: 0.35, vol: 0.3 }); [0.12, 0.2, 0.3, 0.4].forEach((d, i) => sndTone(ac, o, t + d, { f: (420 + i * 150) * p, f2: (700 + i * 240) * p, dur: 0.08, vol: 0.06 })); }, 0.6, 0.15, 1],
-    fireIgnite: [sx(FIRE_PICK), 2.0, 0.1, 0],          // v0.92: lửa bùng (Dan chọn 1 trong fire / fireA / fireB qua FIRE_PICK), đã hạ đoạn bùng đầu
+    fireIgnite: [(ac, o, t, p) => sx(FIRE_VARIANTS[Math.floor(Math.random() * FIRE_VARIANTS.length)])(ac, o, t, p), 2.0, 0.1, 0],          // v0.93: lửa bùng = ngẫu nhiên fire / fireA / fireB (đều đã hạ ~một nửa đoạn bùng đầu)
     fireCrackle: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 250 * p, q: 0.5, dur: 0.6, vol: 0.1, att: 0.1 }); [[0, 2100, 0.12], [0.07, 1500, 0.1], [0.19, 2800, 0.13], [0.26, 1800, 0.09], [0.4, 2400, 0.12], [0.47, 1300, 0.08]].forEach(([d, f, v]) => sndNoise(ac, o, t + d, { f: f * p, q: 1.6, dur: 0.03, vol: v })); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.5, vol: 0.025, att: 0.1 }); }, 0.65, 0.4, 0],
     arrowShot: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 1500 * p, f2: 3500 * p, q: 0.8, dur: 0.12, vol: 0.2 }); sndTone(ac, o, t, { f: 900 * p, f2: 300 * p, dur: 0.1, vol: 0.14, type: 'square', lp: 2500 }); sndTone(ac, o, t, { f: 180 * p, f2: 110 * p, dur: 0.12, vol: 0.16 }); }, 0.2, 0.1, 0],
     arrowHit: [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'lowpass', f: 1500, f2: 400, q: 0.8, dur: 0.08, vol: 0.22 }); sndTone(ac, o, t, { f: 220 * p, f2: 120 * p, dur: 0.07, vol: 0.2, type: 'triangle' }); }, 0.12, 0.06, 0],
@@ -1291,7 +1292,8 @@ const SND_NAMES = Object.keys(SND_DEFS);
 //   · tone / noise (âm lượng riêng phần tông / phần nhiễu) · att (độ mở đầu, nhân vào att) · layers: { "chỉ số lớp": { vol, freq } } (chi tiết từng lớp, chưa dùng). Trường thiếu = 1 (không đổi).
 //   Áp dụng trong sndPlay (vol, dur) và lớp bọc sndTone / sndNoise (còn lại). Không có trong bảng = giữ nguyên tiếng gốc. Tiếng ghi chú "DỰ TRỮ" đã chỉnh sẵn nhưng game chưa gọi.
 const SND_TUNE = {
-    swingUp: { pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
+    swing: { vol: 0.5 },          // v0.94 (Dan): chém hụt còn 50% âm lượng (tiếng mới của v0.92 giữ nguyên hình dạng)
+    swingUp: { vol: 0.5, pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
     hit: { vol: 0.67, bright: 3, tone: 0.49, att: 2 },
     hitHeavy: { vol: 0.72, bright: 2.49, tone: 0.22, att: 1.79 },
     clang: { vol: 0.96, pitch: 1.28, bright: 0.3, tone: 0.38, att: 0.37 },
@@ -1350,6 +1352,7 @@ const SND_TUNE = {
 const SND_LOG_T = 3000, SND_LOG_FADE = 1500;
 const SND_LOG = { env: [], hero: [], other: [], music: '' };
 const SND_VI = {
+    bombBoom: 'Bom nổ', amb_birds: 'Chim hót', amb_frog: 'Ếch kêu', amb_owl: 'Cú kêu', amb_thunder: 'Sấm', hitSmall: 'Chém trúng đá', hitBigHigh1: 'Đá bay trúng quái',
     swing: 'Vung kiếm', swingUp: 'Chém lên', hit: 'Đòn trúng', hitHeavy: 'Đòn trúng nặng', clang: 'Gõ kim loại / đỡ khiên', dash: 'Lướt', wallBreak: 'Phá tường', jump: 'Nhảy', djump: 'Nhảy đôi', land: 'Đáp đất', step: 'Bước chân',
     hurt: 'Bị thương', dead: 'Người chơi chết', st_poison: 'Dính độc', st_burn: 'Dính lửa', st_slow: 'Bị chậm', st_stun: 'Bị choáng', st_shock: 'Bị giật', st_tick: 'Sát thương trạng thái',
     bench: 'Ngồi ghế nghỉ', orb: 'Nhận năng lực', door: 'Cửa', unlock: 'Mở khoá', gate: 'Cổng', crumble: 'Sàn rung', crumbleFall: 'Sàn vỡ rơi', spike: 'Gai', ui: 'Nhặt vàng / giao diện',
@@ -1359,7 +1362,7 @@ const SND_VI = {
     hitSmall: 'Chém trúng quái nhỏ', hitArmored: 'Chém trúng quái giáp / nhát đầu', hitBigHigh1: 'Chém quái to / nhát kết', throwGas: 'Ném bình', placeBomb: 'Đặt bom', throwBomb: 'Ném bom', fire: 'Lửa bùng (bản gốc)', fireA: 'Lửa bùng (bản A)', fireB: 'Lửa bùng (bản B)', coinMedium2: 'Nhặt vàng bé', coin: 'Nhặt vàng vừa', coinLarge1: 'Nhặt vàng lớn',
     splash: 'Rơi xuống nước', splashBig: 'Rơi xuống nước mạnh', fireIgnite: 'Dầu bốc cháy', fireCrackle: 'Lửa lách tách', arrowShot: 'Bắn tên', arrowHit: 'Tên trúng', throwFoe: 'Ném quái / xác', reflect: 'Phản đòn'
 };
-const SND_HERO = { hitSmall: 1, hitArmored: 1, hitBigHigh1: 1, throwGas: 1, placeBomb: 1, throwBomb: 1, coinMedium2: 1, coin: 1, coinLarge1: 1, swing: 1, swingUp: 1, hit: 1, hitHeavy: 1, dash: 1, jump: 1, djump: 1, land: 1, step: 1, hurt: 1, dead: 1, st_poison: 1, st_burn: 1, st_slow: 1, st_stun: 1, st_shock: 1, st_tick: 1, bench: 1, orb: 1, door: 1, unlock: 1, gate: 1, ui: 1, reflect: 1, splash: 1, splashBig: 1, victory: 1 };
+const SND_HERO = { bombBoom: 1, hitSmall: 1, hitArmored: 1, hitBigHigh1: 1, throwGas: 1, placeBomb: 1, throwBomb: 1, coinMedium2: 1, coin: 1, coinLarge1: 1, swing: 1, swingUp: 1, hit: 1, hitHeavy: 1, dash: 1, jump: 1, djump: 1, land: 1, step: 1, hurt: 1, dead: 1, st_poison: 1, st_burn: 1, st_slow: 1, st_stun: 1, st_shock: 1, st_tick: 1, bench: 1, orb: 1, door: 1, unlock: 1, gate: 1, ui: 1, reflect: 1, splash: 1, splashBig: 1, victory: 1 };
 const _snt = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
 function sndLog(name, line) {
     line = line || (name.indexOf('amb_') === 0 ? 'env' : (SND_HERO[name] ? 'hero' : 'other'));
@@ -1449,11 +1452,12 @@ function sndFire(intensity, pan) {
 }
 // v0.92 (Dan): chọn tiếng chém trúng theo quái. hp0 = máu TRƯỚC đòn. Quái nhỏ (≤ 2 máu, không nặng) = hitSmall; quái có giáp (nặng như bọ đá) hoặc nhát ĐẦU vào con nhiều máu = hitArmored;
 //   nhát sau / nhát kết liễu con to = hitBigHigh1. Thứ không phải quái (không có máu) giữ 'hit' cũ.
+//   v0.94 (Dan): hitSmall dành cho «chém trúng ĐÁ» (whipLaunch) và hitBigHigh1 dành cho «viên đá bay trúng quái» (dmgImpacts) => quái nhỏ / quái to quay về 'hit' / 'hitHeavy' cũ; hitArmored vẫn cho quái giáp / nhát đầu.
 function hitSoundFor(e, hp0) {
     const mx = e && e.maxHp; if (!(mx > 0) || !(hp0 > 0)) return 'hit';
     const heavy = !!(e.def && e.def.heavy);
-    if (mx <= 2 && !heavy) return 'hitSmall';
-    return e.alive && (hp0 >= mx || heavy) ? 'hitArmored' : 'hitBigHigh1';
+    if (mx <= 2 && !heavy) return 'hit';
+    return e.alive && (hp0 >= mx || heavy) ? 'hitArmored' : 'hitHeavy';
 }
 const sndPitch = () => 0.94 + Math.random() * 0.12;      // biến thiên cao độ nhẹ cho đỡ lặp
 
@@ -1808,6 +1812,143 @@ function musStep() {
         let guard = 0;
         while (b.nx[i] < now + 0.5 && guard++ < 8) { musEvent(b, e, Math.max(b.nx[i], now + 0.01)); b.nx[i] += e.gap[0] + musRand() * (e.gap[1] - e.gap[0]); }
     });
+}
+
+// 04b_ambience — ÂM THANH MÔI TRƯỜNG (v0.94, Dan): gió · mưa + sấm · chim hót · dế · ếch · cú · giọt nước "tõm" · nước lăn tăn · sóng · lò dung nham.
+//   Mã dựng âm lấy từ engine âm thanh CozyWorld (Dan gửi): mưa = nhiễu bandpass 900–1600 Hz + rì rào cao, gió = nhiễu bandpass thấp theo đợt giật + lớp hú hẹp, sóng = nhiễu lowpass lên xuống, nước hồ = bandpass ~900 Hz trôi chậm,
+//   chim (3 kiểu câu), dế, ếch, cú, "tõm", sấm (rắc + gầm nhiều đợt). Viết lại cho Honzy: dùng sndCtx / sndMaster; Honzy không có ngày đêm nên dế / ếch / cú theo VÙNG.
+//   Mỗi vùng (ZONES) có hồ sơ AMB_PROF: wind / gust · rain (xác suất một màn của vùng có mưa; mưa to thì thỉnh thoảng có sấm) · birds · crickets · frogs · owl · drip (giọt nước) · waves (sóng, chỉ nghe khi gần nước).
+//   Nước / dung nham gần người chơi (đếm ô T_WATER / T_LAVA trong khung 29×19 ô, nửa giây một lần) quyết định tiếng nước lăn tăn / sóng / lò nung.
+//   Âm lượng đi theo thanh «Nhạc nền» (SND.music) và công tắc tắt tiếng; AMB.vol chỉnh chung. Phòng boss: nhỏ đi, không có sự kiện. Math.random chỉ dùng cho âm thanh, không đụng rng chơi.
+const AMB = { vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
+const AMB_PROF = {
+    mines:    { wind: 0.25, drip: 0.5 },
+    forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
+    cave:     { wind: 0.35, drip: 1 },
+    crystal:  { wind: 0.20, drip: 0.8, waves: 0.4 },
+    ruins:    { wind: 0.60, gust: 0.5, rain: 0.3, drip: 0.2 },
+    snow:     { wind: 1, gust: 1 },
+    amethyst: { wind: 0.30, drip: 0.6 },
+    deep:     { wind: 0.40, owl: 0.8, frogs: 0.6, crickets: 0.3, drip: 0.4, waves: 1 },
+    magma:    { wind: 0.35 }
+};
+const AMB_BIRD = [2500, 3300, 4100], AMB_CRICKET = [4300, 4650, 4950];
+const _ar = () => Math.random();
+const _asm = (a, b, x) => { x = Math.max(0, Math.min(1, (x - a) / (b - a))); return x * x * (3 - 2 * x); };
+
+function ambBuild(ac, dest) {
+    const S = { ac, gustT: 0, gustV: 0.8, birdT: 0, crT: 0, frogT: 0, owlT: 0, plopT: 0, thunT: 0 };
+    const cmp = ac.createDynamicsCompressor(); cmp.threshold.value = -12; cmp.ratio.value = 3;
+    S.nat = ac.createGain(); S.out = ac.createGain(); S.out.gain.value = 0; S.nat.connect(cmp); cmp.connect(S.out); S.out.connect(dest);
+    const loop = (off) => { const s = ac.createBufferSource(); s.buffer = sndNoiseBuf(ac); s.loop = true; s.start(0, off); return s; };
+    const chain = (off, type, f, q) => { const fl = ac.createBiquadFilter(), g = ac.createGain(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; g.gain.value = 0; loop(off).connect(fl); fl.connect(g); g.connect(S.nat); return { f: fl, g }; };
+    S.rain = chain(0, 'bandpass', 1100, 0.5); S.rainH = chain(1.3, 'highpass', 3800, 0.7);
+    S.wind = chain(0.7, 'bandpass', 420, 0.9); S.whistle = chain(0.1, 'bandpass', 900, 7);
+    S.wave = chain(0.4, 'lowpass', 600, 0.6); S.lake = chain(0.9, 'bandpass', 900, 1.3);
+    S.lava = chain(0.2, 'lowpass', 260, 0.5); S.lavaH = chain(0.6, 'bandpass', 2400, 0.6);
+    return S;
+}
+function _apan(S, pan) { if (pan && S.ac.createStereoPanner) { const p = S.ac.createStereoPanner(); p.pan.value = pan; p.connect(S.nat); return p; } return S.nat; }
+function ambChirp(S, t, f0, f1, dur, vol, pan) {
+    const ac = S.ac, o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(0.012, dur * 0.3)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(_apan(S, pan)); o.start(t); o.stop(t + dur + 0.05);
+}
+function ambBird(S, t, vol) {          // 3 kiểu câu: "tí-tí-tí" · trill · hai tiếng huýt đi xuống
+    const base = AMB_BIRD[Math.floor(_ar() * AMB_BIRD.length)] * (0.95 + _ar() * 0.1), pan = (_ar() - 0.5) * 1.4, kind = _ar();
+    if (kind < 0.45) { const n = 2 + Math.floor(_ar() * 3); for (let i = 0; i < n; i++) ambChirp(S, t + i * 0.13, base * (0.92 + _ar() * 0.1), base * 1.28, 0.09, vol * (1 - i * 0.12), pan); }
+    else if (kind < 0.75) { const n = 6 + Math.floor(_ar() * 5); for (let i = 0; i < n; i++) ambChirp(S, t + i * 0.055, base * 1.05, base * 0.95, 0.04, vol * 0.8 * (1 - i * 0.05), pan); }
+    else { ambChirp(S, t, base * 0.85, base * 0.72, 0.22, vol, pan); ambChirp(S, t + 0.3, base * 0.72, base * 0.62, 0.3, vol * 0.9, pan); }
+}
+function ambCricket(S, t, vol, f, pan) {          // chuỗi 3–4 xung ngắn ~4,5 kHz
+    const ac = S.ac, o = ac.createOscillator(), g = ac.createGain(), n = 3 + (_ar() < 0.5 ? 1 : 0); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t);
+    for (let i = 0; i < n; i++) { const s = t + i * 0.085; g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(vol, s + 0.012); g.gain.linearRampToValueAtTime(0.0001, s + 0.055); }
+    o.connect(g); g.connect(_apan(S, pan)); o.start(t); o.stop(t + n * 0.085 + 0.1);
+}
+function ambFrog(S, t, vol, pan) {          // 2–4 tiếng "ộp" trầm
+    const ac = S.ac, n = 2 + Math.floor(_ar() * 3), base = 260 + _ar() * 120;
+    for (let i = 0; i < n; i++) {
+        const s = t + i * (0.13 + _ar() * 0.03), o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(base * 1.25, s); o.frequency.exponentialRampToValueAtTime(base * 0.85, s + 0.09); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 3;
+        g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(vol * (1 - i * 0.12), s + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.1);
+        o.connect(lp); lp.connect(g); g.connect(_apan(S, pan)); o.start(s); o.stop(s + 0.14);
+    }
+}
+function ambOwl(S, t, vol, pan) {          // "hú… hu-hu" mềm ~400 Hz
+    const ac = S.ac;
+    for (const [dt, f0, f1, d, v] of [[0, 430, 380, 0.42, 1], [0.62, 400, 350, 0.2, 0.7], [0.92, 400, 330, 0.5, 0.8]]) {
+        const o = ac.createOscillator(), g = ac.createGain(), s = t + dt; o.type = 'sine'; o.frequency.setValueAtTime(f0, s); o.frequency.linearRampToValueAtTime(f1, s + d);
+        g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(vol * v, s + d * 0.35); g.gain.linearRampToValueAtTime(0.0001, s + d);
+        o.connect(g); g.connect(_apan(S, pan)); o.start(s); o.stop(s + d + 0.05);
+    }
+}
+function ambPlop(S, t, vol, pan) {          // giọt nước / cá quẫy "tõm"
+    const ac = S.ac, o = ac.createOscillator(), g = ac.createGain(), f0 = 380 + _ar() * 380; o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 2.3, t + 0.07);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16); o.connect(g); g.connect(_apan(S, pan)); o.start(t); o.stop(t + 0.2);
+}
+function ambCrack(S, t, v, pan) {          // "rắc" của tia sét
+    const ac = S.ac, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = sndNoiseBuf(ac); f.type = 'highpass'; f.frequency.value = 900;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07 + _ar() * 0.12); s.connect(f); f.connect(g); g.connect(_apan(S, pan)); s.start(t, _ar() * 1.5, 0.3);
+}
+function ambThunder(S, t, k, close) {          // k 0.55..1 độ mạnh; close = sét gần (rắc đanh) hay xa (gầm trầm)
+    const ac = S.ac, pk = (close ? 0.5 : 0.28) * (0.7 + 0.5 * k), dur = close ? 3.6 + _ar() * 2.4 : 5 + _ar() * 3, pan = (_ar() - 0.5) * 1.2;
+    if (close) { ambCrack(S, t, pk * 0.9, pan); ambCrack(S, t + 0.06 + _ar() * 0.05, pk * 0.5, pan); }
+    else ambCrack(S, t, pk * 0.55, pan);
+    const src = ac.createBufferSource(), hpf = ac.createBiquadFilter(), lpf = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = sndNoiseBuf(ac); src.loop = true;
+    hpf.type = 'highpass'; hpf.frequency.value = close ? 210 : 190; hpf.Q.value = 0.5; lpf.type = 'lowpass'; lpf.Q.value = 0.8;
+    lpf.frequency.setValueAtTime(close ? 1500 : 1000, t); lpf.frequency.exponentialRampToValueAtTime(close ? 320 : 280, t + dur);
+    const t1 = t + (close ? 0.03 : 0.6); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t1);
+    const n = 4 + Math.floor(_ar() * 3);          // những đợt gầm nổi lên rồi chìm xuống
+    for (let i = 1; i <= n; i++) { const ti = t1 + (dur - (t1 - t)) * (i / (n + 1)), fall = Math.pow(1 - i / (n + 1), 1.2); g.gain.linearRampToValueAtTime(Math.max(0.0002, pk * fall * ((i & 1) ? 0.35 + 0.15 * _ar() : 0.8 + 0.3 * _ar())), ti); }
+    g.gain.linearRampToValueAtTime(0.0001, t + dur); src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(_apan(S, pan)); src.start(t, _ar() * 1.5); src.stop(t + dur + 0.1);
+}
+
+// E = { p: hồ sơ vùng, rainy: 0..1, wk: độ gần nước 0..1, lk: độ gần dung nham 0..1, boss, vol }
+function ambTick(S, now, E) {
+    const p = E.p, boss = !!E.boss, r = E.rainy;
+    S.out.gain.setTargetAtTime(E.vol * (boss ? 0.4 : 1), now, 0.5);
+    S.rain.g.gain.setTargetAtTime(0.14 * Math.pow(r, 1.5), now, 0.8); S.rainH.g.gain.setTargetAtTime(0.05 * _asm(0.5, 1, r), now, 0.8); S.rain.f.frequency.setTargetAtTime(900 + 700 * r, now, 1.0);
+    if (now >= S.gustT) { S.gustT = now + 2 + _ar() * 3.5; S.gustV = 0.55 + _ar() * 0.75; }
+    const w = Math.min(1.35, (p.wind || 0) + 0.35 * r), wk = _asm(0.1, 1.3, w);
+    S.wind.g.gain.setTargetAtTime(0.20 * wk * S.gustV, now, 1.2); S.wind.f.frequency.setTargetAtTime(300 + 500 * wk * S.gustV, now, 1.0);
+    S.whistle.g.gain.setTargetAtTime(0.035 * _asm(0.4, 1.35, (p.gust || 0) + 0.4 * w) * S.gustV * S.gustV, now, 1.0); S.whistle.f.frequency.setTargetAtTime(700 + 600 * S.gustV * wk, now, 0.8);
+    const swell = 0.5 + 0.25 * Math.sin(now * 0.72) + 0.25 * Math.sin(now * 0.43 + 1.3), wv = (p.waves || 0) * E.wk;
+    S.wave.g.gain.setTargetAtTime(0.13 * wv * (0.2 + 0.8 * swell * swell), now, 0.5); S.wave.f.frequency.setTargetAtTime(450 + 1100 * swell, now, 0.4);
+    const lakeSw = 0.65 + 0.35 * Math.sin(now * 0.9) * Math.sin(now * 0.37 + 1);
+    S.lake.g.gain.setTargetAtTime(0.07 * E.wk * lakeSw * (1 - 0.6 * r), now, 0.6); S.lake.f.frequency.setTargetAtTime(750 + 350 * (0.5 + 0.5 * Math.sin(now * 0.37)), now, 0.8);
+    S.lava.g.gain.setTargetAtTime(0.10 * E.lk, now, 0.6); S.lavaH.g.gain.setTargetAtTime(0.022 * E.lk * (0.5 + _ar() * 0.8), now, 0.25);
+    if (boss) return;          // phòng boss: chỉ còn nền
+    const calm = (1 - _asm(0.02, 0.15, r)) * (1 - _asm(0.5, 1.0, w)), L = typeof sndLog === 'function' ? sndLog : null, st = AMB.stats;
+    if ((p.birds || 0) > 0 && calm > 0.4 && now >= S.birdT) { ambBird(S, now + 0.05, 0.035 * (0.7 + 0.3 * calm)); st.birds++; if (L) L('amb_birds', 'env'); S.birdT = now + (5 + _ar() * 11) / (0.5 + p.birds); }
+    if ((p.crickets || 0) > 0 && calm > 0.3 && now >= S.crT) { ambCricket(S, now + 0.05, 0.016 * p.crickets, AMB_CRICKET[Math.floor(_ar() * 3)] * (0.99 + _ar() * 0.02), (_ar() - 0.5) * 1.2); st.crickets++; S.crT = now + (0.8 + _ar() * 1.6) / (0.3 + p.crickets); }
+    if ((p.frogs || 0) > 0 && calm > 0.3 && now >= S.frogT) { ambFrog(S, now + 0.05, 0.03 * (0.4 + 0.6 * Math.max(p.frogs, E.wk)), (_ar() - 0.5) * 1.4); st.frogs++; if (L) L('amb_frog', 'env'); S.frogT = now + (2 + _ar() * 5) / (0.3 + p.frogs); }
+    if ((p.owl || 0) > 0 && calm > 0.5 && now >= S.owlT) { ambOwl(S, now + 0.05, 0.03 * p.owl, (_ar() - 0.5) * 1.2); st.owls++; if (L) L('amb_owl', 'env'); S.owlT = now + 16 + _ar() * 26; }
+    const dr = (p.drip || 0) + 0.9 * E.wk;          // giọt nước: hang động hay có; gần nước dày hơn
+    if (dr > 0.05 && r < 0.6 && now >= S.plopT) { ambPlop(S, now + 0.05, 0.035 * Math.min(1, 0.4 + dr * 0.6), (_ar() - 0.5) * 1.4); st.plops++; S.plopT = now + (2.5 + _ar() * 6) / Math.min(2.5, 0.3 + dr); }
+    if (r > 0.6 && now >= S.thunT) { if (S.thunT > 0) { ambThunder(S, now + 0.05, r, _ar() < 0.3); st.thunders++; if (L) L('amb_thunder', 'env'); } S.thunT = now + 22 + _ar() * 40; }
+}
+// môi trường của một màn: hồ sơ vùng + màn này có mưa không (cố định cho từng màn, không dùng rng chơi)
+function ambEnvFor(L) {
+    const z = (typeof zoneOf === 'function' && zoneOf(game.levelIdx)) || null, id = z ? z.id : 'magma', p = AMB_PROF[id] || AMB_PROF.cave;
+    const h = (((game.levelIdx + 1) * 2654435761 + ((L && L.pw) | 0) * 97) >>> 0) % 1000 / 1000, h2 = (((game.levelIdx + 7) * 40503 + ((L && L.ph) | 0)) >>> 0) % 1000 / 1000;
+    return { p, id, rainy: p.rain && h < p.rain ? 0.6 + 0.4 * h2 : 0 };
+}
+// đếm ô nước / dung nham quanh người chơi → độ gần 0..1
+function ambNear(L, pl) {
+    if (!L || !pl) return { wk: 0, lk: 0 };
+    let nw = 0, nl = 0; const c0 = Math.floor(pl.cx / TILE), r0 = Math.floor(pl.cy / TILE);
+    for (let r = r0 - 9; r <= r0 + 9; r++) for (let c = c0 - 14; c <= c0 + 14; c++) { if (c < 0 || r < 0 || c >= L.w || r >= L.h) continue; const t = L.tile(c, r); if (t === T_WATER) nw++; else if (t === T_LAVA) nl++; }
+    return { wk: Math.min(1, nw / 40), lk: Math.min(1, nl / 25) };
+}
+function ambStep() {
+    if (!sndOn()) return;
+    const ac = sndCtx, now = ac.currentTime;
+    if (!AMB.S || AMB.S.ac !== ac) { try { AMB.S = ambBuild(ac, sndMaster); } catch (e) { AMB.S = null; return; } }
+    const L = game.level; if (!L) return;
+    if (AMB.lv !== L) { AMB.lv = L; AMB.env = ambEnvFor(L); AMB.sampleT = 0; }
+    if (now >= AMB.sampleT) { AMB.sampleT = now + 0.5; const n = ambNear(L, game.player); AMB.wk = n.wk; AMB.lk = n.lk; }
+    const b = game.boss, E = AMB.env, vol = AMB.vol * (typeof SND.music === 'number' ? SND.music : 1);
+    ambTick(AMB.S, now, { p: E.p, rainy: E.rainy, wk: AMB.wk, lk: AMB.lk, boss: !!(b && b.alive && b.st !== 'sleep'), vol });
 }
 
 // 05_assets — nạp ảnh. PNG được NHÚNG SẴN dạng base64 (khối ASSET_DATA bên dưới, do tools/gen_assets.py sinh từ assets/sprites/*.png)
@@ -2687,9 +2828,9 @@ function drawHeroHp(p, ctx, alpha) {
         return;
     }
     const duck = s === 'duck', c = duck ? 6 : 0, run = s === 'run' ? Math.floor(t * 12) % 4 : 0;
-    const air = s === 'air' || s === 'hang' || s === 'cling', climb = s === 'climb';
+    const air = s === 'air' || s === 'hang', climb = s === 'climb';
     // tay sau (sau thân)
-    const gripNoHands = s === 'hang' || s === 'cling';          // v0.77 (Dan): bám vách / đu móc — hero chỉ áp sát, không thò hai tay ra (cool + bí ẩn như lúc chém)
+    const gripNoHands = s === 'hang';          // v0.77 (Dan): bám vách / đu móc — hero chỉ áp sát, không thò hai tay ra (cool + bí ẩn như lúc chém)
     if (gripNoHands) { /* không tay */ } else if (climb) P(-7, -19 + c - Math.floor(p.y / 4) % 2 * 2, 3, 7, SKIN2); else P(-8, -17 + c, 3, 7, SKIN2);
     // chân
     if (climb) { const k = Math.floor(p.y / 5) % 2; P(-5, -8 - k * 2, 4, 6, PANTS2); P(1, -8 - (1 - k) * 2, 4, 6, PANTS); q(-5, -3 - k * 2, 5, 2, BOOT); q(1, -3 - (1 - k) * 2, 5, 2, BOOT); }
@@ -3135,17 +3276,10 @@ function drawFlaskWorld(e, ctx, alpha, id) { drawFlaskHp(ctx, Math.round(e.drawX
 // hàng trong cửa hàng (ô 12×12px = 24×24hp)
 function drawGoodsHp(e, ctx, x, y) {
     const { q, P, U } = hpPen(ctx, x, y, 12, 1), t = e.type;
-    const boot = (c, c2, hi) => { U([[5, 1, 9, 14], [5, 10, 17, 7]], c); q(6, 2, 7, 2, c2); q(6, 4, 2, 9, hi); q(14, 12, 7, 4, c2); q(5, 15, 17, 2, '#3a2a1a'); };
     if (e.sub) drawFlaskHp(ctx, x, y, e.sub);
     else if (e.gear) {
         const g = e.gear;
-        if (g === 'compass') { U([[3, 2, 18, 18], [1, 4, 22, 14]], '#d8a83a'); q(5, 4, 14, 14, '#f4ecd0'); q(4, 6, 16, 10, '#f4ecd0'); q(11, 2, 2, 2, '#fff0a0'); q(11, 5, 2, 2, '#2a2a2a'); q(11, 15, 2, 2, '#2a2a2a'); q(6, 10, 2, 2, '#2a2a2a'); q(16, 10, 2, 2, '#2a2a2a'); for (let i = 0; i < 6; i++) { q(10 + i, 12 - i, 2, 2, '#e03a3a'); q(10 - i + 2, 8 + i, 2, 1, '#3a3a5a'); } q(11, 10, 2, 2, '#fff'); }
-        else if (g === 'spike') { boot('#8a8aa0', '#c8c8d8', '#a8a8c0'); for (let i = 0; i < 5; i++) { q(6 + i * 3, 17, 2, 2, '#e8e8f4'); q(6 + i * 3, 19, 2, 2, '#c0c0d0'); q(6 + i * 3, 21, 1, 1, '#ffffff'); } }
-        else if (g === 'mitt') { U([[3, 8, 17, 12], [5, 3, 4, 8], [10, 1, 4, 10], [15, 3, 4, 8], [1, 9, 5, 7]], '#e0884a'); q(4, 9, 15, 2, '#f0a868'); q(5, 4, 2, 5, '#f0a868'); q(11, 2, 2, 7, '#f0a868'); q(8, 13, 8, 2, '#b8602a'); q(11, 11, 1, 6, '#6a3a1a'); q(9, 12, 5, 1, '#f8d8a8'); q(4, 18, 15, 2, '#8a4a22'); }
-        else if (g === 'gloves') { U([[4, 9, 15, 11], [5, 2, 3, 9], [9, 0, 3, 11], [13, 2, 3, 9], [17, 5, 3, 7]], '#6ab03a'); q(5, 10, 13, 2, '#9ad86a'); q(5, 3, 1, 6, '#9ad86a'); q(10, 1, 1, 8, '#9ad86a'); q(5, 0, 3, 2, '#e8e8e8'); q(9, -1, 3, 2, '#e8e8e8'); q(13, 1, 3, 2, '#e8e8e8'); q(4, 17, 15, 3, '#3a6a1a'); q(6, 14, 11, 1, '#4a8a2a'); }
-        else if (g === 'cape') { U([[4, 2, 16, 3], [3, 5, 18, 14], [1, 12, 22, 8]], '#c94a8a'); q(5, 3, 14, 1, '#e87ab0'); q(6, 6, 2, 13, '#a8346e'); q(12, 6, 2, 13, '#e070a8'); q(17, 6, 2, 12, '#a8346e'); q(2, 18, 20, 2, '#8a2858'); q(10, 3, 4, 4, '#ffd24a'); q(11, 4, 2, 2, '#fff0a0'); }
-        else if (g === 'jetpack') { U([[2, 2, 8, 14], [14, 2, 8, 14], [10, 6, 4, 4]], '#9aa0b0'); q(3, 3, 2, 12, '#d0d4e0'); q(15, 3, 2, 12, '#d0d4e0'); q(2, 6, 8, 2, '#e05a2a'); q(14, 6, 8, 2, '#e05a2a'); q(3, 16, 6, 3, '#4a4a58'); q(15, 16, 6, 3, '#4a4a58'); const fl = Math.floor(game.time * 12) % 2; q(4, 19, 4, 3 + fl, '#ff8a2a'); q(16, 19, 4, 3 + fl, '#ff8a2a'); q(5, 19, 2, 2 + fl, '#ffe08a'); q(17, 19, 2, 2 + fl, '#ffe08a'); }
-        else if (g === 'ankh') { U([[9, 9, 6, 13], [4, 11, 16, 4], [7, 1, 10, 3], [6, 3, 3, 8], [15, 3, 3, 8]], '#ffd24a'); q(10, 10, 2, 11, '#fff3b0'); q(5, 12, 14, 1, '#fff3b0'); q(8, 2, 8, 1, '#fff3b0'); q(7, 4, 1, 6, '#fff3b0'); q(17, 4, 1, 6, '#c89a2a'); q(13, 12, 5, 2, '#c89a2a'); }
+        if (g === 'ankh') { U([[9, 9, 6, 13], [4, 11, 16, 4], [7, 1, 10, 3], [6, 3, 3, 8], [15, 3, 3, 8]], '#ffd24a'); q(10, 10, 2, 11, '#fff3b0'); q(5, 12, 14, 1, '#fff3b0'); q(8, 2, 8, 1, '#fff3b0'); q(7, 4, 1, 6, '#fff3b0'); q(17, 4, 1, 6, '#c89a2a'); q(13, 12, 5, 2, '#c89a2a'); }
         else if (GEAR_DEFS[g] && GEAR_DEFS[g].ward) {          // bùa kháng hệ: khiên tròn viền vàng, lõi màu hệ, chấm sáng
             const d = GEAR_DEFS[g]; U([[6, 4, 12, 16], [4, 7, 16, 10], [8, 2, 8, 2], [8, 20, 8, 2], [10, 22, 4, 2]], '#d8b04a'); P(6, 6, 12, 12, '#2a2030'); P(7, 7, 10, 10, d.col); q(8, 8, 4, 2, '#ffffff'); q(8, 8, 2, 4, '#ffffff'); q(14, 14, 3, 3, 'rgba(0,0,0,0.25)'); q(11, 1, 2, 1, '#fff3b0');
         }
@@ -4910,7 +5044,7 @@ class Player extends Thing {
         super(x, y, PLAYER_W, PLAYER_H, { kind: 'player', creature: true, hp: ITEM.startHp, gravity: PHYS.gravity, fallMax: PHYS.fallMax, bounceY: 0.5 });
         this.state = 'air'; this.stateT = 0;
         this.hold = null; this.hook = null;
-        this.clingCd = 0; this.weapon = null; this.boom = null; this.ammo = 0; this.gunCd = 0; this.items = {}; this.fuel = 0; this.jetOn = false; this.gliding = false; this.safe = null; this.safeAt = -9;
+        this.weapon = null; this.boom = null; this.ammo = 0; this.gunCd = 0; this.items = {}; this.gliding = false; this.safe = null; this.safeAt = -9;
         this.bombs = ITEM.startBombs; this.ropes = ITEM.startRopes; this.gold = 0;
         this.dead = false; this.deadT = 0;
         this.whipT = -1; this.whipHits = null; this.whipDir = 0; this.whipBufUp = false; this.chargeT = -1; this.chargeArm = false; this.chargeDir = 0; this.whipPower = false;        // chargeT: -1 = không nạp, ≥ 0 = giây đã nạp (H4c); whipDir: 0 = chém ngang, 1 = chém lên
@@ -4939,7 +5073,6 @@ class Player extends Thing {
     }
     onHurt(src) {
         ddaOnHit();          // DDA (13q): đếm lần trúng đòn của level
-        gearJetHit(this, src);
         if (this.hp <= 0) return;
         this.flashT = 0.12; this.restT = 0;
         if (src.kind !== DMG.SPIKE) { this.blinkT = Math.max(this.blinkT, 0.5); }
@@ -4959,7 +5092,6 @@ class Player extends Thing {
         this.timers(dt);
         this.stateT += dt;
         if (this.hangCd > 0) this.hangCd -= dt;
-        if (this.clingCd > 0) this.clingCd -= dt;
         if (this.ladderCd > 0) this.ladderCd -= dt;
         if (this.dropT > 0) this.dropT -= dt;
         if (this.landT > 0) this.landT -= dt;
@@ -4987,7 +5119,6 @@ class Player extends Thing {
         if (swinging) { /* đang đu móc: đã di chuyển trong hookStep */ }
         else if (this.state === 'climb') this.stepClimb(level, dt, ax, up, down);
         else if (this.state === 'hang') this.stepHang(level, dt, ax, up, down);
-        else if (this.state === 'cling') this.stepCling(level, dt, ax, up, down);
         else this.stepMove(level, dt, ax, up, down);
 
         if (this.dead || this.state === 'stun') return;
@@ -4995,7 +5126,7 @@ class Player extends Thing {
         if (this.gunCd > 0) this.gunCd -= dt;
         pogoStep(this, level, dt);
         if (this.whipT >= 0) { this.whipT += dt; if (this.whipT >= WHIP.total) { this.whipT = -1; if (this.chargeArm && inp.held('attack')) this.chargeT = 0; this.chargeArm = false; } }          // H4c: nhát chém thường vừa hết mà vẫn giữ nút chém → bắt đầu nạp
-        if (this.whipBuf > 0) { this.whipBuf -= dt; if (this.whipCan() && !this.hold && this.state !== 'climb' && this.state !== 'hang' && this.state !== 'cling' && this.state !== 'stun' && !this.dead) { this.whipBuf = 0; this.whipStart(this.whipBufUp ? 1 : 0); } }
+        if (this.whipBuf > 0) { this.whipBuf -= dt; if (this.whipCan() && !this.hold && this.state !== 'climb' && this.state !== 'hang' && this.state !== 'stun' && !this.dead) { this.whipBuf = 0; this.whipStart(this.whipBufUp ? 1 : 0); } }
         this.chargeStep(level, dt);
     }
 
@@ -5074,7 +5205,7 @@ class Player extends Thing {
         if (this.onGround) this.setState(down && this.whipT < 0 ? 'duck' : Math.abs(this.vx) > 1 ? 'run' : 'stand');
         else this.setState('air');
         // Bám mép (trên không, đang ép vào tường) · bò qua mép thành bám (đang ngồi, ép ra mép)
-        if (!this.onGround && !this.tryHang(level, ax)) this.tryCling(level, ax);
+        if (!this.onGround) this.tryHang(level, ax);
         else if (this.state === 'duck' && ax !== 0) this.tryDuckToHang(level, ax);
         // Leo thang / dây
         if (up && this.ladderCd <= 0) this.tryClimb(level, !this.onGround);
@@ -5095,7 +5226,7 @@ class Player extends Thing {
             this.hurt({ kind: DMG.FALL, dmg, x: this.cx, y: this.y + this.h });
             sndPlay('hurt', { x: this.cx }); fxShake(2, 0.2);
             level.spawnDust(this.cx - 4, this.y + this.h, 3, 40, 10); level.spawnDust(this.cx + 4, this.y + this.h, 3, 40, 10);
-            if (!this.dead) { this.stun(PHYS.stunT); this.vy = -90; }
+            if (!this.dead) { this.stun(PHYS.stunT * 0.5); this.vy = -90; }          // v0.94 (Dan): choáng do rơi chỉ còn một nửa thời gian
         } else if (f > 0.15) { sndPlay('land', { x: this.cx, vol: 0.6 }); level.spawnDust(this.cx - 4, this.y + this.h, 4, 45, 12); level.spawnDust(this.cx + 4, this.y + this.h, 4, 45, 12); this.landT = 0.1; }
         this.fallT = 0;
     }
@@ -5161,32 +5292,6 @@ class Player extends Thing {
             this.vy = PHYS.jumpV * gearJumpMul(this); this.jumpHeld = true; this.jumpT = 0; this.hangCd = 0.15; this.limit = PHYS.walkMax;
             this.setState('air'); sndPlay('jump', { x: this.cx });
         }
-    }
-    // ---- Bám tường (Găng leo tường, 13m_gear): trên không ép vào tường => bám; ↑/↓ leo, nhảy = bật ra, ép hướng ngược / ↓ + nhảy = buông ----
-    tryCling(level, ax) {
-        if (ax === 0 || !gearHas(this, 'gloves') || this.clingCd > 0 || this.hold && this.hold.mass >= 2 || level.inWater(this)) return false;
-        if (this.vy < -40) return false;                                       // đang bay lên mạnh: chưa bám (để nhảy lên dọc tường được)
-        const hx = ax > 0 ? this.x + this.w + 1 : this.x - 1;
-        if (!(level.solidAt(hx, this.y + 3) && level.solidAt(hx, this.y + this.h - 3))) return false;     // tường phủ cả đầu lẫn chân
-        this.vx = this.vy = 0; this.facing = ax; this.fallT = 0; this.jumpHeld = false; this.limit = PHYS.walkMax;
-        this.setState('cling'); sndPlay('step', { x: this.cx, vol: 0.5, p: 1.4 });
-        return true;
-    }
-    stepCling(level, dt, ax, up, down) {
-        this.fallT = 0; this.vx = 0; this.ignorePlat = false;
-        const hx = this.facing > 0 ? this.x + this.w + 1 : this.x - 1;
-        if (!level.solidAt(hx, this.y + 3) && !level.solidAt(hx, this.y + this.h - 3)) { this.clingCd = 0.15; this.setState('air'); return; }      // tường biến mất
-        if (this.bufferT > 0) {                                                // nhảy: bật khỏi tường (↓ + nhảy: chỉ buông)
-            this.bufferT = 0;
-            if (down) { this.clingCd = 0.2; this.setState('air'); this.vy = 0; return; }
-            this.vy = PHYS.jumpV * gearJumpMul(this); this.vx = -this.facing * GEAR.wallKick; this.facing = -this.facing; this.jumpHeld = true; this.jumpT = 0; this.clingCd = 0.25;
-            this.setState('air'); sndPlay('jump', { x: this.cx }); return;
-        }
-        if (ax === -this.facing) { this.clingCd = 0.2; this.setState('air'); this.vy = 0; return; }       // ép hướng ngược = buông
-        this.vy = up ? -GEAR.clingUp : down ? GEAR.clingDown : 0;
-        if (this.vy < 0 && !level.solidAt(hx, this.y + 3)) { this.vy = 0; if (!this.tryHang(level, this.facing)) { this.clingCd = 0.2; this.setState('air'); } return; }      // lên tới đỉnh tường: bám mép / thoát
-        physMove(level, this, dt);
-        if (this.onGround) { this.setState('stand'); this.clingCd = 0.1; }
     }
     letGo(cd) { this.hangCd = cd; this.setState('air'); this.vy = 0; }
 
@@ -5276,7 +5381,7 @@ class Player extends Thing {
         if (it === 'bomb') { if (!down && this.stickBomb(level, up)) return true; this.throwBomb(up, down); return true; }
         if (it === 'rope') return hookThrow(level, this, inp.axisX(), up);          // v0.69: dây → móc
         if (it === 'sub') return subThrow(this, up, down);
-        if (this.state === 'climb' || this.state === 'hang' || this.state === 'cling') return false;
+        if (this.state === 'climb' || this.state === 'hang') return false;
         if (it === 'shotgun') { weaponFire(this, level); return true; }
         if (it === 'boomerang') { if (!this.boom) { weaponThrowBoom(this); return true; } return false; }
         return false;
@@ -5312,7 +5417,7 @@ class Player extends Thing {
                 carryPick(this, carryFind(this));
             } else if (down && !this.onGround && this.state === 'air' && this.whipT < 0 && !this.shocked()) {          // bước 6: dính Giật thì không chém xuống (rơi xuống nhánh chém cuối => báo từ chối)
                 pogoStart(this);
-            } else if (this.state !== 'climb' && this.state !== 'hang' && this.state !== 'cling') {
+            } else if (this.state !== 'climb' && this.state !== 'hang') {
                 if (this.shocked()) this.shockDeny();          // bước 6: dính Giật => không chém, không xếp hàng đợi nút
                 else if (this.whipCan()) this.whipStart(up ? 1 : 0); else { this.whipBuf = WHIP.buffer; this.whipBufUp = !!up; }
             }
@@ -5334,7 +5439,7 @@ class Player extends Thing {
     chargeStep(level, dt) {
         if (this.chargeT < 0) return;
         const s = this.state;
-        if (this.dead || s === 'climb' || s === 'hang' || s === 'cling' || s === 'stun' || this.hold || this.dashT > 0 || this.shocked() || this.whipT >= 0 ) { this.chargeT = -1; return; }
+        if (this.dead || s === 'climb' || s === 'hang' || s === 'stun' || this.hold || this.dashT > 0 || this.shocked() || this.whipT >= 0 ) { this.chargeT = -1; return; }
         if (inp.held('attack')) {
             const was = this.chargeT; this.chargeT = Math.min(this.chargeT + dt, WHIP.chargeT);
             if (was < WHIP.chargeT && this.chargeT >= WHIP.chargeT) { sndPlay('ui', { x: this.cx, p: 1.6 }); level.spawnBurst(this.cx, this.cy, 6, '#ffe86a', 80); }          // báo đầy
@@ -5371,13 +5476,12 @@ class Player extends Thing {
         if (s === 'dead') return { a: 'hurt', i: 0, lie: true };
         if (s === 'stun') return { a: 'hurt', i: 0 };
         if (this.dashT > 0) return { a: 'dash', i: clamp(Math.floor((1 - this.dashT / (this.dashTMax || ABIL.dashT)) * HERO_ANIMS.dash.n), 0, HERO_ANIMS.dash.n - 1) };
-        if (this.whipT >= 0 && s !== 'hang' && s !== 'cling' && s !== 'climb') {          // chém: khung 0 = lấy đà (tới hitStart), các khung sau chia đều tới hết đòn
+        if (this.whipT >= 0 && s !== 'hang' && s !== 'climb') {          // chém: khung 0 = lấy đà (tới hitStart), các khung sau chia đều tới hết đòn
             const k = this.whipT < WHIP.hitStart ? -1 : (this.whipT - WHIP.hitStart) / Math.max(1e-6, WHIP.total - WHIP.hitStart);
             if (this.whipDir === 1) return { a: 'slashUp', i: k < 0 ? 0 : Math.min(HERO_ANIMS.slashUp.n - 1, 1 + Math.floor(k * (HERO_ANIMS.slashUp.n - 1))) };
             return { a: 'slash', i: k < 0 ? 0 : Math.min(HERO_ANIMS.slash.n - 1, 1 + Math.floor(k * (HERO_ANIMS.slash.n - 1))) };
         }
         if (s === 'hang' || (this.hook && this.hook.ph === 'on' && s === 'air')) return { a: 'hang', i: Math.floor(t * 2.5) % HERO_ANIMS.hang.n };          // v0.69: đu móc dùng khung treo (hai tay giơ cao)
-        if (s === 'cling') return { a: 'cling', i: 0 };
         if (s === 'climb') return { a: 'climb', i: Math.floor(this.y / 6) % 2 === 1 ? 1 : 0 };
         if (this.restT > 0) return { a: 'sit', i: Math.floor(t * 1.5) % HERO_ANIMS.sit.n };                  // v0.68: ngồi nghỉ ở ghế (mắt nhắm, thở chậm)
         if (this.poseT > 0 && this.onGround && (this.poseK === 'pick' || !this.hold)) return { a: this.poseK === 'pick' ? 'pick' : 'throw', i: 0 };
@@ -5442,7 +5546,7 @@ class Player extends Thing {
     equipHandFx(ctx, alpha, fr, white) {
         const eq = this.activeEquip();
         if (eq === 'sword' || this.dead || this.hold || white || fr.lie || this.whipT >= 0 || this.dashT > 0) return;
-        const s = this.state; if (s === 'hang' || s === 'cling' || s === 'climb' || s === 'stun') return;
+        const s = this.state; if (s === 'hang' || s === 'climb' || s === 'stun') return;
         const f = this.facing >= 0 ? 1 : -1, sq = s === 'duck' ? 0.8 : 1;
         const bob = s === 'run' ? (Math.floor(this.stateT * 14) % 2) * 0.5 : s === 'air' ? (this.vy < 0 ? 0.5 : -0.5) : 0;      // nhấp nhô theo bước chạy / nhảy
         const cx = Math.round((this.drawX(alpha) + this.w / 2) * RES) / RES, by = Math.round((this.drawY(alpha) + this.h) * RES) / RES;
@@ -5482,7 +5586,7 @@ class Player extends Thing {
         const run = s === 'run' ? Math.floor(t * 12) % 4 : 0;
         // chân
         if (s === 'climb') { const k = Math.floor(this.y / 5) % 2; px(-4, -4 - k * 2, 3, 4, PANTS); px(1, -4 - (1 - k) * 2, 3, 4, PANTS); px(-4, -1 - k * 2, 3, 1, BOOT); px(1, -1 - (1 - k) * 2, 3, 1, BOOT); }
-        else if (s === 'air' || s === 'hang' || s === 'cling') { px(-3, -5, 3, 3, PANTS); px(1, -4, 3, 3, PANTS); px(-3, -2, 3, 2, BOOT); px(2, -1, 3, 1, BOOT); }
+        else if (s === 'air' || s === 'hang') { px(-3, -5, 3, 3, PANTS); px(1, -4, 3, 3, PANTS); px(-3, -2, 3, 2, BOOT); px(2, -1, 3, 1, BOOT); }
         else { const a = run === 1 ? 1 : run === 3 ? -1 : 0; px(-3 + a, -4, 3, 3, PANTS); px(1 - a, -4, 3, 3, PANTS); px(-4 + a, -1, 4, 1, BOOT); px(1 - a, -1, 4, 1, BOOT); }
         // thân
         px(-4, -10 + crouch, 8, 6 - (duck ? 0 : 0), SHIRT); px(-4, -5 + crouch, 8, 1, '#2a5294');
@@ -5491,7 +5595,6 @@ class Player extends Thing {
         px(-4, -15 + crouch, 9, 2, HAT); px(-6, -13 + crouch, 13, 1, HAT2); px(-2, -16 + crouch, 5, 1, HAT);
         // tay
         if (s === 'hang') { px(3, -16, 2, 4, SKIN); }
-        else if (s === 'cling') { px(3, -13, 3, 4, SKIN); px(3, -8, 3, 3, SKIN); }
         else if (s === 'climb') { px(-5, -13, 2, 3, SKIN); px(4, -11, 2, 3, SKIN); }
         else if (this.whipT >= 0) {
             const front = this.whipT >= WHIP.hitStart;
@@ -5538,7 +5641,7 @@ function whipLaunch(level, p, e, b) {
     e.thrower = p; e.safeT = 10 / 30; e.hitSet = null; if (!b.up) p.slashFlick = true;          // v0.77: chém xác / đá → vệt chém hất từ dưới lên
     if (b.up) { e.vx = p.facing * WHIP.launchUpVx * mul; e.vy = WHIP.launchUpVy * mul; }
     else { e.vx = p.facing * WHIP.launchVx * mul; e.vy = WHIP.launchVy * mul; }
-    sndPlay('rock', { x: e.cx });
+    sndPlay('hitSmall', { x: e.cx });          // v0.94: chém trúng đá / xác = tiếng hitSmall mới
     level.spawnBurst(e.cx, e.cy, 3, e.col, 60);
     return true;
 }
@@ -5663,7 +5766,6 @@ function abilityReward(levelIdx) { const id = ABILITY_REWARD[BOSS_LEVELS[levelId
 // Gọi trong Player.stepMove NGAY SAU khối nhảy thường: phím nhảy còn nhớ (bufferT > 0) mà không có đất / coyote để nhảy thường => dùng nhảy đôi.
 function playerDoubleJump(p, level, wasGround) {
     if (!abilityHas('doubleJump') || p.djUsed || wasGround || p.coyoteT > 0 || p.bufferT <= 0 || p.dropT > 0) return false;
-    if (gearHas(p, 'jetpack') || p.jetOn) return false;                    // bộ phản lực dùng cùng phím nhảy: giữ nguyên hành vi cũ
     if (level.inWater(p)) return false;                                     // trong nước, bấm nhảy = đạp nước (đã có)
     if (p.vy > 0 && boxHitsSolid(level, p.x, p.y + p.h, p.w, ABIL.djNearGround)) return false;      // sắp chạm đất: để phím đã nhớ cho cú nhảy thường
     p.vy = PHYS.jumpV * ABIL.djMul * gearJumpMul(p);
@@ -5675,11 +5777,11 @@ function playerDoubleJump(p, level, wasGround) {
 
 // ---- Lượn (H3, A5) ----
 // CÓ SẴN TỪ ĐẦU (không cần học, không nằm trong game.abilities). v0.78 (Dan): GIỮ NHẢY (≥ ABIL.glideHold s, chạm nhanh vẫn là nhớ phím nhảy) khi đang rơi — trước là giữ ↑ => vận tốc rơi kẹp ở ABIL.glideVy, hết sát thương rơi (fallT = 0).
-// Gọi từ gearAir (13m_gear) mỗi khung, sau khối bộ phản lực; thay nhánh áo choàng (cape) cũ. Thang ưu tiên hơn lượn: tryClimb chạy sau gearAir trong stepMove
+// Gọi từ gearAir (13m_gear) mỗi khung. Thang ưu tiên hơn lượn: tryClimb chạy sau gearAir trong stepMove
 // nên nếu ↑ đang bám được thang thì trạng thái đổi sang leo và không lượn nữa. Không tính vào genReach (đường chính không đòi lượn).
 function playerGlide(p, level, wet) {
     p.glideHT = (inp.held('jump') && !p.onGround) ? (p.glideHT || 0) + 1 / 60 : 0;
-    const on = !wet && !p.onGround && !p.jetOn && p.state === 'air' && !(p.dashT > 0) && p.vy > ABIL.glideVy && p.glideHT >= ABIL.glideHold;
+    const on = !wet && !p.onGround && p.state === 'air' && !(p.dashT > 0) && p.vy > ABIL.glideVy && p.glideHT >= ABIL.glideHold;
     if (on) { p.vy = ABIL.glideVy; p.fallT = 0; }
     p.gliding = on;
 }
@@ -5689,7 +5791,7 @@ const DASH_STATES = { stand: 1, run: 1, duck: 1, air: 1 };       // chỉ lướ
 // Gọi đầu Player.update (sau khi loại chết/choáng). Trả true nếu khung này đang lướt (Player.update bỏ qua phần còn lại).
 function abilityStep(p, level, dt) {
     if (p.dashCd > 0) p.dashCd -= dt;
-    if (p.onGround || p.state === 'hang' || p.state === 'climb' || p.state === 'cling') { p.djUsed = false; p.dashUsed = false; }
+    if (p.onGround || p.state === 'hang' || p.state === 'climb') { p.djUsed = false; p.dashUsed = false; }
     // v0.37 (ý từ Metroidvania: dashBuf): đọc phím lướt MỖI KHUNG, kể cả lúc đang lướt / đang hồi chiêu, rồi NHỚ trong ABIL.dashBuf giây — trước đây chạm nút trong lúc lướt hay sát hết hồi chiêu bị bỏ mất nên không lướt liên tục được.
     //   Đếm riêng thời gian giữ nút chạy (tapT) vì runHeldT chỉ cập nhật sau abilityStep và bị dashStart xoá.
     if (p.whistleCd > 0) p.whistleCd -= dt;
@@ -5894,7 +5996,7 @@ function explode(level, x, y) {
     // 3. Hình + tiếng
     level.spawnBurst(x, y, 18, '#ffb347', 220); level.spawnBurst(x, y, 10, '#ffe9a8', 140); level.spawnBurst(x, y, 8, '#6a6a6a', 90);
     fxBlast(x, y);
-    sndPlay('boom', { x });
+    sndPlay('bombBoom', { x, vol: 1.15 });
     fxShake(5, 0.35);
 }
 
@@ -5917,7 +6019,7 @@ function dmgImpacts(level) {
             const kind = p.kind === 'arrow' ? DMG.ARROW : DMG.IMPACT;
             if (t.hurt({ kind, dmg: p.impactDmg, x: p.cx, y: p.cy, vx: p.vx, by: p })) {
                 t.vx += p.vx * 0.3; if (t === game.player && !t.dead) t.stun(1);
-                sndPlay('hit', { x: t.cx });
+                { const stone = p.kind !== 'arrow' && t !== game.player; sndPlay(stone ? 'hitBigHigh1' : 'hit', { x: t.cx }); }          // v0.94: vật bay (viên đá…) trúng quái = hitBigHigh1
                 level.spawnBurst(t.cx, t.cy, 4, t.creature ? '#d23a3a' : t.col, 80);
                 p.vx *= -0.3; p.vy = Math.min(p.vy, -60);
                 if (p.onHitTarget) p.onHitTarget(level, t);
@@ -5947,7 +6049,7 @@ function dmgContacts(level) {
         if (!e.alive || !(e instanceof Enemy) || e.holder || e.harmless || !overlapBox(p, e)) continue;
         // Đạp đầu: người chơi đang rơi và chân ở nửa trên của quái
         if (p.vy > 0 && p.py + p.h <= e.py + e.h * 0.5 + 2) {
-            const dmg = (Math.floor(p.fallT / PHYS.stunFallT) + 1) * (gearHas(p, 'spike') ? GEAR.spikeStomp : 1);   // SC: hp −= 1 × (floor(fallTimer/16) + 1)
+            const dmg = (Math.floor(p.fallT / PHYS.stunFallT) + 1) ;   // SC: hp −= 1 × (floor(fallTimer/16) + 1)
             const hp0 = e.hp;
             if (e.hurt({ kind: DMG.STOMP, dmg, x: p.cx, y: p.y + p.h, by: p })) {
                 p.vy = ITEM.stompVy - 0.2 * p.vy; p.fallT = 0; p.jumpHeld = false;
@@ -6050,8 +6152,8 @@ function carryThrow(p, t, up, down) {
     if (t.noThrow) { t.vx = 0; t.vy = 0; if (p.onGround) t.teleport(x, p.y + p.h - t.h); }   // vật không ném được: luôn đặt nhẹ xuống
     else if (down && p.onGround) { t.vx = p.facing * ITEM.throwVx * 0.1; t.vy = 0; t.teleport(x, p.y + p.h - t.h); }   // đặt nhẹ xuống
     else {
-        t.vx = p.facing * ITEM.throwVx * (t.throwMul || 1) * (gearHas(p, 'mitt') ? GEAR.mittThrow : 1) + p.vx;      // throwMul: xác to ném ngắn hơn
-        t.vy = up ? ITEM.throwUpVy : down ? (p.onGround ? ITEM.dropVy : ITEM.throwDownVy) : ITEM.throwVy * (gearHas(p, 'mitt') ? GEAR.mittArc : 1);      // găng ném: nhanh hơn VÀ phẳng hơn (ném gần như thẳng ngang)
+        t.vx = p.facing * ITEM.throwVx * (t.throwMul || 1) + p.vx;      // throwMul: xác to ném ngắn hơn
+        t.vy = up ? ITEM.throwUpVy : down ? (p.onGround ? ITEM.dropVy : ITEM.throwDownVy) : ITEM.throwVy;
         if (down) t.vx *= 0.1;
     }
     if (t.onThrown) t.onThrown(p, !!t.noThrow || (down && p.onGround));      // tham số 2: true = chỉ đặt nhẹ xuống (không phải ném thật)
@@ -7295,7 +7397,7 @@ class Boss extends Enemy {
         const af = el ? affinityOf(this, el) : null;
         if (el) { if (af === 'weak') { dmg *= ELEM.bossWeak; level.spawnBurst(this.cx, this.cy, 10, BLADE[el].col, 140); } else if (af === 'resist') dmg *= ELEM.resMul; }
         this.hp -= dmg; if (af) dmgPop(this, dmg, af, el); this.flashT = 0.12; this.hitCd = k === DMG.EXPLOSION ? 0.8 : 0.25; this.lastHurt = src;
-        level.spawnBurst(this.cx, this.cy, 8, this.def.col, 110); sndPlay('hitBigHigh1', { x: this.cx }); sndPlay('bossHurt', { x: this.cx, p: this.phase === 2 ? 0.85 : 1 });          // v0.68: boss rên khi trúng đòn
+        level.spawnBurst(this.cx, this.cy, 8, this.def.col, 110); sndPlay('hitHeavy', { x: this.cx }); sndPlay('bossHurt', { x: this.cx, p: this.phase === 2 ? 0.85 : 1 });          // v0.68: boss rên khi trúng đòn
         if (this.hp <= 0) { this.hp = 0; this.die(src); }
         else if (this.phase === 1 && this.hp <= this.maxHp * this.def.phase2) this.enterPhase2(level);
         return true;
@@ -8422,7 +8524,7 @@ class Gold extends Thing {
     update(level, dt) {
         super.update(level, dt); this.age += dt;
         const p = game.player;
-        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; this.alive = false; sndPlay(this.value >= 100 ? 'coinLarge1' : this.value >= 50 ? 'coin' : 'coinMedium2', { x: this.cx }); }          // v0.92: bé / vừa / lớn
+        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; this.alive = false; sndPlay(this.value >= 100 ? 'coinLarge1' : this.value >= 50 ? 'coin' : 'coinMedium2', { x: this.cx, vol: 0.75 }); }          // v0.92: bé / vừa / lớn
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawGoldHp(this, ctx, alpha); return; }
@@ -8781,7 +8883,7 @@ class ShopGoods extends Thing {
     }
     inShop() { return overlapBox(this.shopBox, { x: this.cx, y: this.cy, w: 1, h: 1 }); }
     keeper() { return thingsWhere(e => e.kind === 'shopkeeper')[0]; }
-    label() { return this.gear ? GEAR_DEFS[this.gear].name + (GEAR_TEMP.indexOf(this.gear) >= 0 ? ' (hết màn)' : '') : this.blade ? BLADE[this.blade].name : this.sub ? SUB[this.sub].name + ' ×' + SUB[this.sub].n : this.amt ? '+' + this.amt + (this.type === 'bomb' ? ' bom' : ' móc') : SHOP.name[this.type]; }
+    label() { return this.gear ? GEAR_DEFS[this.gear].name : this.blade ? BLADE[this.blade].name : this.sub ? SUB[this.sub].name + ' ×' + SUB[this.sub].n : this.amt ? '+' + this.amt + (this.type === 'bomb' ? ' bom' : ' móc') : SHOP.name[this.type]; }
     apply(p) {
         if (this.gear) { gearGive(p, this.gear); return; }
         if (this.sub) { subGive(p, this.sub); return; }
@@ -9447,7 +9549,7 @@ class BigChest extends Thing {
         game.hint = key ? '↑ mở rương lớn bằng chìa khoá' : 'Rương khoá — cần chìa khoá (tìm ở nơi khác trong level)';
         if (key && inp.pressed('up')) {
             this.open = true; carryDrop(p); key.alive = false;
-            level.spawnBurst(this.cx, this.y, 18, '#ffd24a', 140); sndPlay('unlock', { x: this.cx }); sndPlay('ui', { x: this.cx, p: 1.6 }); fxShake(1, 0.15);
+            level.spawnBurst(this.cx, this.y, 18, '#ffd24a', 140); sndPlay('unlock', { x: this.cx, vol: 2 }); sndPlay('ui', { x: this.cx, p: 1.6, vol: 1.6 }); fxShake(1, 0.15);
             CHEST.loot.forEach((v, i) => { const g = new Gold(this.cx - 3, this.y - 4, v); g.vx = (i - 2.5) * 34; g.vy = -150 - (i % 2) * 40; entAdd(g); });
             if (p.hp > 0) p.hp += CHEST.heart;
             let ankh = false;
@@ -9466,24 +9568,11 @@ class BigChest extends Thing {
 }
 
 // 13m_gear — ĐỒ NGHỀ THỤ ĐỘNG kiểu Spelunky (GĐ7h). Mua ở cửa hàng (ô `i`, thay "bộ đồ nghề"). Giữ cho tới hết ván (qua level vẫn còn).
-//   ĐANG DÙNG: gloves, jetpack, ankh. Các món còn lại có cờ `hidden: true` — code vẫn còn nhưng không bán, không rơi, không hiện HUD (bỏ cờ để bật lại).
-//   Tên gốc SC: Compass · Spring Shoes · Spike Shoes · Pitcher's Mitt · Cape · Jetpack · Ankh. Số liệu là ước lượng theo mô tả (mình không có mã gốc của từng món) — chờ chơi thử.
-//   compass   mũi tên chỉ hướng cửa ra (HUD)
-//   (jetpack) ĐANG phụt mà dính LỬA hoặc TÊN => nổ tung (rủi ro đi kèm phần thưởng — bài phân tích SC; chưa chắc bản gốc làm đúng điều kiện này)
-//   spike     đạp đầu gây gấp ×GEAR.spikeStomp sát thương      mitt     ném xa hơn ×GEAR.mittThrow
-//   gloves    trên không ép vào tường => bám; ↑/↓ leo (50/70 px/s), nhảy = bật ra, ép hướng ngược = buông
-//   (cape)    ĐÃ BỎ ở H3: Lượn có sẵn từ đầu (giữ ↑ khi rơi, playerGlide ở 09a_abilities). Khai báo cape trong GEAR_DEFS / GEAR.glideVy chỉ còn là xác chết giữ cho khỏi vỡ chỗ tham chiếu khác
-//   jetpack   đang bay mà BẤM nhảy lần nữa rồi giữ => phụt lên; nhiên liệu GEAR.fuel giây, KHÔNG nạp lại
+//   v0.93 (Dan): đã XOÁ hẳn các món ẩn (la bàn, giày gai, găng ném, găng leo tường, áo choàng, bộ phản lực) cùng code của chúng. Còn: Ankh + 4 bùa kháng hệ (đều là đồ `secret`, chỉ rơi ở phòng ẩn).
 //   ankh      chết lần đầu => sống lại 1 lần, về chỗ đứng an toàn gần nhất, bất tử GEAR.ankhInv giây
-const GEAR = { wallKick: 110, clingUp: 50, clingDown: 70, spikeStomp: 2, mittThrow: 1.55, mittArc: 0.3, glideVy: 55, fuel: 5, thrust: 1800, thrustMax: -150, ankhInv: 3 };
-const GEAR_LIST = ['compass', 'spike', 'mitt', 'gloves', 'jetpack', 'ankh', 'ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'];          // H3: bỏ 'cape' (Lượn có sẵn từ đầu, xem playerGlide ở 09a_abilities)
+const GEAR = { ankhInv: 3 };
+const GEAR_LIST = ['ankh', 'ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'];
 const GEAR_DEFS = {
-    compass: { name: 'La bàn', price: 500, col: '#ffd24a', ch: 'C', cheap: true, hidden: true },
-    spike: { name: 'Giày gai', price: 900, col: '#d9d9e6', ch: 'G', cheap: true, hidden: true },
-    mitt: { name: 'Găng ném', price: 700, col: '#e0884a', ch: 'M', cheap: true, hidden: true },
-    gloves: { name: 'Găng leo tường', price: 1000, col: '#8ac04a', ch: 'W', cheap: true, hidden: true },          // v0.84 (Dan): ẩn — mâu thuẫn với móc / nhảy đôi
-    cape: { name: 'Áo choàng (đã bỏ, thay bằng Lượn)', price: 1200, col: '#c94a8a', ch: 'A', cheap: true, hidden: true },
-    jetpack: { name: 'Bộ phản lực', price: 1600, col: '#ff6a3a', ch: 'J', hidden: true },          // v0.84 (Dan): ẩn — mâu thuẫn với móc / nhảy đôi
     ankh: { name: 'Ankh (hồi sinh)', price: 1800, col: '#ffe9a8', ch: 'H', secret: true },
     ward_fire: { name: 'Bùa kháng Lửa', price: 700, col: '#ff9a3a', ch: 'L', ward: 'fire', secret: true },
     ward_ice: { name: 'Bùa kháng Băng', price: 700, col: '#7fd8ff', ch: 'B', ward: 'ice', secret: true },
@@ -9495,14 +9584,13 @@ const GEAR_DEFS = {
 const RESIST = { dmgMul: 0.5, wardW: 0.5, zoneW: 1.5 };
 function resHas(p, el) { return !!(el && p && p.items && p.items['ward_' + el]); }
 function gearHas(p, id) { return !!(p && p.items && p.items[id]); }
-function gearUsable(id, diff) { const d = GEAR_DEFS[id]; return !!d && !d.hidden && !(id === 'ankh' && diff === 'hardcore'); }          // v0.84: lọc khi nạp bản lưu (đồ ẩn / không biết bị bỏ; Hardcore không có Ankh)
-const GEAR_TEMP = ['gloves', 'jetpack'];          // v0.74: chỉ có tác dụng đến hết màn (nextLevel xoá)
-function gearGive(p, id) { p.items[id] = true; if (id === 'jetpack') p.fuel = GEAR.fuel; }
+function gearUsable(id, diff) { const d = GEAR_DEFS[id]; return !!d && !(id === 'ankh' && diff === 'hardcore'); }          // v0.84: lọc khi nạp bản lưu (đồ không biết bị bỏ; Hardcore không có Ankh)
+function gearGive(p, id) { p.items[id] = true; }
 // chọn món chưa có (cheap = chỉ đồ rẻ); hết món thì trả null
 //   v0.58 (Dan): đồ `secret` (Ankh + 4 bùa kháng hệ) KHÔNG bán ở cửa hàng, chỉ rơi ở phòng ẩn (gearPickSecret, 13t_relic).
 function gearPickSecret(p) { const l = GEAR_LIST.filter(id => GEAR_DEFS[id].secret && gearUsable(id, game.diff) && !gearHas(p, id)); return l.length ? l[game.rngPlay.int(0, l.length - 1)] : null; }
 function gearPick(p, cheap) {
-    const l = GEAR_LIST.filter(id => !GEAR_DEFS[id].hidden && !GEAR_DEFS[id].secret && !gearHas(p, id) && (!cheap || GEAR_DEFS[id].cheap));
+    const l = GEAR_LIST.filter(id => !GEAR_DEFS[id].secret && !gearHas(p, id) && (!cheap || GEAR_DEFS[id].cheap));
     if (!l.length) return null;
     const z = zoneOf(game.levelIdx) || {}, w = l.map(id => { const d = GEAR_DEFS[id]; return d.ward ? (z.resist && z.resist.indexOf(d.ward) >= 0 ? RESIST.zoneW : RESIST.wardW) : 1; });
     let r = game.rngPlay.next() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < l.length; i++) { if ((r -= w[i]) < 0) return l[i]; } return l[l.length - 1];
@@ -9512,27 +9600,11 @@ function gearJumpMul(p) { return (salmonOn(p) ? SALMON.jump : 1); }          // 
 // Mỗi khung của người chơi (09_player gọi sau bước trọng lực, trước physMove)
 function gearAir(p, level, dt, wet, wasGround) {
     if (!p.items) return;
-    if (p.onGround || wet || p.state === 'climb' || p.state === 'hang' || p.state === 'cling') { p.jetOn = false; }
-    if (gearHas(p, 'jetpack') && !wet && !p.onGround && p.fuel > 0) {
-        if (p.bufferT > 0 && !wasGround && p.coyoteT <= 0 && p.state === 'air' && !p.jetOn && p.jumpT > 0.08) { p.jetOn = true; p.bufferT = 0; }
-        if (p.jetOn && !inp.held('jump')) p.jetOn = false;
-        if (p.jetOn) {
-            p.vy = Math.max(GEAR.thrustMax, p.vy - GEAR.thrust * dt); p.fuel = Math.max(0, p.fuel - dt); p.fallT = 0;
-            if (Math.floor(p.stateT * 30) % 2 === 0) level.fx.push({ x: p.cx + (game.rngFx.next() - 0.5) * 4, y: p.y + p.h, vx: (game.rngFx.next() - 0.5) * 20, vy: 70, life: 0.3, max: 0.3, size: 2, col: game.rngFx.next() < 0.5 ? '#ffb040' : '#ff6a2a' });
-            if (p.fuel <= 0) p.jetOn = false;
-        }
-    }
-    playerGlide(p, level, wet);          // H3: LƯỢN có sẵn từ đầu (v0.78: giữ NHẢY khi rơi; 09a_abilities). Thay áo choàng (cape) cũ
+    playerGlide(p, level, wet);          // H3: LƯỢN có sẵn từ đầu (v0.78: giữ NHẢY khi rơi; 09a_abilities). 
     if (p.onGround && p.stateT >= 0 && game.time - (p.safeAt || -9) > 0.4) {            // nhớ chỗ đứng an toàn (cho Ankh): đất liền, không gai / nhiệt dưới chân, không nước
         const c = Math.floor(p.cx / TILE), r = Math.floor((p.y + p.h + 1) / TILE), t = level.tile(c, r);
         if (T_IS_SOLID[t] && t !== T_SPIKE && t !== T_LAVA && t !== T_CRUMBLE && !level.inWater(p)) { p.safe = { x: p.x, y: p.y }; p.safeAt = game.time; }
     }
-}
-// Bộ phản lực đang phụt bị trúng lửa / tên => nổ (dùng explode: người chơi mất ITEM.blastDmg máu — thường là chết)
-function gearJetHit(p, src) {
-    if (!p.jetOn || (src.kind !== DMG.FIRE && src.kind !== DMG.ARROW)) return;
-    p.jetOn = false; p.fuel = 0; game.pickupMsg = { t: 0, text: 'Bộ phản lực nổ tung!' };
-    explode(game.level, p.cx, p.cy);
 }
 // Chết mà có Ankh => cứu (trả true: đã cứu). v0.84 (Dan) theo độ khó:
 //   Dễ: sống lại TẠI CHỖ, đầy máu, bất tử ANKH_EASY.inv giây, xoá đạn / lửa địch gần, hiệu ứng vàng (chỗ chết là lửa / gai / ngoài bản đồ thì về chỗ an toàn gần nhất).
@@ -9578,28 +9650,18 @@ function ankhRestart() {
     game.banner = { text: 'Ankh — làm lại ' + game.level.name, t: 0 };
 }
 
-// HUD: biểu tượng đồ + thanh nhiên liệu + la bàn
+// HUD: biểu tượng đồ (Ankh / bùa)
 function gearDrawHud() {
     const p = game.player; if (!p || !p.items || p.dead) return;
     let x = VIEW_W - 6 - 9;
     for (const id of GEAR_LIST) {
-        if (!p.items[id] || GEAR_DEFS[id].hidden) continue;
+        if (!p.items[id]) continue;
         const d = GEAR_DEFS[id];
         ctx.fillStyle = '#000'; ctx.fillRect(x - 1, 25, 11, 11); ctx.fillStyle = d.col; ctx.fillRect(x, 26, 9, 9);
         drawText(d.ch, x + 2, 25, '#101018');
-        if (id === 'jetpack') { ctx.fillStyle = '#000'; ctx.fillRect(x - 1, 37, 11, 4); ctx.fillStyle = '#ff6a3a'; ctx.fillRect(x, 38, Math.round(9 * clamp(p.fuel / GEAR.fuel, 0, 1)), 2); }
         x -= 12;
     }
     if (p.weapon) { ctx.fillStyle = '#000'; ctx.fillRect(x - 1, 25, 11, 11); ctx.fillStyle = p.weapon === 'shotgun' ? '#9a9aaa' : '#c8d0e0'; ctx.fillRect(x, 26, 9, 9); drawText(p.weapon === 'shotgun' ? String(p.ammo) : p.weapon === 'boomerang' ? 'B' : 'R', x + 2, 25, '#101018'); x -= 12; }
-    if (p.items.compass && !GEAR_DEFS.compass.hidden && game.level.exit && game.level.id !== 'test') {
-        const e = game.level.exit, dx = (e.c + 0.5) * TILE - p.cx, dy = (e.r + 0.5) * TILE - p.cy, d = Math.hypot(dx, dy);
-        if (d > 70) {
-            const a = Math.atan2(dy, dx), px = p.cx - cam.x + Math.cos(a) * 30, py = p.cy - cam.y + Math.sin(a) * 30;
-            ctx.save(); ctx.translate(Math.round(px), Math.round(py)); ctx.rotate(a);
-            ctx.fillStyle = '#000'; ctx.fillRect(-4, -4, 9, 8); ctx.fillStyle = '#ffd24a'; ctx.fillRect(-3, -1, 6, 2); ctx.fillRect(1, -3, 2, 6); ctx.fillRect(3, -2, 1, 4);
-            ctx.restore();
-        }
-    }
 }
 
 // ---- Vũ khí mua ở tiệm vũ khí (lần 18; số liệu là ước lượng của mình, không có mã gốc để đối chiếu) ----
@@ -10902,7 +10964,7 @@ function saveSanitize(d) {
     return {
         v: SAVE_VERSION, gv: Number.isFinite(d.gv) ? d.gv : 0, diff: DIFF[d.diff] ? d.diff : null, tries, bench, hs: d.hs && typeof d.hs === 'object' ? d.hs : {}, seed: d.seed, lvl: d.lvl, runT: Number.isFinite(d.runT) ? clamp(d.runT, 0, 3600 * 9999) : 0, wanted: d.wanted === true, stats,
         ab: abilitySanitize(d.ab), ci: Array.isArray(d.ci) ? d.ci.filter(k => typeof k === 'string').slice(0, CARRYOVER.max) : [], dda: d.dda && typeof d.dda === 'object' ? d.dda : null,
-        p: { hp: clamp(p.hp, 1, 999), bombs: int(p.bombs, 0, 99, 0), ropes: int(p.ropes, 0, 99, 0), gold: int(p.gold, 0, 1e9, 0), items, fuel: Number.isFinite(p.fuel) ? clamp(p.fuel, 0, 9999) : 0, sub: subSanitize(p.sub), blade: bladeSanitize(p.blade), hpUp: int(p.hpUp, 0, RELIC.maxUp, 0), weapon: typeof p.weapon === 'string' && p.weapon !== 'boomerang' ? p.weapon : null, ammo: int(p.ammo, 0, 999, 0) }
+        p: { hp: clamp(p.hp, 1, 999), bombs: int(p.bombs, 0, 99, 0), ropes: int(p.ropes, 0, 99, 0), gold: int(p.gold, 0, 1e9, 0), items, sub: subSanitize(p.sub), blade: bladeSanitize(p.blade), hpUp: int(p.hpUp, 0, RELIC.maxUp, 0), weapon: typeof p.weapon === 'string' && p.weapon !== 'boomerang' ? p.weapon : null, ammo: int(p.ammo, 0, 999, 0) }
     };
 }
 
@@ -10931,7 +10993,7 @@ function saveWrite(d) {
 function saveRun() {
     const p = game.player; if (!p || !game.genMeta) return false;
     return saveWrite({ v: SAVE_VERSION, gv: GEN_VERSION, diff: game.diff || 'normal', tries: game.tries || {}, bench: game.bench || {}, hs: game.hpSnap || {}, seed: game.seed, lvl: game.levelIdx, runT: game.runT, wanted: !!game.wanted, stats: game.stats, ab: game.abilities, ci: game.carryIn || [], dda: ddaSave(),
-        p: { sub: p.sub || null, blade: p.blade || null, hpUp: p.hpUp | 0, hp: p.hp, bombs: p.bombs, ropes: p.ropes, gold: p.gold, items: p.items, fuel: p.fuel, weapon: p.weapon, ammo: p.ammo } });
+        p: { sub: p.sub || null, blade: p.blade || null, hpUp: p.hpUp | 0, hp: p.hp, bombs: p.bombs, ropes: p.ropes, gold: p.gold, items: p.items, weapon: p.weapon, ammo: p.ammo } });
 }
 function clearRun(slot) { try { const key = slotKey(RUN_STORE, slot); if (key) localStorage.removeItem(key); localStorage.removeItem(RUN_STORE_V1); } catch (e) { } }
 
@@ -11272,7 +11334,7 @@ function sceneIcon(id, x, y) {          // icon ô 12×12 px (vẽ bằng sprite
 function sceneFlask(id, x, y) { const d = SUB[id] || { col: '#7fb8ff' }; ctx.fillStyle = SPR_OUT; ctx.fillRect(x + 3, y - 1, 6, 3); ctx.fillRect(x + 1, y + 2, 10, 10); ctx.fillStyle = '#d8e4f0'; ctx.fillRect(x + 4, y, 4, 2); ctx.fillStyle = d.col; ctx.fillRect(x + 2, y + 5, 8, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 3, y + 3, 2, 5); }
 function slotHero(d, x, floorY, empty) {
     const p = new Player(0, 0); p.facing = 1; p.state = 'idle'; p.vx = p.vy = 0; p.onGround = true;
-    if (d) { p.items = d.p.items || {}; p.blade = d.p.blade || null; p.weapon = d.p.weapon || null; p.ammo = d.p.ammo | 0; p.hp = d.p.hp; p.hpUp = d.p.hpUp | 0; p.sub = d.p.sub || null; p.fuel = d.p.fuel || 0; }
+    if (d) { p.items = d.p.items || {}; p.blade = d.p.blade || null; p.weapon = d.p.weapon || null; p.ammo = d.p.ammo | 0; p.hp = d.p.hp; p.hpUp = d.p.hpUp | 0; p.sub = d.p.sub || null; }
     p.x = x - p.w / 2; p.y = floorY - p.h; p.px = p.x; p.py = p.y;
     ctx.save(); if (empty) ctx.globalAlpha = 0.45; try { p.draw(ctx, 1); } catch (err) { } ctx.restore();
 }
@@ -11549,7 +11611,6 @@ function nextLevel() {
     // Quái sót: còn sống ở level cũ (kể cả quái đã mang sang) → mang ceil(50%) sang level kế, hết vùng thì xoá. Phòng boss: không có quái mang vào, giữ nguyên danh sách đi qua.
     const from = game.levelIdx, left = game.level && game.level.def.boss ? (game.carryIn || []).slice() : carryoverPick(carryoverCollect(game.level));
     ddaLevelDone();          // DDA (13q): ghi số liệu level vừa qua, tính hệ số quái cho level kế
-    { const pl = game.player; if (pl && pl.items) { for (const id of GEAR_TEMP) pl.items[id] = false; pl.fuel = 0; } }          // v0.74 (Dan): găng leo tường + bộ phản lực CHỈ dùng tới hết màn đang chơi
     game.levelIdx++;
     if (diffOf().wantedLevel || zoneIdx(game.levelIdx) !== zoneIdx(from)) game.wanted = false;          // v0.59: Easy xoá khi qua màn · v0.76 (Dan): chế độ thường vẫn truy nã ở các màn kế TRONG VÙNG, sang vùng mới (vd hầm mỏ → rừng sâu) thì hết
     game.carryIn = zoneIdx(game.levelIdx) === zoneIdx(from) ? left : [];
@@ -11621,7 +11682,7 @@ function loadLevel(def, fresh) {
     game.entities = []; game.blasts = [];
     const old = game.player;
     const p = new Player(0, 0);
-    if (!fresh && old) { p.hp = old.hp; p.bombs = old.bombs; p.ropes = old.ropes; p.gold = old.gold; p.items = old.items; p.fuel = old.fuel; p.weapon = old.weapon; p.ammo = old.ammo; p.sub = subSanitize(old.sub); p.blade = bladeSanitize(old.blade); p.hpUp = old.hpUp | 0; }
+    if (!fresh && old) { p.hp = old.hp; p.bombs = old.bombs; p.ropes = old.ropes; p.gold = old.gold; p.items = old.items; p.weapon = old.weapon; p.ammo = old.ammo; p.sub = subSanitize(old.sub); p.blade = bladeSanitize(old.blade); p.hpUp = old.hpUp | 0; }
     p.placeAt(L.spawn);
     game.player = p; game.entities.push(p);
     if (L.id !== 'test') game.lvlHpUp = p.hpUp | 0;          // v0.74: mức máu tối đa lúc vào level (chế độ dễ hồi sinh cùng màn về mức này)
@@ -11852,7 +11913,7 @@ function frameLoop(now) {
         alpha = 1;
     }
     const t1 = performance.now();
-    musStep();
+    musStep(); ambStep();
     renderFrame(alpha);
     if (dt > 0 && !game.paused) perfPush(dt, n, t1 - t0, performance.now() - t1);
 }
