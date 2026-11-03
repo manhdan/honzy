@@ -1921,7 +1921,7 @@ function musStep() {
 //   Mỗi vùng (ZONES) có hồ sơ AMB_PROF: wind / gust · rain (xác suất một màn của vùng có mưa; mưa to thì thỉnh thoảng có sấm) · birds · crickets · frogs · owl · drip (giọt nước) · waves (sóng, chỉ nghe khi gần nước).
 //   Nước / dung nham gần người chơi (đếm ô T_WATER / T_LAVA trong khung 29×19 ô, nửa giây một lần) quyết định tiếng nước lăn tăn / sóng / lò nung.
 //   Âm lượng đi theo thanh «Nhạc nền» (SND.music) và công tắc tắt tiếng; AMB.vol chỉnh chung. Phòng boss: nhỏ đi, không có sự kiện. Math.random chỉ dùng cho âm thanh, không đụng rng chơi.
-const AMB = { waves: false, lake: false, vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
+const AMB = { waves: false, lake: false, lava: false, vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
 const AMB_PROF = {
     mines:    { wind: 0.25, drip: 0.5 },
     forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
@@ -2017,7 +2017,7 @@ function ambTick(S, now, E) {
     S.wave.g.gain.setTargetAtTime(0.13 * wv * (0.2 + 0.8 * swell * swell), now, 0.5); S.wave.f.frequency.setTargetAtTime(450 + 1100 * swell, now, 0.4);
     const lakeSw = 0.65 + 0.35 * Math.sin(now * 0.9) * Math.sin(now * 0.37 + 1);
     S.lake.g.gain.setTargetAtTime(AMB.lake ? 0.07 * E.wk * lakeSw * (1 - 0.6 * r) : 0, now, 0.6);          // v1.05 (Dan): gần nước không còn tiếng sóng / ù nước (chỉ còn giọt nước nhỏ xuống mặt nước) S.lake.f.frequency.setTargetAtTime(750 + 350 * (0.5 + 0.5 * Math.sin(now * 0.37)), now, 0.8);
-    S.lava.g.gain.setTargetAtTime(0.10 * E.lk, now, 0.6); S.lavaH.g.gain.setTargetAtTime(0.022 * E.lk * (0.5 + _ar() * 0.8), now, 0.25);
+    S.lava.g.gain.setTargetAtTime(AMB.lava ? 0.10 * E.lk : 0, now, 0.6); S.lavaH.g.gain.setTargetAtTime(AMB.lava ? 0.022 * E.lk * (0.5 + _ar() * 0.8) : 0, now, 0.25);          // v1.07 (Dan): tắt tiếng rào rào của nham thạch (AMB.lava = true để bật lại)
     if (boss) return;          // phòng boss: chỉ còn nền
     const calm = (1 - _asm(0.02, 0.15, r)) * (1 - _asm(0.5, 1.0, w)), L = typeof sndLog === 'function' ? sndLog : null, st = AMB.stats;
     if ((p.birds || 0) > 0 && calm > 0.4 && now >= S.birdT) { ambBird(S, now + 0.05, 0.035 * (0.7 + 0.3 * calm)); st.birds++; if (L) L('amb_birds', 'env'); S.birdT = now + (5 + _ar() * 11) / (0.5 + p.birds); }
@@ -9001,9 +9001,10 @@ function princessRescue(L, p, up) {
         if (t.holder) t.release();
         t.alive = false; n++;
         const heal = t.pet ? PRINCESS.healPet : PRINCESS.healPrincess;
-        p.hp += heal;
+        const full = !t.pet && p.hp >= maxHpOf(p);          // v1.07 (Dan): đầy máu thì thay vì hồi máu → tặng 1000 vàng
+        if (full) { p.gold += 1000; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + 1000; } else p.hp += heal;
         L.spawnBurst(e.c * TILE + 8, e.r * TILE + 4, 10, '#ff7a9a', 90);
-        game.pickupMsg = { t: 0, text: (t.pet ? 'Thú cưng quấn quýt! +' : 'Công chúa cảm ơn bạn! +') + heal / HP_UNIT + ' tim' };
+        game.pickupMsg = { t: 0, text: full ? 'Công chúa cảm ơn bạn! +1000 vàng' : (t.pet ? 'Thú cưng quấn quýt! +' : 'Công chúa cảm ơn bạn! +') + heal / HP_UNIT + ' tim' };
         game.stats.rescued = (game.stats.rescued || 0) + 1; if (t.pet) game.stats.pets = (game.stats.pets || 0) + 1;
         sndPlay('unlock', { x: p.cx });
     }
@@ -10958,9 +10959,9 @@ function dmgPopDraw(camX, camY) {
 //   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
-    staff: { v: 250, life: 0.184, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.27, size: 6, spread: 0.14 },
-    boomN: { v: 191, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 48 px = 2× tầm kiếm (24 px từ tâm) — v1.02 (Dan)
-    boomF: { v: 240, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 72 px = 3× tầm kiếm (đòn nạp, xuyên 3, hồi 2,5 s)
+    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.339, size: 6, spread: 0.14 },
+    boomN: { v: 174, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 40 px (v1.07: −½ ô, Dan; trước 48)
+    boomF: { v: 226, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 64 px (v1.07: −½ ô; trước 72) (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
 };
 function elemOf(p) { return (p && p.blade) || 'fire'; }
@@ -11041,7 +11042,7 @@ function classAttack(p, dir, power) {
 const ALCH = { convT: 2, convFast: 1, cap: 10, capFast: 20, glideMul: 0.7, glideShotMul: 1.6, startFlask: 'shock', tapT: 0.2, tpDist: 3 * TILE, tpCd: 4.5, tpStep: 2 };
 const CLASS_MUL = { dmg: { alch: 1, sword: 0.6, hunt: 0.6 } };          // sát thương bình ném theo lớp; mở rộng thêm: radius / duration / environment
 function classMul(attr, cls) { const t = CLASS_MUL[attr]; const c = cls || (typeof game !== 'undefined' && game.cls) || 'sword'; return t && t[c] !== undefined ? t[c] : 1; }
-const FLASK_ORDER = ['water', 'oil', 'shock', 'frost', 'poison'];
+const FLASK_ORDER = ['oil', 'shock', 'frost', 'poison'];          // v1.07 (Dan): vòng chọn 4 hệ — ↑ xăng · → sét · ↓ băng · ← độc (bình nước không còn trong vòng)
 function subCap() { return abilityHas('flaskFast') ? ALCH.capFast : ALCH.cap; }
 // Mua / nhặt bình: Giả Kim cùng loại thì CỘNG DỒN (tới sức chứa), khác loại thì thay như cũ.
 function alchGiveFlask(p, id) {
@@ -11050,7 +11051,7 @@ function alchGiveFlask(p, id) {
     return subGive0(p, id);
 }
 // Vuông (dash) của Giả Kim: CHẠM (thả trong ALCH.tapT) = Dịch chuyển (sau boss vùng 6) · GIỮ (đứng yên, có bình) = hiện VÒNG CHỌN BÌNH: mũi tên chỉ về loại nào thì loại đó sáng, NHẢ nút = chọn.
-//   Thứ tự theo chiều kim đồng hồ từ trên: nước (↑) · lửa/dầu · sét · băng · độc (FLASK_ORDER). Mở vòng thì mũi tên không còn đi / nhảy (Player.update bỏ qua phím).
+//   Thứ tự theo chiều kim đồng hồ từ trên: xăng (↑) · sét (→) · băng (↓) · độc (←) (FLASK_ORDER). Mở vòng thì mũi tên không còn đi / nhảy (Player.update bỏ qua phím).
 function wheelPick(dx, dy) {          // dx,dy ∈ {-1,0,1}; trả chỉ số 0..4 hoặc -1
     if (!dx && !dy) return -1;
     let ang = Math.atan2(dx, -dy); if (ang < 0) ang += Math.PI * 2;
@@ -11557,7 +11558,7 @@ function drawTransPanel() {
     if (t.rescued > 0) lines.push([t.pets >= t.rescued ? 'Thú cưng dụi vào chân bạn!' : 'Công chúa: "Anh hùng của em!"', '#ffb0d0']);
     if (game.levelIdx + 1 === FINALE_LEVEL) lines.push(['Sắp tới: TRẬN CUỐI — Hang núi lửa', '#ff9a5a']);
     else if (zoneIdx(game.levelIdx + 1) !== zoneIdx(game.levelIdx)) lines.push(['Sắp tới: vùng ' + zoneOf(game.levelIdx + 1).name, '#9ad0ff']);
-    drawPanel(lines, 'XONG ' + t.name, '#7fe08a', 0.75);          // v0.77 (Dan): bảng hẹp 75 %, bỏ dòng «Phím bất kỳ: tiếp tục», số tiền màu vàng
+    drawPanel(lines, 'XONG ' + t.name, '#7fe08a');          // v1.07 (Dan): kéo hết chiều rộng màn hình (v0.77 từng để hẹp 75 %), bỏ dòng «Phím bất kỳ: tiếp tục», số tiền màu vàng
 }
 
 // 15c_scene — MÀN WELCOME + MÀN CHỌN SLOT kiểu pixel (v0.61, Dan): vẽ bằng chính ô / sprite của game trên một «bản đồ» thu nhỏ vừa khít màn hình (20×15 ô).
