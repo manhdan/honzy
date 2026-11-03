@@ -261,7 +261,7 @@ const KEY_ACTIONS = [
     { id: 'left', label: 'Trái', need: true }, { id: 'right', label: 'Phải', need: true },
     { id: 'up', label: 'Lên · leo · chém lên · vào cửa', need: true }, { id: 'down', label: 'Xuống · ngồi · nhặt (↓ + Tròn)', need: true },
     { id: 'jump', label: 'Nhảy (X) · giữ khi rơi = lượn', need: true }, { id: 'attack', label: 'Chém / ném (Tròn)', need: true },
-    { id: 'dash', label: 'Lướt (Vuông) · đứng yên ↑ + Vuông huýt sáo', need: false }, { id: 'item', label: 'Dùng đồ phụ (Tam giác)', need: false },
+    { id: 'dash', label: 'Lướt / Dịch chuyển / đổi bình (Vuông)', need: false }, { id: 'item', label: 'Dùng đồ phụ (Tam giác)', need: false },
     { id: 'rope', label: 'Móc ngay (L2)', need: false }, { id: 'bomb', label: 'Bom ngay (R2)', need: false },
     { id: 'run', label: 'Chạy (R1) · Luôn chạy BẬT = đi chậm', need: false },
     { id: 'swap', label: 'Đổi đồ phụ → (L1 / lăn xuống)', need: false }, { id: 'swapBack', label: 'Đổi đồ phụ ← (lăn lên)', need: false }
@@ -270,7 +270,7 @@ const KEY_ACTIONS = [
 const KEY_DEBUG_CODES = ['KeyJ', 'KeyI', 'KeyP', 'KeyN', 'KeyG', 'KeyK', 'Digit0'];
 // Tuỳ chọn người chơi. autoRun = luôn chạy nhanh (giữ nút chạy thì đi chậm) — SC mặc định TẮT (phải giữ nút chạy)
 // SLOT (v0.60): 3 chỗ lưu độc lập (ván + hồ sơ). cur = 0: chưa chọn (đang ở màn Welcome / chọn slot) → không đọc / ghi gì. Slot 1 dùng khoá cũ (giữ bản lưu sẵn có); slot 2, 3 thêm hậu tố _s2 / _s3. Tuỳ chọn + phím dùng chung cho cả máy.
-const SLOT = { n: 3, cur: 0, lastKey: 'honzy_slot_last_v1' };
+const SLOT = { n: 5, cur: 0, lastKey: 'honzy_slot_last_v1' };
 // ĐỘ KHÓ (v0.80, Dan) — chọn lúc bắt đầu ván, lưu theo ván (game.diff), không đổi giữa chừng. Hardcore chỉ hiện khi hồ sơ slot đã phá đảo (PROF.wins > 0).
 //   respawn: 'level' = chơi lại đúng màn đó · 'zone' = về đầu vùng (hoặc ghế nghỉ) · 'start' = về 1-1 (giữ vàng / đồ / năng lực) · 'over' = thua luôn (xoá ván)
 //   ghost = giây ma xuất hiện (cảnh báo trước 30 s) · wantedLevel = truy nã xoá khi qua màn (không thì xoá khi sang vùng mới) · foeMul = mật độ quái · dda = cho phép độ khó thích ứng
@@ -280,6 +280,19 @@ const DIFF = {
     hard:     { name: 'Khó',       respawn: 'start', ghost: 120, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Chết: về 1-1 (giữ vàng, đồ) · ma ra sau 2:00 · quái +25 %' },
     hardcore: { name: 'Hardcore',  respawn: 'over',  ghost: 120, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Như Khó nhưng chết là THUA — ván bị xoá' }
 };
+// LỚP NHÂN VẬT (v0.95, DESIGN_CLASSES_v3.md): chọn khi tạo ván mới, khoá theo slot. hp = chênh số tim so với mức chuẩn.
+const CLASSES = {
+    sword: { name: 'Kiếm Sĩ', desc: 'Cận chiến · nhảy đôi · +1 tim', hp: 1, col: '#ff8a4a' },
+    alch: { name: 'Giả Kim', desc: 'Gậy phép · bình ném · −1 tim', hp: -1, col: '#7fd4ff' },
+    hunt: { name: 'Thợ Săn', desc: 'Boomerang · móc không giới hạn', hp: 0, col: '#9be37a' }
+};
+const CLASS_INFO = { sword: 'Kiếm + nhảy đôi, chịu đòn tốt', alch: 'Bình ném mạnh nhất, mong manh', hunt: 'Boomerang + móc dây vô hạn' };
+const CLASS_LIST = ['sword', 'alch', 'hunt'];
+function clsOf(c) { return CLASSES[c] ? c : 'sword'; }
+function classHpUnits(c) { return (CLASSES[clsOf(c === undefined ? (typeof game !== 'undefined' ? game.cls : null) : c)].hp) * HP_UNIT; }
+function startHpOf(c) { return ITEM.startHp + classHpUnits(c); }
+// ô vẽ cố định của màn chọn slot (5 hàng)
+const SLOT_ROW = { y0: 18, pitch: 40, h: 36 };
 const DIFF_LIST = ['easy', 'normal', 'hard', 'hardcore'];
 function diffOf() { return DIFF[(typeof game !== 'undefined' && game.diff) || 'normal'] || DIFF.normal; }
 function slotKey(base, s) { s = s === undefined ? SLOT.cur : s; return s < 1 || s > SLOT.n ? null : s === 1 ? base : base + '_s' + s; }
@@ -311,7 +324,7 @@ function assistOf(k) { return SETTINGS.assist ? Math.max(PHYS[k], ASSIST[k]) : P
 //   dashBuf (v0.37, từ Metroidvania): lệnh lướt bấm sớm (đang lướt / sát hết hồi chiêu) được nhớ chừng này giây rồi tự lướt khi đủ điều kiện => chạm nút liên tục là lướt liên tục (cách nhau ≥ dashT + dashCd)
 //   glideVy (H3): LƯỢN có sẵn từ đầu (không phải học): giữ ↑ khi đang rơi thì vận tốc rơi bị kẹp ở glideVy và hết sát thương rơi
 //   djMul lực nhảy đôi so với nhảy thường · djNearGround: còn cách đất ≤ px này thì phím nhảy dành cho cú nhảy thường (đã nhớ phím) thay vì tốn nhảy đôi
-const ABIL = { dashSpeed: 220, dashT: 0.15, dashCd: 0.35, dashInv: 0.1, shadowSpeed: 300, shadowT: 0.25, shadowInv: 0.25, djMul: 0.9, djNearGround: 8, dashTap: 0.2, dashBuf: 0.12, glideVy: 55, glideHold: 0.1 };
+const ABIL = { dashSpeed: 220, dashT: 0.15, dashCd: 0.35, dashInv: 0.1, shadowSpeed: 300, shadowT: 0.25, shadowInv: 0.25, dashInvHunt: 0.15, djMul: 0.9, djNearGround: 8, dashTap: 0.2, dashBuf: 0.12, glideVy: 55, glideHold: 0.1 };
 const ABIL_DEFAULT = Object.assign({}, ABIL);
 const ABIL_META = [
     ['dashSpeed', 120, 500, 5, 'Tốc độ lướt'], ['dashT', 0.05, 0.5, 0.01, 'Thời gian lướt (s)'], ['dashCd', 0, 1, 0.01, 'Hồi chiêu lướt (s)'],
@@ -321,9 +334,27 @@ const ABIL_META = [
 const ABILITY_DEFS = {
     doubleJump: { name: 'NHẢY ĐÔI', short: 'Nhảy đôi', text: 'Bấm {jump} lần nữa khi đang ở trên không', from: 'Vệ binh đá' },
     dash: { name: 'LƯỚT', short: 'Lướt', text: 'Chạm nhanh {run} để lướt (giữ = chạy; 1 lần mỗi lần rời đất)', from: 'có sẵn' },
-    shadowDash: { name: 'LƯỚT BÓNG', short: 'Lướt Bóng', text: 'Lướt xa hơn, xuyên quái, không bị chạm thương', from: 'Thợ săn tuyết' }
+    shadowDash: { name: 'LƯỚT BÓNG', short: 'Lướt Bóng', text: 'Lướt xa hơn, xuyên quái, không bị chạm thương', from: 'Thợ săn tuyết' },
+    pogoAuto: { name: 'POGO TỰ ĐỘNG', short: 'Pogo tự động', text: 'Rơi xuống gai thì tự nảy lên, không mất máu · giẫm đầu mạnh thêm ×1,5', from: 'Vệ binh đá' },
+    reflect2: { name: 'PHẢN ĐẠN MẠNH', short: 'Phản đạn ×2', text: 'Đạn bị chém bật lại gây gấp đôi sát thương', from: 'Thợ săn tuyết' },
+    flaskFast: { name: 'ĐỔI BÌNH NHANH', short: 'Đổi bình nhanh', text: 'Đổi loại bình chỉ còn 1 giây · mang tối đa 20 bình', from: 'Vệ binh đá' },
+    teleport: { name: 'DỊCH CHUYỂN', short: 'Dịch chuyển', text: 'Dịch chuyển 3 ô (hồi chiêu ~4,5 s, không bất tử, không xuyên tường)', from: 'Thợ săn tuyết' },
+    hookDiag: { name: 'MÓC CHÉO', short: 'Móc chéo', text: 'Móc chủ động tới gờ gần nhất trong ~8 ô, chọn được hướng', from: 'Vệ binh đá' }
 };
-const ABILITY_REWARD = { warden: 'doubleJump', hunter: 'shadowDash' };      // khoá BOSS_LEVELS -> năng lực nhận khi hạ boss đó (vùng 2 = Vệ binh đá, level 12 = nhảy đôi; vùng 6 = Thợ săn tuyết, level 36 = lướt)
+// phần thưởng boss THEO LỚP (v0.95): khoá BOSS_LEVELS -> năng lực. warden = Vệ binh đá (vùng 2), hunter = Thợ săn tuyết (vùng 6)
+const ABILITY_REWARD = {
+    sword: { warden: 'pogoAuto', hunter: 'reflect2' },
+    alch: { warden: 'flaskFast', hunter: 'teleport' },
+    hunt: { warden: 'hookDiag', hunter: 'shadowDash' }
+};
+// năng lực KHỞI ĐẦU theo lớp (ghi đè abilitiesNone): Kiếm Sĩ có nhảy đôi; Thợ Săn có lướt; Giả Kim không có cả hai
+const CLASS_START = { sword: { dash: false, doubleJump: true }, alch: { dash: false, doubleJump: false }, hunt: { dash: true, doubleJump: false } };
+// tính năng cố định của lớp (không phải học): dùng classHas(id)
+const CLASS_HAS = {
+    sword: { pogo: true, reflect: true, upSlash: true, kick: true, spikeBoots: true },
+    alch: {}, hunt: {}
+};
+function classHas(id) { const c = CLASS_HAS[(typeof game !== 'undefined' && game.cls) || 'sword']; return !!(c && c[id]); }      // khoá BOSS_LEVELS -> năng lực nhận khi hạ boss đó (vùng 2 = Vệ binh đá, level 12 = nhảy đôi; vùng 6 = Thợ săn tuyết, level 36 = lướt)
 
 // Tiện ích
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -358,7 +389,7 @@ const CARRYOVER = { frac: 0.5, minLeft: 1, max: 12, minDist: 12, avoidR: 6, pick
 //   Thuật toán: sfc32 (nhanh, chất lượng tốt, 4 số 32-bit trạng thái), khởi tạo từ chuỗi/số bằng băm splitmix32.
 //   Phiên bản bộ sinh level: GEN_VERSION (đổi bộ sinh => tăng số này; hiện cạnh seed, ghi vào báo lỗi).
 
-const GEN_VERSION = 48;     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
+const GEN_VERSION = 49;     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
 
 function rngHash(x) {      // splitmix32: số nguyên 32-bit -> số nguyên 32-bit "trộn đều"
     x = (x + 0x9E3779B9) | 0;
@@ -1023,7 +1054,7 @@ const FIRE_VARIANTS = ['fire', 'fireA', 'fireB'];          // v0.93 (Dan): mỗi
 const SFX2 = {
     checkpoint(opts = {}) {          // v0.94 (Dan): nhạc lưu điểm hồi sinh — rải 2 nốt D5 → A5 (quãng 5 mở, "sạch" và dứt khoát)
         const t = this._now(), p = this._p(opts, 0.02);
-        const notes = [{ f: 587, delay: 0, amp: 0.15, dur: 0.18 }, { f: 880, delay: 0.05, amp: 0.17, dur: 0.24 }];
+        const notes = [{ f: 587, delay: 0, amp: 0.15, dur: 0.6 }, { f: 880, delay: 0.1, amp: 0.17, dur: 1.1 }];
         notes.forEach(({ f, delay, amp, dur }) => {
             const st = t + delay;
             const osc = this.ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = f * p;
@@ -1242,7 +1273,7 @@ const SND_DEFS = {
     st_shock:  [(ac, o, t, p) => { sndNoise(ac, o, t, { type: 'highpass', f: 3500, q: 0.7, dur: 0.14, vol: 0.4 }); sndTone(ac, o, t, { f: 1800 * p, f2: 200 * p, dur: 0.16, vol: 0.16, type: 'square', lp: 5000 }); sndTone(ac, o, t + 0.09, { f: 1400 * p, f2: 260 * p, dur: 0.1, vol: 0.1, type: 'square', lp: 4000 }); }, 0.4, 0.1, 3],
     st_tick:   [(ac, o, t, p) => { sndTone(ac, o, t, { f: 240 * p, f2: 110 * p, dur: 0.12, vol: 0.18, type: 'sawtooth', lp: 1200 }); sndNoise(ac, o, t, { f: 600, f2: 250, dur: 0.08, vol: 0.14 }); }, 0.2, 0.05, 1],
     // --- thế giới ---
-    bench:    [sx('checkpoint'), 0.5, 0.5, 2],          // v0.94: nhạc lưu điểm của Dan (2 nốt D5 → A5)
+    bench:    [sx('checkpoint'), 1.4, 0.5, 2],          // v0.94: nhạc lưu điểm của Dan (2 nốt D5 → A5)
     orb:      [(ac, o, t) => { [392, 523, 659, 784, 1047].forEach((f, i) => { sndTone(ac, o, t + i * 0.1, { f, dur: i === 4 ? 1.0 : 0.4, vol: 0.18, type: 'triangle' }); sndTone(ac, o, t + i * 0.1, { f: f / 2, dur: i === 4 ? 1.0 : 0.4, vol: 0.1 }); }); sndNoise(ac, o, t, { f: 400, f2: 3500, q: 1.2, dur: 0.5, vol: 0.15 }); }, 1.6, 0.5, 2],
     door:     [(ac, o, t) => { sndNoise(ac, o, t, { type: 'lowpass', f: 300, f2: 1200, dur: 0.18, vol: 0.3 }); }, 0.25, 0.3, 0],
     unlock:   [(ac, o, t) => { [523, 784, 1047].forEach((f, i) => sndTone(ac, o, t + i * 0.07, { f, dur: 0.35, vol: 0.14, type: 'triangle' })); sndNoise(ac, o, t, { f: 900, f2: 300, q: 1, dur: 0.18, vol: 0.12 }); }, 0.6, 0.5, 2],
@@ -1921,7 +1952,7 @@ function ambThunder(S, t, k, close) {          // k 0.55..1 độ mạnh; close 
 function ambTick(S, now, E) {
     const p = E.p, boss = !!E.boss, r = E.rainy;
     S.out.gain.setTargetAtTime(E.vol * (boss ? 0.4 : 1), now, 0.5);
-    S.rain.g.gain.setTargetAtTime(0.14 * Math.pow(r, 1.5), now, 0.8); S.rainH.g.gain.setTargetAtTime(0.05 * _asm(0.5, 1, r), now, 0.8); S.rain.f.frequency.setTargetAtTime(900 + 700 * r, now, 1.0);
+    S.rain.g.gain.setTargetAtTime(0.07 * Math.pow(r, 1.5), now, 0.8); S.rainH.g.gain.setTargetAtTime(0.025 * _asm(0.5, 1, r), now, 0.8); S.rain.f.frequency.setTargetAtTime(900 + 700 * r, now, 1.0);
     if (now >= S.gustT) { S.gustT = now + 2 + _ar() * 3.5; S.gustV = 0.55 + _ar() * 0.75; }
     const w = Math.min(1.35, (p.wind || 0) + 0.35 * r), wk = _asm(0.1, 1.3, w);
     S.wind.g.gain.setTargetAtTime(0.20 * wk * S.gustV, now, 1.2); S.wind.f.frequency.setTargetAtTime(300 + 500 * wk * S.gustV, now, 1.0);
@@ -1959,10 +1990,11 @@ function ambStep() {
     const ac = sndCtx, now = ac.currentTime;
     if (!AMB.S || AMB.S.ac !== ac) { try { AMB.S = ambBuild(ac, sndMaster); } catch (e) { AMB.S = null; return; } }
     const L = game.level; if (!L) return;
-    if (AMB.lv !== L) { AMB.lv = L; AMB.env = ambEnvFor(L); AMB.sampleT = 0; }
+    if (AMB.lv !== L) { AMB.lv = L; AMB.env = ambEnvFor(L); AMB.sampleT = 0; AMB.rainT0 = now; }
     if (now >= AMB.sampleT) { AMB.sampleT = now + 0.5; const n = ambNear(L, game.player); AMB.wk = n.wk; AMB.lk = n.lk; }
     const b = game.boss, E = AMB.env, vol = AMB.vol * (typeof SND.music === 'number' ? SND.music : 1);
-    ambTick(AMB.S, now, { p: E.p, rainy: E.rainy, wk: AMB.wk, lk: AMB.lk, boss: !!(b && b.alive && b.st !== 'sleep'), vol });
+    const rs = now - (AMB.rainT0 || 0), rainy = E.rainy * (rs < 45 ? 1 : Math.max(0, 1 - (rs - 45) / 15));          // v0.94 (Dan): mưa chỉ kéo dài tối đa 1 phút mỗi màn (45 s đầy, 15 s nhỏ dần rồi tạnh)
+    ambTick(AMB.S, now, { p: E.p, rainy, wk: AMB.wk, lk: AMB.lk, boss: !!(b && b.alive && b.st !== 'sleep'), vol });
 }
 
 // 05_assets — nạp ảnh. PNG được NHÚNG SẴN dạng base64 (khối ASSET_DATA bên dưới, do tools/gen_assets.py sinh từ assets/sprites/*.png)
@@ -1990,7 +2022,37 @@ const ASSET_DATA = {
     hero_a_slash: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAiCAYAAAAJUNaOAAAGq0lEQVR4Xu2cfWhVZRzHf3cud3dXm/4/ajQobc1qbthclP+k+I+J+6MFi+E/M5CxIsmBsxglLYPGCNOGIDHNXrA0WC8ShlQ2cDNjmZoJ1qJ0Irq5LV82T3yf7Xd57sM59+0855znjvOBeb0vuzy/3/P9vTzPec6IQkJCQkJCQkJCQkJCQkJCQkJCQkLmNBGd1pXcfZ/F3zc6/qftd/NnnN43jbloUy7htf/zdTvjcOvj4itXdpMli7wyWmb9lW/Rng96xPvrm5oT3jeZuWKT12LyCi/9n6dz0BD8yu5+8ZU9jUuFw58oKLOaCh+yqiIxWjtdRIcaX6Kv9n8sAkGeENO5cOW2GCLbI9sEe0wHvoaQWEwySE54/7MD31icoEzDK/9rrwAqa+5ZQMVTd+Iv/3Rzim719dOhvn6ieaa5OTW5bo8spPK8WNzgqmkSgbz6uWdTOyFAdPtfawDIGf2fS1dExof4x/Lz6NTErQDdlh1zzR4Z3ULyAj/872oRfObM79aiRQ/EvwMDvncqQmh3QG1BvhD/QGmUWnt20vC5YZofLaDOtnZa/PcEnb8zSaMRoqEbF1yNwyvmij0sJLQ/x367SCe/vhyfG7vEdHDehBGbFH7439UaAOLfvqs3vvODjA/xQ/gs/i+uX6OW+kqqrV4ixA/aOt8QTkYJxsLYRNDjw56N0WJhS0XRfNr73xjVttbQRyd+pEvDI3F7zv47IkwYussyLphZRLDlvXeGqPC7q8KWI2UxqvtyD63e3UnP7O2i06VFwgYkJSSxoPHL/1osRRBs29QunAyxAGT+3vFrtPvlZVTz+oe2/nyysFyIxrQtUYhmrtgCIXE15nlBUnqz/Wmq27KLDn7+bXxu1jc1izkMugL46X8tAQCcBv3L5PmkyWRh8f1UeTtiTCB4bQdXzDUrlokK6mWm9VNIuvDa/yquWiA7sMsD1N6yoaou4ePyc1QB0/DCDhb/Ky88H/FS/BARMv9b+SXxVnTHjTHaNDIoEpJTRUYyMgUv/G+HtgzEkcucsCbp05OHKTbQT9enLero2kkNWzsSxvDg+EXxfPnGV8WjCa2QF3Zgf/2PyzPrBIjfa5HJNqAlhZgwH1yNkXywjmH4uRwAQc2FF/5PhrbJUAcOZKc78cn+PtqwocXYAHBjh9/CZ/wWkU781pG2AACZDt408TsJKFUQ2NkRlPizmQfGlPnwU0faA4C30LAdigpQYpHY61eRtz+DKrdO8NYhSMeOY9uqafmWAWEHhI/f87PlscNPEekmU/8z2ehI65VgFSEempzJShaJfX8EBV7Hpfegt9vSJZUdgMUftPC5AiARwfdyACPdPRIrTzDb5ETEpPK/Gx1pqwBq1DrBVQHB4GbgXuDGhlPd9VZfwVoxLD8WusmwswN+t0tEYrydi6mi9YA2LWRLOv4fWFojvn7h8aNaNKRtG5TLDx+DYPjCGF8dBvIhLJPI1AZMRumjK+ImQPgmih+IqhuJJfgeV31NIh3/t/z6sxjy1ZqnxCPaTySfbO3Q2gLhTE/V7JVHFWzFIQhwtAB70nw8unbBEgvPTTkPZBfAvCctw5kIE7IjWmYhg2Iigs6kQkTRMnH8XIa3Q/H47sOPzYgI/wweF//ntYsd3NbZoTvg0/F/3sDRhM81bB7MVv96AwDnylWnM1wJTCaT8VfPCodmj36AoMXPpBKRCNrZJMT4KXInMvE/QOt2trSZOvYRratf5fi9ydBaAVTHAzV7wvGAM5JJ5Pr4QaYiYnpf3Bp4Fc7E/xD/9rbTVNE1c4ERFWxd/aqM1zHa1gAqmWR8tEWmkYvj57vUGE4y3H4CJCD8sM/xGbQQprSg8tiT8f1r58TbxW1vi0dUsGRtnBPaAkDNPDK8A2EyuT7+XE9AbvyPIMBaJJsg0BYAcvni7InMg50GzjZ2i0l+LZkD/CDXx+9GQCagw/8cBPI9KqnQEgB85hzI4geNhfbtjVyWQVA3xmDs8pl5tW3g8fOBMqBO1uap0cBbCB0CSiUWr9CpH96VQhCk0xJlvGhQQeZxcj7A3UfqTfFyS6T+rl9bork6bpVk4pHXMWoAy9uiCOBsjhG4wQ//y8fPta4BMHj+SSZ+oIqf6dj3vsj6aJHkqoF2CX96xI1zncjVcdsBW5KJH4nHCSQgbj3xiPsG/GhB/fa/XA2cfJFxBbBzFM75MPJ5HzUDARx/kMHdYPLv8tXJH27qu1E+F8dsV2n5tVRJx87vED2SDm57hM/R2nEQ4PO431mnz5ONn/FLN+ofb5D5H4QQwWo9RHhvAAAAAElFTkSuQmCC',
     hero_a_slashup: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAuCAYAAADXyhwkAAAFYUlEQVR4Xu2ab2hWVRzHf5vLPZu2FVT0YtRovamxkrlRpkQvwohAZqMymDz4ZgYiI4gw+gNmgUYUQwwbgYz5ZxXWEkYkvbAwM1rDGEOtFpYj6I/gppub27zxPY+/63nO7r3PPeeeu7U8H3i4e3a3+z33+/tzzrnPQ+RwOBwOh8PhcDgcDofD4XA4rHDq1E9e1IWKragsUAqZY4NDR76LvMx1HYBC5swF13UA5oq3dneFtqGSuRqEbSqX3unf1MjF34qCrs9/E3Q+ypQ4xNW/+9bb6Je//wq95IINADjc9qA4rm4nTza5LlPt/V7i0Z7ODnF+Q7Y17zzz4nPrAwMXl7j6USzoAIAz56bEcVVptVdTXO7fa/0M0ecHPqTHn30mrp9GJNU3CkDc8sMdhbUH26y58SaqmL7iX/bbyWm63HucPus9TrQoX+2Tg194UW3BhCj92ndfst+C4pZfWPknQU6AP/48R00zS4T5oyXFNDh2OcmlY2FT36gCmKTll4Q7povovXcGxCVWlJYI8/uqMtTWsYfO/nyWFmdKafuWV+ie4TGqmyqikUy1NzBxRvR8ZH/S/q+jDzAvsb6MlWUoyg8m8AuI8m95PonHoSDj64vKfT2Yf+jCedrcXEcrGu4T5oMt29+gnkVjhLkBk7ItdPVBmL52BdgsPxOE/kwu6wHM77p4nj544QFqfHm3+F3T2kf9Szet/ZUeLqvx54Gk/d9E/+2O/aG3qh0AoFN+avknATeP7FPN/3F8KPKyAzd4YhwD0t7BBFN90YKu6quLEu0WpFt+tssfYIUD1Al3Xf3KPF/l9wiCLUz017RvC5TXqgCT8pPL/7+AjQlYl6jdsFYAwmjcFt7jvr40RDdX3CU2SshCW/sCZGG/N04fnzhMw/v30YWZXIb3fPqlP8x1r26lk1176diu1+mhTa+JnbGt9b+OPi293e4cAHH04aAW0N3/zTUD6lf674NaACbEJ5sfM34cgJXQU8tW+3NA9/qWwBv96ECvbtLGIq7+aSkpVIwrQCcDOAMZGI+fdbMR1dNzdSJmYML95TWhEzHM37hxcyxDC2Gqz8vioOrXyj5eBcigDUStQk7ufJoGbsn6JshtwGQzhDFgFQZgPvQrPaKRgDvhtfexNxvyxlzbdlDrvmV09Lt3LJ8VU1VbeyC6QUAG1v3TSaerWsVgOOtNzAeqAQBBEOc8EqsuvEdwADZicuYNtjd7NgOgq69iFADTDOwtbRL6Ns0PgqsCweAA1K7KeoNHO7XvNyr7w1D1q5Y9QmHa2vsAFWQalz8ykDMPRwjjxRn3xGSPsfmAM5k1GN6YyY9C5EfTtkhDX2sSDip/4Bsi5Vff8kZxbvjEEXFMUvYyQebzxiiIHSWVtNNC9jNG+hEZoBUAkQGZai9sEJyJ/RNEDT98nwuA8iw+CXiiKP8/6wH5Z5Xivq+SyPqkoa/dgkwyQB24Kao2ULN/18RowYCYkoa+VgBMMyANojJeZVOmwvoQbOlrBSCNDIhLVBXxMjRN0tLXCkBY/y1EGhn4fyF2ANLKgLjI1cflj/4/dGXcD3DQaoh/l3QeSks/dgDSGkAcsmX3+qsf2XzQUhbc3/mBIZPkI8k09WMtQ5MMgDNQ1wBkbFjQQe2SxbO+hqLOBXJFYPee+wg/HnOlH1kBGESU+TAhDJjBBuCIDVGhNoDz/IoyH6jfAWK27ntfBButSa4WzEP4TCLK/vnQn/VsRDapkAnyUozNhvEwYUO2VXwOihbB5/D3ey+N0tHJ3NdDZIKCg0cbjPyQLUgXz3zyrjd1TQL/i4CAIG0wX/p5RszXIHRQsxjPoRCoMGNtY1v/X0cE2YJLcY00AAAAAElFTkSuQmCC',
     hero_a_throw: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAAC1UlEQVR4Xu2WP2gTYRjG36SxvaSa6C5azCBWuhSKjYKjOIljt9AlHYpkcNBBheCikzhIsQgijX/QRYcsnRUz1KAUEZFKNaK2UDQxiWmb9uT54nu8d9yX5C4Rl/6W43rpPc/753vvJdphhx3+M4Fe6cd2HzT5XaXKJ9f38m/k81CvDID59Li6nrpJphQZMYbMzyGT7t6bVc8nkynreU8MIDKIL69tUir7ikY2AxQPD1sZAeOnm+Ymk6l/lwHmzJ69FG1sW/cv1xu0kcvTs1yeqM+e864zIGv/dWWNzm4NKvFyKEhvqxttK9x1E8LAgUaARgMRJZYYCCnxhf0GpWdnqPihSP3GAF27eImOfKnS0naNSgGixfqy0g62tdiCZHjYRMTTRlQJHx3sp+zvMiXSY/So8IJWiqtKHLz/tqqui7tMSxz4zgAihziEAaKeq/ykO+eP0djVB662T4bjyoDEVw/oxN/UllomFOI4Ibj+KH9Uv+2qBOhu4Gy2idETNiPynjPwbi7rvwScAaZg1ujJ63mKLOTp15ZJmRszNHE5YzNxuPJd3R+fvmL7u+cecIoDGGiX/scPczQ1dc4S50np2QDwasIpLvFtAGcf4PwjAzGT1Pl2gm+AhJsP7Ise6q4JGZhgcRjhoYQrjiqQHyduQOA5Azz5OHodnJV4MEJP+6rKgBzbjOc5oCIxhkyOksFAwrHkwVSokxKXuO0JvuaATlzH9VBM7QRuzz2VAC+R4hytjBzcqpdtHyfc88fHiacMOCMHPA0ZiAE21w5PBiSdCgB8LXV0bEBXQ4CO90vHBnS1x4LBETrLIUukC6DtMcTSIY+afCnKkKBmeiHOmXCavdAoUanuvqprT0GrjgfYfpyLpyyF04TuJFgZkCnSpduWib9bL6cd4pn7t9XajaUjYTQHE4MR7YbKgFt95D9gokEAxmT3swBGrQQGGPwv+gQ8X28uopI/yW9TslQTsLkAAAAASUVORK5CYII=',
+    hero_alch_carry: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADsElEQVR4Xu2YTUgVURTHzxO1pzxePEty0YfWQiokCKIPA10FbVq0ySAQN7qIcNEiow+wNu6qRVoShOQHJVgEEYhCQpSLFkZEizAtJYxnSTakpDbxv3nkvHFm3puZOxX0fjC8NzNv3r3n/7/n3nOHKEuWLFmy/L9E/Ia+NrbF5Ge/Gu9t/4d/43T/XyA3SCf6G/epxw9dI1MGWREtNT/kmnS7o13dr6utT7mvA10GBBIAdIwdJaJhKo4dNGN529Q1g4iKiOhxz106fPyYjnht0WFAYAGY0nVHKPIzvnKeNJ7TwOASDQx2hyaADgN8CSCHX3L6IxXlVavgzZxZmp59HWrATvg1wJcAYPNihGpao0Q0QsWx/Sr4skQfXe1to4m3E5QfXUMtTecpOb2D8mkTVUQj5qv5cd+TrkSnAb46VJaoVSsAAgcIfvzzQ+o7s50qz92gB/cHVvpbV1uvRsiXhSfaVgMIAAOMgirVjjSgsX21AcbCKJUsTpKdAZ4FQOMISAY//6mVbp3eS3su2+f7hngV/aAJbQLoNMCTAE7Bv/w+6pr3ifhWlQY6RNBtQI6fGQszPLBOeDW7K1P+Tp4j+KC4GeA0+gDahgFy7mB8CQAgQmxuiHpH+mmyu4ve3OlU15H/fNRcaFbXn12/FDT2FHQa4CsFJBAhXQrc63lEDQ2n1GNBymIeAQwbUPhimL4tmdR8pU2JLik3ptTpgZMXbdv3JACwdgK4iaAreD9tM2598CUAliCAZQjBT+VuVMuMFewHmCDOS3Qb4LsQYiBCydyQOoUQ2A9AFFzHfkDn+i+HvtWAXYW/9yGSTAzwNAlyAcKNSxHUaFjeDKn7C+5Loy6UAcujDwZwcaQMyKtWzbiNPk8C8B9xIwwXRfjk71IMXYRhgCcBrM4DBMzLkh3libPq/YAOEcIwwJMA1kDYbRbCDbjHRxAx7EZfEAM8CWBtHFgbn0u22AoyM/tOHUEIwwBPAkik++koKG5aqRSDEIYBGQvglsdY9tKBSgybIl3oMiBjAaT63DiGP5Y7OGyXDvIaiidMYn4LorAMyEgA3n/LyY5zvyxxwtZU3JcuyaLED2EZ4CoAVHcLfn18p2MsSAsWCZ9BlsMwDVglAILmw0l1xvoWmGnuuqkcR3rIdEGq4PV5piPgTxiQshmyyzOUl4ys8+XwZqdR90vwEkI+y+Vx0njquAmTfUhngF0fMPJgAN5Fon2kKPcPvx+b6Uxp37EjblhdRC0OodwCy4S/YcAvoFaPTabtjEQAAAAASUVORK5CYII=',
+    hero_alch_climb: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADVUlEQVR4Xu2YTUgUYRjHn5VdW2XZWGvJQx9aB6mQIIg+DPQUdOnQpQ2CxYseIjx0yOgDti7eqkNaEoSUSgkWQQSikJfy0MGI6BCSpYSxW5AtrbTaxP/NR94dZ8edd95ZguYHy+7M7Mz7Pv//87wfQ+Tj4+Pj4+PzvxJQDXx9ZJvB937PfrR8Dv+n2PV/gaCbTox0HBC3H7lBhhxkY7jO+BQ06G5fr7jemmwruK4DXQa4EgD0fThORBMUjxw2IqEd4lyWiGqI6NngAzp68oSOeC3RYYBrAZi6Dcco8Du6cpzOvqTRsSUaHRvwTAAdBigJIKdfOvOZakItInijYp4y8289DbgYqgYoCQC2LgYo0R0mokmKRw6K4Otjw3R9qIdm3s9QZXgddXVepHRmF1XSFmoMB4w3C9PKg66MTgOUOlQfS4oZAIEDBD/99QkNn9tJTRdu0eNHoyv9bU22iQz5ln+ubTaAADAgW9Us2pEN6OhdbUA2P0W1i7NkZYBjAdA4ApKDX/jSTXfO7qd9V63rfVO0mX7RjDYBdBrgSIBiwb/+OWVb97HodlEGOkTQbUCFyoiFER6YB7zE3qaCx8nHCN4tdgYUyz6AtmGAPHYwSgIAiBDJjdPQ5AjNDvTTu3v3xXnUP38Sl1Li/IubV9zGXoBOA5RKQAYirFUCDwefUnv7GXGbm2UxZwDDBlS/mqAfSwalrvUI0WUasnPi8NDpy5btOxIAmDsB7ETQFbxK24xdH5QEwBQEMA0h+LngZjHNmMF+gHHjvIxuA5QXQgxEqM2Ni0MIgf0ARMF57Ad0zv9y6psN2FP9dx8iU4oBjgZBXoBw47IIIhuWN0Piet5+atSFMGA5+2AAL46EAaEW0Yxd9jkSgB/EjTC8KMI3/5bF0IUXBjgSwOw8QMA8LVnREDsv3g/oEMELAxwJYA6E3WYhyoFV9rkxwJEA5saBufFcusszQbwwwJEAMrL7a1EV71zrLyXhhQElC2BXx5j2yo0uA0oWQFafG0f6Y7pjh61qkc+5HQi9MqAkAXj/LQ92HFh97JSl+bguuyQvSlTwygBbAaC6XfAbo7uLxoKyYJHw7WY69NKAVQIgaP4UU50xvwVmUv23heMoD7lcUCp4fV5qBpTDgD97fCxLMWakMAAAAABJRU5ErkJggg==',
+    hero_alch_cling: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACn0lEQVR4Xu2WT0gUYRjGn7XVVIaNqZY69MfNg1BYEUVZgULgsUNReCikSx5CPASxggVLHfYWXZIkCA9WFHQQuohCnerQoYhOIVkbYewWZENKahPPB+/yzefMut+undofLLOzs8zzvH9ngBo1avzvxNYiARucnb7c54f3MfSe8h/zenwtDJCJgSPq2H0Lvi7S3tjif4r7uDc6oq5f6L0YuF61AUZG8dEPpzA2fgUN2I6U21XMiAfg7Il1Iv7vMiC0bDqJ2J9E8TzvvcDk1DImp+6HJruqDOi1zxe+YGN9lxL36+ZQmHtXVnWrakIa2LEUg9fUqcSSTocST7lPMDAyjNz7HBoa1yObHkK+sBve4jS2Ln3G24WZom5dWTYjYMQUp7CIz3wbR//pdnQc3KvESTp7A98Xn8GpbwUbUqfiDDB6GqAwYeQLX2/j7uXDOHQ9vN5bEp34jVygEa0NRAm/+TVdMpluYpeaENNAxSVgdxOz2XoOHAsY0c8pblJxBgRn/jkev55A86uX+LnsI3NzGD1XMwGdNm9WnR+9dE0d9UVV1RgSNuGZ/d3FEjw8fy60FI8ePA393boEdM+O1qGJfc2tkT1A8b6+/hXRE+sSEJl/yQDLMBvfpmbcRB+7sAeVdQbCYAZEnEZkMfHIUTXrrmPdA2b0gog62t25+bh8SmGdAUmjCAqykGQrktXEibWBlNvr6+IizL0g3+fz2cDzgc+LKKwM8OVCv5EIEv27DVYGzLQT2YgCo7cxZGUgKvrVaEqmqy+BmX4d7oFKKTsDUY3HUZMIzXLoJYoKoCwD7Hxz3EQs5Ybvfn0qiPkiIpQ0QNelxDcn9kRmnmURkzy2uYOhWVhhgKLyiUq7YL79CpmxOypilkffEyxV0jkeGOW/VO4kklFT5Q4AAAAASUVORK5CYII=',
+    hero_alch_dash: 'data:image/png;base64,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',
+    hero_alch_duck: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACp0lEQVR4Xu2VP2hTURjFT0pSEwmRBAsd7J+oWKxkKQjWCoqD7k5BCkEodhBxcLBFK3SyuKggLbhIoShYqC4uxUFBaQeRSHFQKa1GNJooWIMNtvrk3PSL9928JC8lm/ktLy/v5Z7zne/eL0CDBg0aNPjf8dQjgG3BDkvW+Z5757imvGM+99bDAJk9d0Bdj92ApYvE/J3We6+F25O31PNTidO253UzQCaXTgCYx/6Oq5bnT6hYWyQ3h/MDdxxrrWpAj5eYEerPM9mPiPiOgOJW0wqyK6+qBlzVAEkkl3GyHTge6XRcsH3dg/i4H0ASLcFeJR4Nz+D69ARSb1No9m/B2NAlZLLdaEYbYn6PtZBfVnulogFWF7s5p0QpblYfDSfU5guEexEAlPDS1ynMXNiLvovP8OD+IyVOXn/6goivG7+QwkL+30Z1dQoGju62eva0YngqpUzQGKNmtYTC+c/jePlzsWLk4dBOlQBNSDFNVZu0wYs3aVzpb7O9nskV0jF7He/ps72n31Ncx1UCRE+BMAEhuPoE08lZbH0+jx+/LYxem0B8ZNQm1JVLq/uDZy6rqyRQkwH+UFqhGyA0Ua0F9+4+xODg2c0ZEPRjx91PcoHDykDauwOt6x9KuspBJJgb2fUeMBfQxQWK0wQNiTH5TGFTnLhuAWH1TsImkkbQtwvf1h6XVK1TUwKsgBVJVUSOonyWe4qTrvCw+j8ocblBTQbMhUzxzVCTAb1yQWaBsJoZK0mmEjUZ0NGrr0agZajsK64NyNzX+87qc2uLRTNmGkS+K7cPXBkoJ06i4X7H6iisp6TPAtengK4riW8P7SsbLY+iVM9rudNQnANOEXGoCDxWXJQbUa9MRHjedfivp/+WrSq05Klt9tQ0iAr9P2Q70zL9zIXd8hf4tB9RdV6a1QAAAABJRU5ErkJggg==',
+    hero_alch_fall: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAEZElEQVR4Xu2Ye2hOYRzHf9PG6G16x0IZG6LUKLkNRRL5Ry7JaLWU7A9E7Z8tl3Ip+4cot7SSzIRCItGIkkukaaFcZ6/cNiuzWG5H3+f1O5732fM855y97zHiU6u97znP+X1/39/vuZyX6D//Nml/a/q9I4Md1v6+7bk2D77HdB2kJ2NAqkR0lgurJ4qhM3eSIydZkJnnNKY7dODgfnF9acnyhOsySRkAUiEiGQ4+m09ENygnMsWJZAwVj2ojomwiOnfkKM1evMj6+KQNAMmK6EpSYgCT12cOpX3Pcj83tV2n2ovfqPZiTeg5djZ2Sg1IFfLaAtRFTL7e1PySsjOmCeOdbq3U3HovkAyjAb9ThI6SugZaMohoVnae9vqgr2lUtCeTiOooJ1Ioks+PnqAdx/dS7FGMumf2oMryddTUPJK6Uy4VZKY59e0NHXaLbja7IOJ8S4PxFhZx+1aiiOrza2jrrgW0rWoJ5fS9L8bHReS5W5cXd66+oppG/V2oeFvPqSJxTr7h3WlataCACseOEsmD8sot1PLlMmFxxK6gwzoFIIKmDNAOFCIySAgAqABEbF8WF/Em9tYVsbRkubi/kWJeebstX7+y0KnX3M2dKcdtf7OHzpRNoHFr94kRc+fNcEfOnfeU+mVNNca1HoRM+zy+R0KqiCqI2Kxf8CDiM8WshxKVZdOHOWOG96eK6vg4U9y7H58YEwTRrCGiA3XxrVNg4fgM2lqc6z4cAvKjJc6IaIXbep+aKunmszIhwpQ8BHSWOw9fJ2gA2F2AuuAVjZmcEEb+jOR1WA0AYQuwUXXpsduh6qIMEyKfrtDxugv0ouYwPThULR516mSt+1e0fqP4/truTcYw1jUAAtCGGO0l4MO3+CIDAYwsYNKKDdZkuwrrGgDYAJ6LmPsyqILXHDx25CyVlq4Sw2wvJjrCju85BeQ2BNhWZLAdje4VP4PrSCZ5EHZ8zw5g5CmA/R8geXTA6/SB1P/riw75y3tv0MqrhBXfswP+FGCgzkQUgc1HIfCZi8PT1Wa+bwPCEhAEdIHcfQySFt3483VYGPDFfjZgfBsAwhAQBK4kV5nhAxkfjYFsho1ABoQhICi65PlgpAOHNts7SCADeG7JwPVkBHQ1gQxQneTWA/L/YRFG/EAGqO0H1Orj3SAsQ8KIH8gAtfX90jOn3O+tvvHbcSgQ4o/P3af9QcCXAWg920KCw5AKOkFeH0wC/IDYeAs13SvHZ7M5voxOgy8DdIufCVu1O2OCzni/1VeLAFQNngbAeXnuyXst2gsHDjlpdU3gLuDvISDIT2N8yGHk5P3EZ3CvToOnASZsWx/DC6IsgvFjgq3tbfHlgqlTQR4HDUYDEFwWoFaeyY8WG00CHFCuHDrG9CPlr+d2nPN+W1+H2jnctVoDVOfVwbp2NCEvUPKiiBOa+iNLKtCZpHYiFwYmdDDA1nZ+0e3XMl7TR6chaPV1GnTPSDAgFYFN6JJGF6ikogA6dAc0aPoB9xSaiEefc0QAAAAASUVORK5CYII=',
+    hero_alch_glide: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADZklEQVR4Xu2YTUhUURTHz8hoKg9ljKEWWQ4thMCK6MsKbCW0aVFEBoW0yUWIizYTVCC1mF20yZAghMg+oEUQgSjUKhctimgVojURxkxF9khptBfn2pnu3O57b+67562a32a+53/P/3zc+x5AjRo1atT4f0lEDb3V2eTRb7+577T/Q9/x+9wGLv2kzSImhvaKn/deA08Osquxw3uf9ODW2Kj4/HT/mYrPueDQtzIAGZs9AgDTkHYOeE79ZvGeCwBtAPBk/B4cOnGcK14ttvrWBhAdaw9D4ldL+XXBfQ6TUyswOXUnVgNs9SMZIPdfofgR2uoPiuC9ugUoLryJPWBO/UhDEBewcTkBblOPCDbtdIvgM6mHMDQ6Avm3eWhoXAO57AUoFLeAW5qB9csf4PXSXCQ9FU79uijpwoxj8Bg4BT/3+REMHu2C7p1bRfBINncFvpSeAs4GHIpccOobZwTdxwVg4AhmfunTdbh5bg/suqzv93UtPfAT8izbIbe+0QzwE3/1YyYwuRh8A7RDq1O5XZoSh36kFsAJj6gDr2/H/oqY5NdoAhec+kYtQBkgnMVn8ODlBDS/mIbvKx4MXx2BvovDFXF2uvPi9b6zl8SjzakwDn2jFlDBQXhse2+5Be6eOqlN8v3xx1zJr4BD36gFMHs41WVwEduaV0+AOjD4gYFB6+xT9XDrG7UAQnswgsFjG8wnN4h9XkXe+mxKX4Zb36gCdKAJFDwaQYcjfMTt0rbvw7DVN5oBqvsEBe1Iq8XTH10ccRGHvlEFUBlTwAQdiuhkiHAHL1cSp76RAdT3Mhg07cs6OlPnxf0BrirQBW+jb2SAGghlHpGfx0Uc+kYGqO4jqvuLhVxshsShb2SAWvrVgAY1pbOwu/0GWxtUW3HUnkH6VRmApZdJ9fsGgGcBAsUQrARqC6qSqCZE1SejgvRDDUBxv6krQ6WvvmdrQhR9OQk6E+REBJ4EdVmXhx06i/t9JvX3GoDcVqtCnhX0H2ha0F0iVV/VFrtSafVSXF2DrirVNaC+bwVUEzwx+/V2+bluN5DbgQYnzQY/glquGuSq1Q1m0tcaYCsuMvPnfiGhmkBG6AgzPwy/JFA7EGhC6AwgTPZ5+q5u2wr7Hw7zCV0SVBP+MYBzASphZwQ/7TDTdPglQV3Db7svU3uoEg10AAAAAElFTkSuQmCC',
+    hero_alch_hang: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAC10lEQVR4Xu2YPWgUQRiG3wuXmIQl4SKHFv7ksAgIURFFo0KsAjYWihhBCTamkJDC5gIqBC2uExsDQZA0xh+wEEQICWhlCgtFrCQYPZHInYJxMcEkrnwj3zG7TM6dnZnKfZq7vb27d97vb+YOSElJSUlJSUlJ+T/JJLXd7m0P+LPf/Q/K7+H3rHffBFv6WZNFTA0fFB/vu4lANtnd3Bl8zAa4MzEu7p8fuBC6bwsb+kYBICbenwAwi7x3JPAad4jXfAAdAJ5O3sexM6dt+VViqm8cAKZz43FkfrfVriv+C0zPrGF65q7TAJjqJwqA3H+V6md0NB4V5oOGRVQX3zo3bFM/0RCkBWxbzcBv6RVm816PMF/IPcLw+BjK78poat6AUvEyKtWd8FfmsHn1E94szyfSi2JTvyFJuijjZJ6Ms/n5r48xdLIbPft2CfNEsXQd31aegWYDDUVb2NTXzghFnxZAxgnK/PKXW7h96QD2X1P3+6a2XvxC2cp2aFtfawasJ/7651zd5JL5JmxFuxfeLnVxoZ+oBWjCE9GB17/3cMiTfE1BsIVNfa0W4Aww3tJzPHw1hdaXs/ixFmD0xhj6r4yGfHb5C+L60MWr4tHkVOhCX6sFotAgPLWnr9YC986dVSb5weQTW8kPYUNfqwUoezTVZWgRu1v/ngBVkPnBwSHj7HP12NbXagGC92CCzFMbLGS3iH0+irz1mZS+jG19rQpQQUFg8xQIPhzRI22Xpn3/L0z1tWZANPoMm/ak1dLpj38c2cKFvlYFcBmzYYYPRXwyJGyblyvJpr5WALjvZcg078squnIj4v8BW1WgMm+irxWAqBHOPCE/d4ULfa0ARKNPRKO/VCk5C4gLfa0AREs/Li35Yty3xkan4urpxw5AvT6ms4BrXOnHDoBcfhx9Kn/a7jjCqmHEr5kOQlf6sQJQyA3Uprhsnijk1Od/Mi6XqckfIi71/wAeLukxHgEf6wAAAABJRU5ErkJggg==',
+    hero_alch_hurt: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAADG0lEQVR4Xu2WT2gTQRTGX2pa0xJaUglWMDVBsSgEJeDfFioqihcPXoxSCILYg4gHQVv8A8GDvakgbZWCBKyChSoFLyUVBaEeRCLiRS1GIxJJFKzBFtu68m14cXYym1mp4CU/KE12JvO+9743M0tUpUqV/4zLSfwm7yqD530rvFf+hufYjdvhth2RGD+51Xyy5yoZYpCwJ2h8cBt0M3HDHD8SO2YZ1+GoAgAZQkTi3QEaHjtNdRQgb+1qy/q7dy2hfYcOQoTjSjiugExw2X5y/WosPc4VJik5sUDJidu6pC2YAkSPgeyjOJ7Lf6Lm2h1mcKNmmvLTr/4qoEypArFUmg63Eu1tDioXbJ13UbTfQ0Qp8nu3mcFDvlG6MjJAmTcZqvMspb6ec5TLrzftCXtcxsvZtNbi0gRkGb42SZGOFZTYGCyrQsgXM3cCggMISH8Zo9Ez66j97CDdv5csCUcPoEpf5x5pe8Gi0G674TkWFIPPfu6noVNbaNNFtefLGzvpJ2W0AixNCO+P7lxjRNa2UO+t4nazC/7ix1RF7xEcVjR5rdtWpka1yvPXWbrUFbAMocuB3HTRSLtlnvgdInQom+RPFYoLoPyMd+YxjaTGqeHZU/q+YFD88gBFz8ctcdoKWfP79uMXlLtKxLZLIQITi3ZkLCIAhOhsuHvnAXV3n6goQmkBGHr41iIOHS1SqO+kDQ3Wk1DESXCg3afizsBZABAcFci6V1LL/Mcym3E3MLrLSStABGJEEWwFgBjcDRAGgcDJOeD4LlAF52qYQgSlhbmpsovKDtsekOFScnYMH074z5/lW7ISjgWI2YrB+XxQ0ebrNd8X/pkA+CvDWTP1/p7SPIjD90oiFlUBIFdgJtdnPpeFLboHdJlXAlVYtIBKZVRZ4xTHFojdz+VF+bHlOENVQ/IzuwQcCeCXEdFbXjjk61Imi3GxD8TTUUQrQLeN8GYkbkuuFGzhhoQY3KibA4OGvJ5SACbxn13pGfnNmIkPXzezhkWiZbDL7+0onQ3Ku0CVNc56RjzzxTKzLfLNiTcj8bcQVdzCT1y/AWIxZJrXx2w5AAAAAElFTkSuQmCC',
+    hero_alch_idle: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAiCAYAAACX6tEuAAAEu0lEQVR4Xu1ab2hVZRz+XdlsymVx54YT/LNVNDDWh1HWTFiIJH0RbURLBhdB9EOJQV8mlbAK3JcywWbJQKT9IYUKUWQyo0BqoMhkqKCtrrtSW3cJ6SWlbZ143svv+t5zzzn3vvecc1+z94HLds+f+5z393ue3/vvEBkYGBgYGBgYGBgY/L8QKbW5j0ZXWXzvn+kbjr/D17id9wPd/A8LKvw05Mzu58XtLx0gS05yc1WDNVlh0ZGjh8X5bfEdOeeDgk5+3QIMit+XAICjv7xCRKNUF11nRSsfF8fSRFRDRKeHvqSXX38tqHw7Qie/TgECQfD7FgCjYckmivxTnf2eSv9II2fnaeTsYKgC0M2vU4BBGNBRAHJ5Aex9uHw+NfMr1VS+KJJvLbhNM7cv+064bv5S8F81gGsFiI8laOtKoo01DY7xWDkXoY7eKiIao7poq0h+Y+wr+uT4IUpeT9LCqkeop+tdSs2spoW0gpqrItb4vUTRg06d/LoFWE7+BW5qv3juNxqcdD4Lx6cXtYnEc/ITf5ygXe3N1PrM0yL5QFfPh3Rr9jvC2ACDQhXo5ocAh28lXB+ZDXDhfK4B+offon0H2+mjvq1UV3tF3J8xQINSAMrF71gBUPLH32y1xh2az+pE4gE4/950L518+zl69p3PxLHNWzZk79y85WdaWt2mknvt/AAESOuWOT63MEAl5cQABvh4e8YA08nfswbYFt8hrp+kpFIMysXvWZK3r3/Canmynvb0J0VSkHw0xp78S39NeDYuVv2YcMHflPmdYiOhk99tmuUWgz4Y4APnAS8MoNr2cvG7dgGMi9emaF/nipycYYQP2Ad8HS0v5Fwnf0cASoEufgj11TWVou2cDC8DuCUfQNthAHvf7oVy8XsKoO/bn7JutT88RBC9+z0dHztDNwcH6OoX/aI933w9kv10vNctjv/w6ful5F47v+gKHnIDFCzHKMMIBHcF6AJkQASFuoBjQ6do585d4jaVLgB4EPi57YDcfjbA4gujdGfeou79h4ToZTSlp8TXtW/sLbn9YfIXFAAnwe0hAC8R+Ek+Qx4L2JMQNv+DIMAwDViUAAC5C8AUCMBUEMmfqlhO9XM388q8PPVTdb4dOvl1CjBsAxYtAAYSIQuAHQhACJjzQxQQB4B1AL/Jl2H4g42/0l6AU/C5EgghSJlKz04IMQQJw5+ffL/xLzgNlMFOZnczeF2AVwaFGAJOPmD4M2soQcZfSQBu5Lwu4ISm2B7lZVAvODXe8GfWZUqJv5IA7OvZ7HxA/j8sGP7c/YQg4q8kALv7ALv77qZ6QhOE4c/fU/EbfyUByFBx/KK6rsCLguHPbMYVA6/4Fy0Ar+1MTPvChuF33072E/+iBSCXX3Yfyg+me6wwp8EYH1PdD7fD8N8v/0HGvygBNMbi2ZcZZHKgMdbpaH4kXi7Tqi+EyDD84cXfUwBwrVfwa6ufcq38KEvsfvwtZTpo+MOPf54AEHT+uJVdhv0tYEb3wOfC8ege5IqBrgKvj3uNFwx/eeOfsxfg1E9jfZ8hr/PL5Z2djnV/GXgJQr4XggBS6XOOexCGP3+gF3b8lTeDALuLsROIB3VLbJDQya277YwgY/AvEIBI+tC6+EIAAAAASUVORK5CYII=',
+    hero_alch_jump: 'data:image/png;base64,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',
+    hero_alch_pick: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACmklEQVR4Xu2WS2gTURSGT+o0fRgiUYsuqjYWFJRqFz4aN3XVtSiKi0rppl2U0kVBs1Ch6CI7cWOlCFJ8oiBScNOVrnThQhFxIdW2kdKSWGkcbbFJRv5bz3AyvVNmkuycDy4zk5uZ/z/nnntmiAICAgIC/ndC1UjAlsgei5+zZM5on8n/cc4b1TAAJoc61LHrJllSpK2+xZo1LLo7Pqbme3v6SuYrzgAig/j419P0YOIi7ds2QKFi1I4rY762zxdXX1Y3AzL1mewcba09qcStmhxlcx89JbeiDMDA7nyIzIZOJdYUSSjxeOwZDY2NUvpzmsL1dZRKXqZM9gCZq1O0M/+NPqxM27o1nmy6gIghDmEWn/4+QYNn2ihx5JASB8nUdZX+SG0roR4kZWcA0cMAhAEiX1m4RXeGj9PRaw+1lndEO+kPpV13iicgHI/1qHFs1211RKUXiwU1zrV32OfyGvfxqCgDHDkTWX5FT99NUuPbN/SzYNHIjVE6f2WkJJj95ry6PjFwVR3lNq24D6AGzrZ30fvfU+rhjy90azP55NEL7e++ixDuUVASmDjc2KoVABDv7x9cFz0oqwh5+wGIYxnmjWa1xZzIqte1ad8GnOJusClsPV0HZMpaAo5cwtuRewKAOCO7psS3AWw77nyAhdHz+Xw5kyrpjuiWpwqbtSZ8GcB+10UtjbiRqDO0JnwZcItcguidhhqaknQpv0TPN/1Sc7IheTbgjF6CgvPCj9wXe/guQrfo8YZDhEC++xn+DXUQi+6lT/fu+y9CFB7fJYsOxGP6zieLEnA/QDuGEca1FSPlG6359ujBdV8+zqWQGUEGYML1m1C3xkivjUlrAv/e/1Rcm2ERNJtFEU7Yca9pNFNY3TFTsgR/AXSnQ7zHgnvYAAAAAElFTkSuQmCC',
+    hero_alch_run: 'data:image/png;base64,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',
+    hero_alch_sit: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAD00lEQVR4Xu2XXUgUURTHz5praywbqy5ZlK0VBYU9RGWGYJQQvYQWUUmwCKJRmVAQShH08bAv1VNmIpSkBkUUUgmiUSDlQ4Qh1EOa5gpl2wfZ0opfE/+7c4fZ2ZnZ2S8Imh8MOzsf955z/ueec4fIxMTExMTExMTExMTE5P/DEq/Li+0rBf7ur8An1XH4M1r3/wXSEzGiu24btY7so/bOM0IGrSC7dXXYcKW7FtCewwep0lMtJDsIyRIgoQDIcWfvJcu8Q7rkD7yint456untSCTGuiRDANUAILqegVGqyCPaneWOSGHcz5u10KFGGxE9pXXOBhJoktzZt6mu+Qb5Pvgow1ZB3vpz5P+2npAdBTaLMDg1GveSi0a8AqRpDfym7zN1jKnfzbLuoEBmCbnsRewQ0iZp9Hsn1e4voKLNGynDtpC9WO+9TD9mnrOlMZYulYyoIMAnhwShf1oQ5KnOkQvQ1RUSAECAaw8K6ZR3GV1pqSBXzjt2PSSAW9UA1QzAeh08USQMqpjKDYLjAM5PTTTS49OFtOVsE7tWVl4qvVlW/pGWOEqiOq0EAlDxUtX3mABWCrMBAlytCgkw4fsqCVDpqWbPj5FPdSzdlKzauYZFbdPaXDrW1GeB8xgMIABY5/bgC3r7Z1jXQadjlXTfaDHUKnLcBqUALRDgknq9gQDT5FOdW3MJgJZnQ1KAlKnInb8/0E3jHe30/k4bcxTHo4c90jmuv7x+UTdAaiBQB7ZaCUfj0WImhFwAABuQfRBAy3kA5/n7yrkMFSVkArKgoS00EM8Cjl4W3Lv7hGpqatmjRtWXozc35oUAi1730+85gbYfP89evdXazFIf8ODze0obDAVAGT10AIBCCCO+pC+n3NnxCCHlhS8e5zmpFMBwADi8AvMAAAQBIBCo+PiP4AB0gUScl8/Lz5MpQMwbIUzOneNkuurZeswXO0NQDEgy4UFU1iLYkqshQJYBAXSLoBpK53k30AI9WqsHxwMXQG4HBMD/fOcRqTsYJaYAKB3hrQjIz1NJsgWIKQDyybnDSH05Qb83IiBQKBmkQgDDAdBLY14EU00qBDBUBPOdHiEgeqdUnv0Xix/bHInP4ZzXB/yieCXSDSAAt0EJE0C0IVZ0A8AmFduZfJ3ztM9xbCCaV58SRvllwUAxDM564/oiTKUAEUsATvMjWsopv/85F9pvsk1QYGY4LGNQC1z20LbWCLADzvNnldnHBNCACSDWJ/xqdaOYN0KhTAh3ArtAbIL8gb64xpMjrzXRBJB3Hu4sHIcA2ArjMxitkd/D8yM/28Ls/AsMEA+0fDYrSgAAAABJRU5ErkJggg==',
+    hero_alch_throw: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAAC7ElEQVR4Xu2WO2hTYRiG39SkJhIiqQYdvCQ6FCsugmjt0ILg6OAg3YqLHUQ6CFrRCsHBbuJisQhSbBUUqgguJQULig4OShEpUluNaDXR0hpMsJcj7x+/+OckJ8k5ibjkWQ7n+r7f5f/OD9SpU+c/46qV/nr/dkO+tZB6X/S78ox+310rA2Ss54A6Hr4KQxfZ4w0bH9wGbg4NqvvHu07k7tfEACOj+NDMUYw8PINGbEUk2JHLSArAsUNrRPzfZUAIbzgC12ogd55IPUNsfAWx8dsFCa86A3rtE8lPaPJ0KHGjYRHJxddlK1x1E9LAtmUXUr52JRbytyrxSHAUPYMDiL+No9G7Fv29F5BItiC1NI3Nyx8xmZlV2lVlIBLsUnX2BVvhA5TwzLdhjJ7dhbbzT/HgfkyJk6nPX9HkacEvxDGZ+btKHGeAkTPdjJhQPPPlGm6c3o99lwprTTYF2pUBHUcZsBJ/9XO6ZM0pzhXC4/ziO/VsQ8k3ysDuJuZm69zblvemfi4ZeHNrWD3jqASSAcGfnsC9l2NY9+I5fqwYiF4ZQGdfNM9Ec2pOnR88eTHvum0DZnFCA+XSf/fOI3R3n8qJy6S0bYDYNWEW13FsgGufcP0zA3PuLWp9m+E/QEeajwQDO6prQoEmRJxGZCjxyKVK9J+TNKCjJpTJJ9FbIVnxe3bi+9JjZUAf24LtOaAi8YYNiVLgQOKylMGUTk8ocZ1i+wRHc8BK3Irm4Dm1Jyh231YT8iO6uESrR07Sif68nxPP5edjxlYGzJETmYYCxYiYK4ctAzqVChBfqNfSR8UGrGpI2PFOqdiAVe25wZAIzeXQS2QVQNllKJsOva4ixDKEkN0P8Jpkgma5QZF3puYvY0HbhOhYZoCOS4lvDOy2zDqNiEkeSy3DXAb0FDECbqWLRZ27tpq9L0IUjY5c554/uy3/M5gEjmhgtsC0mgPF6pN9IQsnGgVoTO9+Eeeo1aEB/V32Sdbsk4K58xtIWlPY6tbBzQAAAABJRU5ErkJggg==',
     hero_dash: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAhCAYAAAC4JqlRAAAD1ElEQVR4nK2XT2gbRxTGf2sv1eoPWufUS0CivqWoBdHSqMmpuDn0tL6ZxL0XfAgUgw9OD6bNwaE95GCwjyG2ySVB9FBICj2ENqJgDMHQm4oFvZcVsqSFlaYHeYbZ3VmtlPoD452dt/N97817b0YWM6DmVAXA2fDc0sc65Ny8yPzodq4q1vNl9oZd3Eta34INp6xsDgddfOvdRBg/qDlV8XVpiXI4VgTLCwU138jZtIKQ9rjP78G7eS6xkEUOE48lPiy+B3Al5AC26aVO3gpC6tbE+0bOhnDM4aB7JeQQi0DNqQpJloY0crdUSSSmySZuZ4zAvHBLFbHtXKNsu2Ir9PF7HaPAXdsF4BvtvYrALN5DNB906NsW93LaODMCMuPVxymBbgUhjZzNru1O7PM3RHPxQs17o6KRba4t0IXo8EZFo2gZcskkRUYE1JyqcAX4Bm/iCwKs58v4VlVkNZ1GzlbNS26bbF7eqMiTS7sFINJksrxtBeHUbZA4HHQBeD1os3N0wM7RgXqnb41KwrpV4FT0UxfUI7K8UDCeB9LmcNDlp83PeNtvA+CtruCtrvB60FYiEgJgEqJZRdStArdzVVXXcq4VhPgWfPr9cVwfMNkOb1RUlZBoxRtOmfZ49kjEcSr6yvM41uq3eNtvKyfdUkXYZ8Nzi8seoCda/ACSc42cnShNib1hNLxr9VusfbdjFLNru2yF/qQMz4bnVj1/I7Kn6/lywnvT2PT+n+MjAJ6d/qHG1+/ew1tdUXN7wy7Y2hboe98KwoTHafBGRZXVG04ZV8Aba4nrd+8pG/35JP8+MMkhv9exIrWc1o6nCZBCpQN1q0B73Ofb4wO81ZWI7ceFZVwxyZ0ng78sMFxIZj0T0hCvIr0R1a2CipY8sFK7manO48L0yKTlhi5Kft9cvMgWYIKs3UiPN5DrVdLI2WyFfuK8kCKmHkaS0O91LP0INS2ok2ehkbMhKNIsVUSiEcXx6v5NJeTNw0+yFybaM9KamHzOFADw58mvAHy+fcKr+zeB6IGil6pOLu30UpU20m5qvPxex7rzGMHjL9n+8QcA7mw+iNhMS8RWEMIiCftWEKocmCkCkvzh5gN++a0JwL/dv2kuXrAV+hGPdFHS+zj0KshMQp3c73Wsr77wBMC18gcJez0astXCpAzllSzt0mokf7T/VDzaf5q4Srulinh29LPQ/7ulithf+kjUnKqoOVUxHo/EeDwSbqkiak5VmK7k/5vcLVXEi+cvI2P5pwuYiVTHi+cvjeS6CP3ZZKeLmFvIXOHKWCdLwJX8vpsmQD6nJd5/xfs1AtyqSWMAAAAASUVORK5CYII=',
+    hero_hunt_carry: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAD1UlEQVR4Xu2YW0gUURjHv1VxNy+7bLj2ZpsREWg3skzfg5B6yAetF/FFH0IMehG6gGXgWyREJlFEqd3UlCSweg3phqHgQ6SmQZmZ7LpdjGzif7YjZ8cz41wraH8w7OzMzp7z/f/nO+c7Q5QkSZIkSf5fPFZDD2StVfizkdgb6f/w32jd/xdIs9OJgfpi9viec6SIQRb6wspkmkJXrrax+9VVNQn3ncApA2wJAFo2pLLPQLFf8eans/NpipGXiO533qS9ByuciFeKEwbYFoCTWxYiJXspKyj6JEq96X3U29VHRJmuiWDXAEsCiMNv9t0sefd/JiXbT555D0VGI64Fq4dVAywJAPJ+eGjf+CN27t8ZD35bV4jq2+7Q1KspSvd5qbnhOE0UjRMVzFHhUFgZ/jZhedIVcdKAFCt2wfHpAzEWOA/+Q/8M1ZUX0u4dm1nwoKG5iRb6MglzAyZFJ+EGvBh+nmBAz5EH1FJ2mVrL2yn8dF28SRjgC0s7YNoRqA8BEDiA874zi3Tp6C4qOt0hjTFYEiQaCTq2HOYeymHBiH2AAffKKqj0WCvd7Xm41I/qqhpmGIyQLcemBNAK/uWX17rmBv35zAUnRHDaAEspgBkeqCe8yu2lCUIkfB8J2s4APQO0Rh8DbRfMJcwdHEsCAIiwpjuLbg8N0NuOdhq9dp1dx/DjR+WJRnb98flTtoMXcdIASykgAhFWSoFbnf1UW1sXHzUaZbMR+AjgcAMyng3S/KJCjWcvMNFFNsbes68lh09K2zclAFB3AuiJ4FTwVtrm6PXBkgBYggCWQgQ/ufUT5Q2tXmaiuPTZcV7EaQMsF0IciJDXHQ8eQmDNhyi4jmpAa/mxA/5fbcCWjPWWDDAlANQX3RdFAF6Kb4bAwth3Jobb2DXA1CrAhzEaFeEFCa8MmRguBK9nABtxQpswwAimBODDTh08X5ZkhJpSNctQs7hhgCkB1PU0dx6I5zLgHj/MBi4iG312DDAlgLpxoG58VcNPqSBz0TF22MENA0wJIMt7I3xtTlmqFO3ghgGGBdDaTgK+LOmBSoxtihxipZQT0TPAsACi+rxxDH/MtmhAlg7iNSyfmMSsFkRuGWBIAL7/Fic7nvuhyhypp7gvumT3hYhbBugKANX1gg9sCmgOaKQFFwmfdpZDNw1YJgCC5oeW6hz1W2BOY/tF5jjSQ0wXpApenxudBv6EAQmbIVmeob7niHW+OLy506j7E8BboN/gWV6dRQajmpswsQ8rGSDrA0YeDMCrMLSPFOX9w+9nbnxMaF+zI3qoXcROEELpBWaEv2HALzENjAVk+/euAAAAAElFTkSuQmCC',
+    hero_hunt_climb: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADdElEQVR4Xu2YW0gUYRTHz6a4m5ddNlx7s82ICLQbWabvQUg95IPWi/iiDyEGvQhdwDLwLRIikyiiVLqoKUlg9RrRDUPBhyhNg7IwUbeLkU38v+XIt+PMNFcJmh8sOzuzu993/v9zvvPNEPn4+Pj4+Pj8rwTsBh7JXqfwb2cT7zT/h7+jd/1fIN3JJAYbSsTP954nRQ6yKBRXJtIVunqtXVyvqa5Nue4GbhngSADQujFNvEdKwkqwIEMcT1GCgkR0v+sm7TtU6Ua8mrhhgGMBmLzyGCk5S1VBc0/nqC+jn/q6+4koyzMRnBpgSwA5/aY/TFPwwFdScsIUmA/Q7OisZ8EaYdcAWwKA/F8B2j/2SByHdyWD394do4b2OzT5epIyQkFqaTxB48VjRIUzVDQUV4Z/jNtedGXcNGCVHbvg+NTBhAicg/808JnqK4poz84tInjQ2NJMC/1ZhLUBi6KbsAEvh1+kGNB79AG1ll+htooOij9bnxwSBoTimhOw7AjUhwAIHMD50NlFunxsNxWf6dSMMVoaJRqJutYO8w7nimDkOcCAe+WVVHa8je72PlyaR011rTAMRmi1Y0sC6AX/6tsbQ3Oj4QLhghsiuG2ArRLACg/UC17VjrIUIVI+j0QdV4CRAXrZJ8DYhTMpawdjSwAAEdb2ZNPtoUF639lBo9dviPNIP35VnWwS5x9fOO04eBk3DbBVAjIQ4W8lcKtrgOrq6pNZo7NtNgNnAMMGZD5/QvOLCjWduyhEl9mU+Cg+lh45pTm+JQGAehLASAS3grczNmM0B1sCoAUBtEIEP7HtC+UPrVlmotz6nDgv47YBtjdCDETI70kGDyHQ8yEKzmM3oNd+nID/VxuwNXODLQMsCQD1ZfdlEUCQkjdDYOHtTyGG1zg1wFIX4DTGoDK8IeGdoRDDg+CNDBAZJ40JA8xgSQBOO3Xw3Ja0iDWn6W5DreKFAZYEUO+n2XkgH3uJVvY5McCSAOrBgXrw1Y2/PRPECwMsCaBV92b43mJ7mBS8MMD0zPRuJwG3pZXESskZGWBaAFl9Hhzpj9WWB9CqRT5nJKAZvDLAlAB8/y0vdhxYrCpXc/64Lrvk9IGIVwYYCgDVjYKPbI7omoeyYJHw7qQdemnAMgEQNL/0VGfUT4GZpo5LwnGUh1wuKBU8PjeT8mAlDPgDTH4mAzRmMkAAAAAASUVORK5CYII=',
+    hero_hunt_cling: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACtklEQVR4Xu2WS2gTURiFT2xJYh8JkSTuqkREhFarWK11343QhaIEUcSNXWjpwk3ABwQrZCe6KRZBXPhAqdBgN90LIi4qFlyIWtuFVqmSNj5arCNnwh/v3MykuUldmQ/CzOQmc87/uP8MUKdOnf8d31okINyyyZL75PLvXe8pv9HXG9fCAJkY7LaPvddgqSIdwc3WTKOFW7dH7PVTJ0871ms2wMgofn1rAx6ffQK0f0U8ES1mZA55HF3uE/F/lwEhfjAGq7Woj4VnCxjzZzE2mgXQXJLwmjKg1n7+wzwCfd9gtYbgW/Qh9ypXUXVrakIaaPvlw9yhvC0W2lsQ3zUaw+DIMGZfz8IfDCCTuoDprndYeruMtskNePlzuqi7riKbHjBiilNYxD+Nf8bA4Q7s37PDFiepzBCWss0IJPxgQ6pUnQFGTwMUJow8eGUFN8/tQ9flu66WIz0RYCriaETjHvgr3MCkF4VffH8DnHfVtYmEEkB76XrVJWB3E73ZkrsPOFQc11OREgfGJZAMCBsfteDh5ASanj/F4oqF9NVhJC+mHULb8h/t654zlwqmlWlpXAIdNuGRzt5CCQDcP3HctQ4P7o27fm9cArpnR6vQxM6mLZ4NQPH+/oGS6O3m9fxXGWT/E4qzDDOdX+w9rqNuO7cHlXEG3KAJEacRGUw8cqvqdVcx7gE9ekFEA/AXv+Pk4/Aph3EGJI0iKMhAkqlIVhMnxgbix6KWKi7CnAtyvj712/F84PPCCyMDfLlQbySCRD03wciAnnYiE1Fg9CaGjAx4Rb8aPzLeMhUb0NOvwjlQLRUb8Go8bjWJUC+HWiKvACoywM7Xt5uIxZJR1+DVXUH0FxGhrAG6Lice3h72zDzLIiZ5jA01uGahxABF5eOVdkF/+xXSd27YEbM86pxgqcLdIcdW/gOutCkdE7STugAAAABJRU5ErkJggg==',
+    hero_hunt_dash: 'data:image/png;base64,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',
+    hero_hunt_duck: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACrUlEQVR4Xu2VT0gUYRjGn1Vxt9RdNtyCCA1DMkhQodC6RXiMCILtH9FFggQ9eqhAKthbFIHgoT8nl8IOQRfpWCQSZSRlRba6kGlZzO6aKdnE8+1+wzfj7Oyws7f2d5mdnd3ved5nvvf9gDJlypQp87/jK0UAodpGXa6jZWZt15S/sT6vKoUBMtbXKa7dN6CrIq2BnfpclY4794bF83Nne0zPS2aA3GyuFNfmK7t0vS4bygoA/0QK50dP5WqtMdXs2YAa/9L8EvxHlqHXBeFL+6C90woG7HkP0EDDHx8WjmWEWHB/Vrx9NIK+4SEkPyZRHfAjNnARiX2fsTqzhobJLXjzOyG0KwpadGDryXqdFa/EKoRwaE8I3+LfcRuHEH/5DAvJRSFO3s8vZleaChvipKgEWDWFKSoWSfsQuLaO178+OdYTDjYBe38KE3KjekogNZESgtZ3He04aDJiup8Km555SkCy7WEtHkyOYfOLcaTXdQxeH0L00qBJaHfmq7g/cOFy1nRuXnjuAsINeLyt23gF8TOnbV/F/ZHHG74vKgEid780wBTm2n6IHW6Fg0jiaRLKnm/dsQwt20VG+xGK04S/qVoYkq2JRzUbhCWuEqDw7JMT+DI9jZ7YU2gJZXEbZBo0suogThy7gMJv7x4V+VG8q/cVPnSYq5atSPhZ3lOcRK5WivPAzmhBA2R7S4vxX6bAiiRW8WJwTIAbpvHwCJ7fahdr8zMHkIqcBZJNA3+NNNxQsA1poqsXIkJVXK2+EBzV6Lf/latJSBN24qyeh4s0Y02DyO/y7QNXBnjoWN+7XDgSrbctjc/VlNRZoOJogK6dxHn65YOtKE3ymq8bjDlgFxGHikQdLmplUkTtDgFPvRxiHsysiTttPGWaPa4GkUqoM2jqaTn9rAu75R/l7x3ctlz9lQAAAABJRU5ErkJggg==',
+    hero_hunt_fall: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAEMElEQVR4Xu2YW0hUURSGlxqOZY5MOAYRZpOBD1kaWamvIYTUQxJpFOKLPqQk9CJ0gcpgHksKIqKIUruZKUlg9VpQVIZCdNPSICosvFVGdeLfsqY9Z/a5zJkzStQHgjNzzl7/+vfaa+9ziP7zb5Pwt6afPn+JxtpHJ94o8+BrjH4Hc2IxwC0RTunZvV7cWnqMNDnJvJRsbWiORmfPnRK/V1fVhP0uE5MBwA0RsdC8PEncnr7eq3kCyeL/9zRBHiK62XaJNlZuMx0+ZgNArCJmE1cMYDLL/KSlhZYmjd0fo87kLups7yKi1Ljm6TS2qwbMFHLvGXk3Qp7Nk6SleSlhPIFGn45GJcOxAW6KcELWjwTaNHhH3OpdO518Qbufdp+6SsMvhik5xUPBxn30unCQaMVnyuvN1vq+vY7YLRKdBGdYxKO+h2EiOhpuUXPZGTpZ3kLZD5ZOXw4RKdl/1kcMYMbfb5kQMTn5D90fqb48j4rWrBTJg8ZgE011pRKaI3YFFY7PAZnbM8SIEAAwAxBxo2wblew9Sdc7bofiVVfVCNEQY7Yn2wGVh7HkuClHftLpPeuo8HCrcghfsY+o36eM7cgAt0XYxSjuky+vTIfweQOiAlUmRLUEIAAz729KCpXe3MZf9GzvcyHCcAYgwEWwuwB9w6tYXRIWJexzv0+pICoDGDcFOAUaFl6bT1d6e+htaws9PX9BDIWlx38V+w+K7++eOGQYxvEuoBcw/nO6ychrXxZQvOuA01zjimMDADrx1vzS0Bq8uHOHUuzltu64JOFG/KiWADo4OrkMRKyat8wwQSRfW1s/vWYNntrsEo/4Ue8CaITY/7kCsA6H8j9RVu+CiDzkvTfW5Bm340dVAbMJEsdf3uLJiApk8zERqEieHJwXrCrPtgHxEmAHxH5zu5LuHS8IXc6JcrL4zI/DYGrgu52h7RkQTwFWIDYSX7KhjRbl5lLf29Sw5AGfCvloDGQzzLCsgHgLMINjF9U9FrMPE7isGSTN5xIVOLSZPYOYGjATAmYbywpA2TFYh/I2yKUnl6HbxDu+qQHYulB23HxUJagvPzwbuGXITMS3PAlCRFEdiXOuvP7k2bfiazCRqMHqKjWxxhcTFPRSDgW0lw0Dzl6I4ODDhx8VOAzpQSXIDSrnaMDxyxDE1jc/GTm+MJsoFF9GpcGyBzDyvmsGC1DhxARVB7dbffpJAHoNlgbg+V9OXt5rUV44cMhJ63sCVwF/DwHRvBpDbH18xk58+VqVBksDjDDbexluiLIIxo4J/NpNhVl82TCuAiMNhgYguCxAP/OMvyJDKVAfUC5bVIzRS0pGlbzd0lch3wvzuGqVBuiD629m7AiSG5TcFHFCk1+tu4VKk74SAZsQYYBZ2dnFqmFaLR83Zl+lQWVOmAFuBDZClTSqQI8bE6BCdUCDpt80zpTATG0FuAAAAABJRU5ErkJggg==',
+    hero_hunt_glide: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADZ0lEQVR4Xu2YzUtUURjG31FxJj9GJhzbWVjRJssiy2wvRNCiiCyKaJOLEBdtXFQgGbjrYyNIEG3SCgMHJPAviGhhJLSIynRRZhajU2lkN547vcOZ07lz77nn3FXz28yduTPznPd5P86ZISpTpkyZMv8vsbChN9Rtdviz2dx75ffwe7zum2BLv8pkEVN9He7Hu26RIwbZmtjizFU5dPfeiHv//LkLRfdtYUPfyABwe3ul+9jQkXTiLdXu9QLlKE5ET0Yf0OFTJ23Fq8RU39gApulImpz6QlfQ8rNlmqjO0MR4hohqIzUBhNUPZYDYf0sflih+9Bs59UmKrcQo+yobebA29UMNQSyg+VeMFo7l3GCT+/PB7xlPU9/IMM2/nqfqRJyG+i/TbPs7Wnv7k5qnN9LL1dlQejI29SvCpAsZR/AInIP/NLlIvcdb6eC+XW7woH9okNYytYTZgKFoC5v62hmB+1gAAgfIfOL6Ot25dIDar91XxpjqTBHNpKxsh7b1tQzwEn/x/U3J5KaSLUQ7vxqbEIV+qBbAhAfywOvee6jIiKLnMylbHWBVP1QFMJse19Gj6Smqef6UVtYdGrgxTN1XBooC3ZH76D7vvHg1b5rHqTEIXAE29UNtgwwG4Ym2rkILjJ09o4zj4ehkkPi0saGv1QLIHqa6CBaxu2ar5+IRfE9Pr3H2uXps62u1AOA9GCB4tMFc2xd3n5cRtz6T0hexra9VASpgAgcPI/hwhEdsl6Z974epvtYMkN0XZwGIU/7HEMDpj38c2SIKfa0K4DLmLDN8KOKToWvG31+GNolCX8sA7nsRBM3nAhXpwUr3/wFbRqjMN9HXMkAOhDMPxOuoiEJfywDZfSC7v6H/d2SGRKGvZYBc+kGAQT+GKmjbzRZrbRC04rg9S+kHMgCl13S60TMAnAUYiAFUArcFV0lYE8Lqs1Gl9H0NgLjX1Bfh0pdfMzUhjL6YBJUJYiJKngRVWReHHZzFfp/ubizEzW7LVSHOCv4OmFbqXyJZX9YG0AfyGlRVKa8B+p4VECR4ZnHsc+FatRuI7cCDk2eDF6VaLghi1aoGM+srDTAVB3LbyCawESr8zPfDKwncDgxM8J0BjM4+z+9VbVt+32PDfEaVBNmEfwywuQAZvzOCl7afaSq8kiCv4Q9Mq1IUZSkrowAAAABJRU5ErkJggg==',
+    hero_hunt_hang: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAAC4ElEQVR4Xu2YzWsTQRjGn9iSjf1IWWnqrUpFvFhtxWqt94IIHhQxiiJe7EFKD73koEJphdxEL4UiiBfrBxUaKEL/AhEPFQseRK3tQatUSRs/KtaVd+MbJstu3NmZObm/Sz42yTPPM++8MxsgJiYmJiYmJibm/yQR1XZL0zaHv1ssvfP9Hf5M0HUVdOnXqwxidqjX/Xr/DTiiyc7Udmex3sHtOxPu9QvnL1Zd14UOfaUAiJs769zHlt60Y3Uk3efLKMEC8HjyPo6cPqXLry+q+soBMG1HM3CaK6sCq09XMZ0sYHqqAKDRaAhEVP1IAYjrb+X9CqxjX+E0p5FYS6D4smjcrE79SE2QBtD+K4Hl4yXXbPpA2Xz3VAZDE+NYerWEZMpCPncZCz1vsf7mJ9rntuDFj4VIel506m+KMl0042SejLP5jzOfMHiiE4f273HNE7n8GNYLjaDeQE1RFzr1pWeE0qcBkHGCZj51bQO3hg+iZ/Sur0e7zwbmbS3boW59qQCCxJ9/e11zcu10B7D7i3IIJvQjLQHq8IS34WX3Ha4Kour1vK1rBWjVj1QBzNZHTXg4N4uGZ0+wtuFg5Po4sldGqozuKn1wX/dduloOLeDUGAauAJ36kbZBhhrhya7+yhK4d+6sr48HkzNh/EmjQ19qCdDsUVcXoUHsbdgROHgyPzAwqDz7XD269aWWAMF7MEHmaRksdn1293kv4tanUvoiuvWlKsAPCoHNUxB8OKJH2i5V1/2/UNWX6gHe9MVeQFgo3wwRdPrjmyNdmNCXqgAuY55lhg9FfDJ0w/h7Z6gTE/pSAfC6FyHTfC7wIzNW5/4/oCsIv/BV9KUC8BrhmSfE56YwoS8VgDd9wpv+5txvY4GY0JcKwFv6YfmejywTiEzF1dIPPbJa65jOAqYxpR86ALH8OH0qf9ruOGG/ZsTvqTZCU/qhAmg701rp4qJ5IpNt9Z18Mi6WqcofIib1/wBTw++CS5JYAgAAAABJRU5ErkJggg==',
+    hero_hunt_hurt: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAADEklEQVR4Xu1WS0hUURj+RkXNx8iEY9BCxYpcFGVg+dhGEIJBG7VNtMlFhkEboQdIBe56EFgSRIsSCitFN+I2kggyFFpE5SPohcWoPZTsxnfGfzpzuPeeQy3azAfizNxz/+873/84B8gggwz+MyIu/CVFFZ6sSyzN+L4ja4KeByEn8ImB0c469cu+y/B0ku35ld5sjoebt/rU8yOHj6Y9t8HJAYI7pIgrW7Ix3PEI2PYFeVW5afEPrDRjf1sLRTg74eyAibKmOLziVGaw8GQBg7lDGBwYAlBo23gKTgL0Gph/N4+85q/wiqOILEaQeJFwJvODUwoooPxnBB8OLqkY0d1J8pqBODr7ejH3cg65+Xno6TqN6do3WH69gvKJ9Zj8MW2Nb10gKDtUqvwmOUEBH0c+YbipBY2nruHhg7HUWtYAXVoeKrTWgpMAOsCAOnn+hVXcOLkHtefu+Foba4gBU7F/FxBE/vzbq9Dcx6JVqlNsIrJCo2hglRNm0bXuakwLkfZ9KmYNb02BOCDYcL8I9yZGUfB0HIurHrov9qL1THca0dal9+p7w7GzSdEB01PVklXi2hBiDeigEFsa7vaPoL39eKgIpxRwB6xoHWzJHQWbAvW7kDs7IC5wFhAkpwOzOz+rfjfBs0FgO5ycHJBJWFKZHEQkpwj9LKAYGVRMl5myIFgFkHxmrA2Pr9akYgiRuGGK4SR0RagAkpO4Ym8/NlZXY/JtYRo5IcOJ/+WzeUqGIVCAkNd3PFO7pwjTVhLKfPBD/Hy2ui+ECQhtQ7Gf5BRBF3QhsmOKkM/Euq5faQcXvwcdTKEpYAULOeHngukAyfTU2GC9D1BEfQeUjXoK9B3b8L0nCzjhv8raBQRFyAzwA9vyb+EkQNpNoOeeLad2iOS1zIT8FlSMTgLkMqLnVgLHW0t9N28Wpj4ddVgFWNto8U8j0RkZUkyLFCTFsH42X6ryzHi+ArhI/vSpp1svMG/Ggu7b19WumSL9PaarpC6amg2+c8Bv15z1Ak46OQ/0bpC0mCenuhmtge/KqE6ML0R+A6GjajExpU0ZAAAAAElFTkSuQmCC',
+    hero_hunt_idle: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAiCAYAAACX6tEuAAAEaklEQVR4Xu2aW0hUURSGlxWO5Y2JLIhQE6ICjYosL68RhNRDPai9iC/1kFHQi9AF7AK+RVJUEkWUSRe7SBGYvZZ0NQx8iFJTKAuTMbuSnfj3tIY945nbOfu0w/YHg86M4z9nrX/ttS+HyGAwGAwGg8FgMPxfpDi93OyMPIs/GxgfsP0//DfR3neDbv2pwgw3F9Kxs0R8fN1RsuQkF6XlW29mWHT2XLN4v7Zma9j7qtCpr9uAqvRdGQA0LZoufmaXZFm+glTx+zCNk4+I7rReovXVlarybYtOfZ0GBCr0XRuAmVuRQ1ZmqCvQ2MMxupnaTjfb2oko3VMTAF36Og2oogAdGUAefkbejpBv42eyMrMo5VMKBXoDnidbt74dugzotgAdGQDk/kyhDX33xO9Zq4PJX9GWQzubr9Lgy0FKTfNRY/1e6i/uIyocpaLufKvnW7/jSWckOvV1G1Cl/jQn5YqKH940LhLPyX9/+wPt2FxEpauWieSD+sZD9L09nTA3wKRQFbr15QJ42vMkrACu77pLTRVn6OTmFsp/tDB4ySiAtHx1AZAK0K1+0hUJ9yEBSDxA5acdnqDTu9dQ8cGLtjn2l/mJXviVLAd164v5xpY5IplyDFAAtyoqqXzPSbpxvTMUh9qarcKwKARVy2GV+kkZIFrwn395FbO4/VkFogrcmkC3PtBtQNX6jloAZvggcsJXtbI8zAhhz1/4VXUAbfqxDBht9BPg2gtHw3q3E7zQd2QAABPMu5ZBV7o7aOhiC/WevyBex/DHj6p9DeL1+8cPOLnemOjUn0oF4KgFyMAE8VrA5dbbtG3bjuCoEWXbOBG4Av4VfS6AWY+76NOERQ1HTgjTyywefyeelm3fr/z6VegnZQC5ByaaBFXJZ5I1gUr9ZLUZVd/BC31HBsAaHGApCBe+Wf6RcrtnTypieennpvJlEATd+pjVT5UCSNgAvPlQtOAzBfozQgYAMAGAEbDmx3OYA6ha/hj94Omr6vgnNAlE8Ac6q+nBsRUh43OCeSTAcz4MEol//WPSiOAUo+9d/OMaAMFH4vPWttL8JUuoZyg9LPmAN0R4ZxDIZnCD0fc2/jENwMEvrXsmqh8miOx/SDovi+zIOTTd8Tao0Q8m38v4xx0BUPUM2gB6OsOVL48CqjH63sY/pgEwc0fVc++3GwEiq39m/S9lhjD63sc/7nEwklBaR2IGKg//cvXH42vjNKJd8f7KHqPvbfzjtgCAJPDa2w5eBnqF0fcu/gkZAMjLPq5+DP9Y7okK/3M+EAm3CLfn4UY/uK8iz7dUxD8hA/D5c6Q4yKmaY1v4+HJym3BzQ4jRD95/4EX8YxoAVRsr+NlLs6OO+mgLXP346WQ5aPS9j/8kAyDo/Ig27DKRdwEzDS2nRMWjPcjtAq0Ct4/HmisY/b8b/7CzALs+jf19Rt7nl4d3rnR5j0CAu4D+gM/y9nCga8z2DMLoT75v0Ov4J3wYJBNZxTgJxBeNlliV6NQGuvVVf4ff9U1VtTofXuYAAAAASUVORK5CYII=',
+    hero_hunt_jump: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAiCAYAAACgCNxfAAAF4klEQVR4Xu2aa2gcVRTHz7YhmzbpLinZCiJJiYoVGm3FxKR+k1IoYmgrYiqK9Ev7wZYK/RKwFWIr7DcfKNUiiGib+Gi1gSKE+s1HELGRBloobtOkVPOoZdONtsF05H8nZ/bu3XtnNvNw0yQ/CNnXzLn3nP8598ydIVpiicVMLMjkkzUNFh+fzV3Rnot/Y/p+sVMR1AF9+1vFKba8Q5bs5KaqtdZwhUUff3JMfL/r5d0F3y9hEzgA4N0Hl4v/ydaEFW+sFK9HKUdxIvq2+3PauvP5SPy9EDIwlAAwa55OkbXKqUo0+fMkna7spdMne4moOpIg3O0Z6DsAsvqu/3Gd4u1TZK1KUOxmjLIXspE420Q5MjCs7PMdAFD/b4yeufydeJ1osZ2/8WSK9h/7ikYujVBlVZzSnQdpqPky0fob1DSw1jp/ayjQwu/G/52BYWSf7wBA8aOzjgdw/tiZcdr37FPU9vgjNDoyJj7vTB/BAkzxdqLhwXx5Csp8ycCg2ec7APOB+ZSBfrPPVwBs9U2JssPqr3pzhvoObKXm1z4Qn23bvtmJ0bbtGardVBvqQlzODAwz++Zcj2Eck1ed/9vfv7smRW2iUawDNFgb+KLMNIaPDjxBzYdPaMchBBCCbdFu1zRYyL7RHTnN+ne0aP27nZmm+oHVpFv/lrl6zQW0mEDteDoee7LgqIL3g8iCYLgJwOR8AWyvv1GgXr+I7NuREyLk5sNe/5rE+ofmg9e/273VhGsjXJTq8J0BzD2naujLgT5a+Us/3ZyxqOuto9RxqKvA1kO5P8X7Ta+8bgfNsG1RChwAgMlDCBgDZyAC3vPrD86p+L3IwFnCsK9WAL/Z52sNkIESntuwxXFAz0svav34RfcZ7ed3E37Lr5N9gw1F2zGBA+AFHL9nz77AytfB6kcGXj1xXGQg+Obrs/kMONRFFz79jH58/w0nA4MCu8gAlN8qqinKNqYgGw3lN/IARE25MjCs4PsKAGouwOTxenjDX/ToyvuLfC0vPEHqbhCizMAwgl/yIsy9b9N9U5QdygcAcEAQCKz4eM8tGrqAMJ3PLaAqALR5KlEIQG4CGLkJUPESQEkZAKNXzu6kaxcv0u70987kGXZ2nOytaIDel7emw0AnAA5C/Snb+aoA0AyGLQBZcGFUAM/rAEz8p/c2UsPmbrp33To6f7XacTjDLRn3xSBs50MAGIcadA4CnCHbhADCBH7AHyqADOxy9kEALEYxnnb7t24VwDUA7Py2vefE5BEEPqnsfL4o05E6slzcHfPrjIUuAM8MgOoZqBAprSofcBaEyWIQgGcAys1CF4BrAFC7UHa49upKkFp+VnTeCS0jym0fRC0Azy4ITmjbS6KGy/V/LiXnn/Qyolf95VI57c8KQDQhYK4CdFsbmZJKEAaC7VcTfB0QFeW0bwvgnGhEAgnQQEkBANxeyQsuIox2Tyic7KcgVPizIJ1QuQkiAJ7/A283ajtBzxK05oU650AuO3xS8b7Fdg/vjXCwEmTfLcNvxg/OUPaW/sm5UsAY8JyRGnygCmCFtDnG48IYIAC/DwTo7PO5TfbFWpi2t8t58043BmMG4Mduzk8+nDT6DiWJg4T/fq8FYN9LAKmOuiIByI5nTDdEvDDZ5/mxfR3seHkM8u1MoA0AnG8qOQDOVx/AktcB9VioYS7q0wWfb75gUrDvJgAmqAhk5weFhagiSpBcn+E8U7pzCbDspsiZIJzfdfxD8fgJbvulWuoK1gNcolO/fgrq2uBlH6jBl3HGkZkW6pSDgJKQ7ElY2f5JY0ehio/nLM9XJ0IdYlOS8uuiHYQE1XfaOwMQZUx1gHDWLPLOptx28qTkq2IBbrpLx/J+jNeE5cGr9gHvrurGANzGATAP01hU8cmY7MlBYdgnXAlkQQJZDHz8eM8EVRSVBlmp/URjNEHJTMIaz0w4xrD5BEdlcxOFSlKOLQUv+8LBrdMWZYi0YxBqzo9NoGabIftk5LKpOljt7tRroFL6fRP/AUVEVAyHns6PAAAAAElFTkSuQmCC',
+    hero_hunt_pick: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAACm0lEQVR4Xu1WTWsTURQ9aUMT+5EQaeuuSlTERW0Eq21/QJciFaWIIm7sQksXLpqFCkWF7PzYFIogoqgoiojddC8UcVFR6EKstV34UapkmqqVJiPnpXd4mb4pM0125sBjZvLy3jn3vHvvDFBFFVVUUcX/jlAlDIg3brdln2zus3FP+Y97PlwJAcTEUJe69t6ErZO0R3fYc2Ebd+6Oqfkzp8+WzJftACMj+a3dtXh5/hVah8OwmxxDYL22nBhXXjRU1gHd+sUvi4gcXobdFENoKYTsdNaXuWU5QAFtqyF868spstjBIvn+py0YGhvF/Id51EUjyKQvYrbzE1Zm/qJtaive/Zl1eGt8yfQAIyY5iYX8+/gCBo+2o/vAPkVOpDNXlf2RZB2YDzo27QCjpwASE4w8ei2P2xcOofPKA6PkRE8CeJ/wrBRfIHHriWY1dt1IqiszvVDIq3E81eXc689cJ6MsByRywbZnjXgyNYH6N5NYytsYuT6K/ksjJcHsyX1Vzz3nLqurXqZl9wHmwLFUL97++qg2f3TqpNHJxw/Hjb8HTkKqZ0LpoIiO+p1GAoLkAwOD66JXueO5agNI+REk5zHMpX6oEnNDz3pTmw4swE3uBRHF0jN1QMGmjkAi1yHlKD2BILlA75o6Agtg2UnnI4SYPV/ut6QLJd2R3fJIvsEoIpAA1rspal2IF7ojYaOIQAK8ItfB6N2CfmdqMLyaxfPaZTWnNyTfAtzR62DC+cFPa8YZgZPQK3q+4Rghob/7BfIb8yARS2L63v3gScjEk1V60hEt/c3G4PWkJKQfsB1TiMCzFdPyjc48vje+7svHfRS6I3SAIjy/CU1nTHsdK2EpAquvWHo2iqYICZtNybvetXYhtbbXZKlh/wBuFUixDVrHvgAAAABJRU5ErkJggg==',
+    hero_hunt_run: 'data:image/png;base64,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',
+    hero_hunt_sit: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAiCAYAAADvVd+PAAADb0lEQVR4Xu2XS0hUYRTH/6PiI22mCccgQkUoChQy0MyWtQnpQS3MNuJGFxku2ghFUBm4lqISIaPUKKwU3YhtSyLIUGoR5XNjRuIrU7KJ/zedO9fp3nncuSNB9weXe2fu4zvn/M93zvcBDg4ODg4ODg4ODg4ODv8fLqsue7Ly/PLu/NKE4XfkGbP7/wIp8Rgx0FCGlt3J6KuHH4VzSCtI3fC5k2tHcKyqEjXVtX67g2CXAHEFQE9OhQ/+rVpSYOH1AnpSe9HT3QsgM544m2KHAJYCwOjn/nTh+NgLYAzwNbmBReBAew4aWm9j6uMUUs+kobnxMsZLxsDsKBrO94/8GLc85SJhVQBLBuWcy1ZSu0vdyi7Xogtf+mfRV1GJw5fu4PmzQc3emupapJ1Yxmpvpm21QASYOb2kxqEdtKG42xcUID0owOrnNeQOb4eRADEHgIPTIb3z6TfW0XbxIEqudxoK5S33AqNe2wJgpwAxBUCcl6hznu94moV33z+FzVCvu0C7H28xtFuApEhzywxx/snwAKY7O/DhwUPlKA9OAbnm/y9vXbM6zAb0AhDawOyjAGbZpxj1qpO+cwgxZYB8hFNAT7gseNzVj7q6C+pxu9QXOC4F2PJmCIvrfpSfv6Ju3bvfqmoPkeDLvVAbLAWAHYCwCNGIyf3fVJEJZTIl2BbjdV4IzQISjwBRB0DSp2jXMubHs7QAiAGEgeBiiAZJhbaz+ksG2ilAxBpAx9+3n1JSTgxWYWQ6UzknDpKV5iT123c2W+sOdkM7eFAAPRxXso8CiF08y1QNl31hA8ABX90sxqH6t+A572iX9lGB7ZDFyAxfUzKK0vODcyFGEi1AxAzYuXevZjIzgCmtd97o2i42Q4CwAWDqbCtrVnWCWbCnpU3LAFkIhaqf0fhL+S/3ZYpYJdECRMwAwkBI4TGCRS8RbIYAUW2GuPScQXDdTUR5Kr1SGnCf/2UgEAxeS33gmelstRXyPdaRGZMoUwCxIVbCBkAN+mfDoU9rcd6zzwM/jOubaoUIFEc+zx1jbqO1HWEiBfhrCtBpOcI5T0L3/8LVjrtqEcRdmL5WsF16ytxRdwTaIRsfMwHMoAAiVEAA424U9UJIT6gT7MPswfNDC5a+p0ffMiMJoC+04iwdpwBqKVw4p9Ym+uk6++jrBjt/A7vtIacbcY0cAAAAAElFTkSuQmCC',
+    hero_hunt_throw: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAiCAYAAAA+stv/AAAC8UlEQVR4Xu1WTUhUYRQ9o+JMqTNMONPOZCAiMKjAKWzXok3gokVIm2iTiwoXbVxYMJTgLmojSRTRnxQKSm3cCxIRRoFEZOYsbDQb5qdSSV+cb+Y+vvecN+ObmWgzZ/N4f98599z73e8CNdRQw3+Gp1r8geZ9hqyVyn4tuK58o79vqJYAYqrvuLqeug1DJznkazcWGww8eDii3l84f9F8XxUBjIzkd/bX4+XlaaAjiXCk1XQkgSzObnQL+b9zQBA+HYLRYvIj/TqNicZJTIxNAmiymF6xA3ruV5dW4e3+CaPFD0/Gg9RcqmSGKy5CCmj740HiTFaR+aM58iNjIfSNDCP+KY5GnxdD/QNY6PyC9fkNtM3uwfu1BcVdV1JiEYTPtRqM+PdQnSIOHAxgZfQ77uMkRt9OIxFfVuTEx6Xl3EofgiY5UbYDjJzkJFYLZTzwDW7i3tVj6LzxtKDsYFdQCdBRVg04kb/79bm4oSTvSCoRyfS8+raiFLC6CXux9Rw9YRFiuc87MPfocfkpEAcEe8eb8WJ2CrvfzCCzaSB2axg912IWEQey39R916Xrlueua8BOTlBAKfufP3uF3t4rJrl0StcCCLci7OQ6yhbAvU9w/9OBxcM/1P62g2eADik+IuiPVFaEAooQcgqRpsQrt6oqVO2ElAIkXDsgnU+id4K44o00Yn2ySQnQ27bAdR9QkfjaDYlSwIbEbSmNCeNbilxHoTmhrD7gRO6E0M16NRMUeu8qBVxEJ5doLZED2NW/ZTmceC+Hjx2uHLBHTkg3FJCMMFNRAq4E6NgpAcHT0gk7FuCUQ4IVXy52LMAp9xwwJEJ7OvQUOQVQchty6NC3mr6oSkM095bk4gTF+pGbE/jNysAmUmuFR3VHB6i4GDmnHydQiLjBa7FtaDqgW8QIOErr1azby6gM5IyR5ySNPbnLmV8NHaFoq+UftmjMbJes+kCh/Kgf8mBHI4GyNj+C6eRstRZw6tH+ZZ0QqZn0tr7zF+9cWpvhu+fqAAAAAElFTkSuQmCC',
     hero_idle: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAcCAYAAAB/E6/TAAADFElEQVR4nJ2WTWgTQRSAv9lum3RbE/FcbDAHUYlKrGhrUREUBJWqBxUEEUEPxfbgRfCHFhXqSRRELIqIqKggVSiCXjyI7aEUJXiSSFpF9FAwMQmNTTIewgy7m12z9UHI7sy897335s3bESxCou2dUj1n8zPiX2vc8+ZiQACvBzcDsOs60m4sEY7JWVNy7/4oAMePnXTMLxoEkJlbAKA3FJNxw9LjyQq8evyE3UcO1en8F0jJviVLiZSr+n2iVObP+CQvxieh6T9B9v35/nOOvkobkXKVnGnwqfCnob7nhvqBlpcFSVFLVXfIJGcaTHWEGRy9xdfPX2kJhxg5e55V3wqkq0WyAlLzGQFgBAX1VdpICovukKkhL3//4vTBBN1da2kJhwA4O3KZsaYCccNi1tRJcEbkV5rR9k7ZV2mjO1TLdM40eJD/xZ0zm9h46ZGnY1tb46SapbZl2I29v9LlANqjcUM+FtO+EIBUsySxILQtDcrmZ0TPuSkAOtZv1wvU/0SpDFC38YeTW3zfU80+qbNH17F+O98+vNURKZmWRZ59eI01NcnvimT42i0OXxh26K/M/wCgp/+iDsK36qLtnfLGgRUMPP/iACnYx2LaTxWAp4/HOXXqtAZ5Vl20vVMO7YzRtWEZ9+6PMtZUcMwnhcU6Kx4YAj6pu7Z/mxx6kwFgz6Ej7N3Rw5UTAxoyLYtEJWQ9tO0lba9ez4iG3mTI5mdENj8jHt4dqZtPCktDohJ9iJPC0ml2H5FAnSERjkllyE9UlHHDYqypUAcK3BncEHWuVKeAGsRPAoG8IOpceclVM6qzEBjkVlDeu58bSUOQ1764o7k5n2sIDrxHjQy5pT8cCQ5yp80u07IYGNoQZE+bimaiVCZdLWqPvYpCjdkd9QUda12tF9khAEdbI546E6WyI72+Hz7lhV8kAGvaWuouJPY0unVvzudIzWdqTTURjkn1+xcEqIMoGX54m1lTkq4WHXr94Qi9oZgUXhsetY3EjVoTVfcFN8Td2RMLwqGbrtaiDXwL6g05HcqKmkPvSplANv4CSChRf6o06p4AAAAASUVORK5CYII=',
 };
 // </ASSET_DATA>
@@ -2040,6 +2102,26 @@ function assetBlade(name, col, col2) {
         g.putImageData(d, 0, 0); out = c;
     } catch (err) { out = null; }
     return (_bladeCache[k] = out);
+}
+// v0.99: viên ngọc trên gậy Giả Kim đổi màu theo hệ — thay ba màu xanh của ngọc (110,220,255 · 200,250,255 · 60,160,230). Cache theo (tên, hệ).
+const ORB_PAL = { fire: ['#ff9a3a', '#ffe0a8', '#d85a1a'], ice: ['#7fd8ff', '#e8faff', '#4a9ad8'], shock: ['#ffe45a', '#fffbd0', '#d8b020'], poison: ['#7be06a', '#d8ffc8', '#3a9a3a'] };
+const _orbCache = {};
+function assetOrb(name, el) {
+    const pal = ORB_PAL[el]; if (!pal) return null;
+    const k = name + '|' + el; if (k in _orbCache) return _orbCache[k];
+    const im = assets.img[name]; if (!im) return null;
+    let out = null;
+    try {
+        const c = makeCanvas(im.width, im.height), g = c.getContext('2d'); g.drawImage(im, 0, 0);
+        const d = g.getImageData(0, 0, im.width, im.height), a = d.data, hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)], P = pal.map(hx);
+        for (let i = 0; i < a.length; i += 4) {
+            if (a[i + 3] < 200) continue; const r = a[i], gg = a[i + 1], b = a[i + 2];
+            const j = (r === 110 && gg === 220 && b === 255) ? 0 : (r === 200 && gg === 250 && b === 255) ? 1 : (r === 60 && gg === 160 && b === 230) ? 2 : -1;
+            if (j >= 0) { a[i] = P[j][0]; a[i + 1] = P[j][1]; a[i + 2] = P[j][2]; }
+        }
+        g.putImageData(d, 0, 0); out = c;
+    } catch (err) { out = null; }
+    return (_orbCache[k] = out);
 }
 function assetWhite(name) { return assets.white[name] || null; }
 // v0.36: bóng đơn sắc (từ bóng trắng), có cache theo (tên, màu). Dùng cho bóng lướt. Chưa nạp xong ảnh thì null.
@@ -3447,15 +3529,15 @@ function drawFireballHp(e, ctx, a) {
     U([[3, 0, 6, 12], [0, 3, 12, 6], [1, 1, 10, 10]], k ? '#ff7a1e' : '#e0501a', '#8a2a0a'); q(3, 3, 6, 6, '#ffd24a'); q(4, 4, 3, 3, '#fff3b0');
 }
 // Boomerang: lưỡi cong hình trăng khuyết, đối xứng hai bên; (cx, cy) tâm theo px, R bán kính cung (hp), rot góc xoay (rad)
-function drawBoomCrescent(ctx, cx, cy, R, rot) {
+function drawBoomCrescent(ctx, cx, cy, R, rot, col) {
     const pts = []; for (let th = -1.15; th <= 1.151; th += 0.07) { const w = 2 + 3.2 * Math.cos(th * 1.35), px = R * Math.sin(th), py = -R * Math.cos(th) + R * 0.62, c = Math.cos(rot), s = Math.sin(rot); pts.push([px * c - py * s, px * s + py * c, Math.round(w), th]); }
     const put = (x, y, w, col, grow) => { ctx.fillStyle = col; ctx.fillRect(Math.round((cx + x * 0.5 - w * 0.25 - grow * 0.5) * 2) / 2, Math.round((cy + y * 0.5 - w * 0.25 - grow * 0.5) * 2) / 2, w * 0.5 + grow, w * 0.5 + grow); };
     for (const p of pts) put(p[0], p[1], p[2], SPR_OUT, 1);
-    for (const p of pts) put(p[0], p[1], p[2], '#e0a84a', 0);
+    for (const p of pts) put(p[0], p[1], p[2], col || '#e0a84a', 0);
     for (const p of pts) if (p[2] >= 3) put(p[0] - 0.5, p[1] - 0.5, Math.max(1, p[2] - 3), '#f8d890', 0);
     for (const p of pts) if (Math.abs(p[3]) < 0.35 && Math.abs(Math.round(p[3] * 10)) % 2 === 0) put(p[0], p[1], 1, '#c03a3a', 0);
 }
-function drawBoomerangHp(e, ctx, a) { drawBoomCrescent(ctx, e.drawX(a) + e.w / 2, e.drawY(a) + e.h / 2, 11, e.age * 18); }
+function drawBoomerangHp(e, ctx, a) { drawBoomCrescent(ctx, e.drawX(a) + e.w / 2, e.drawY(a) + e.h / 2, 11, e.age * 18, e.el ? elemCol(e.el) : undefined); }          // v0.98: boomerang hệ đổi màu theo hệ
 function drawGhostHp(e, ctx, a) {
     const x = e.drawX(a), y = e.drawY(a), al = Math.min(1, e.age * 0.8), f = e.facing, k = Math.floor(game.time * 4) % 2, { q } = hpPen(ctx, x, y, e.w, f);
     ctx.globalAlpha = 0.78 * al;
@@ -4252,7 +4334,7 @@ function genGrid(map) {          // map: chuỗi có viền (Level) hoặc mản
     return { w, h, T };
 }
 // CHASM.gap: số ô trống dài nhất mà người có NHẢY ĐÔI + LƯỚT vượt được (đo bằng mô phỏng vật lý thật, test_smoke mục 6E: nhảy đôi một mình ≤ 5 ô, cả hai tới 8 ô; chọn 7 cho có dư). ab = { doubleJump, dash }: dash chỉ có tác dụng khi kèm doubleJump
-const CHASM = { gap: 7, from: 37, chance: 0.35 };          // from: level đầu tiên mà hero chắc chắn đã có lướt (hạ Thợ săn tuyết ở level 36)
+const CHASM = { gap: 7, from: 37, chance: 0 };          // from: level đầu tiên mà hero chắc chắn đã có lướt (hạ Thợ săn tuyết ở level 36)
 function genReach(grid, sc, sr, maxFall, ab) {          // ab (v0.46, H7): năng lực giả định { doubleJump } — mở thêm bước leo 3 ô; bỏ trống = không năng lực (đường chính)
     const { w, h } = grid; maxFall = maxFall || GEN.maxFall; ab = ab || {};
     const T = ab.charge ? (c, r) => { const t = grid.T(c, r); return t === T_PUSH ? T_EMPTY : t; } : grid.T;          // v0.55: có «chém tụ lực» thì khối đẩy T_PUSH coi như không có (xem genPushRoom)
@@ -5033,7 +5115,7 @@ class Thing extends Entity {
 // v0.40: sát thương lên NGƯỜI CHƠI theo máu mới (10). raw = giữ nguyên (DoT); ≥ 90 = chết ngay (bẫy đè, rơi vực); gai / dung nham / bom có mức riêng; còn lại ×HP_UNIT.
 function playerDmgOf(src) {
     if (src.raw) return src.dmg;
-    if (src.kind === DMG.SPIKE || src.lava) return HURT_P.spike;
+    if (src.kind === DMG.SPIKE || src.lava) return src.kind === DMG.SPIKE && classHas('spikeBoots') ? Math.ceil(HURT_P.spike / 2) : HURT_P.spike;          // v0.95: giày gai — gai chỉ gây ½
     if (src.dmg >= 90) return src.dmg;
     if (src.kind === DMG.EXPLOSION) return HURT_P.bomb;
     return src.dmg * HP_UNIT;
@@ -5055,8 +5137,8 @@ function overlapBox(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b
 
 class Player extends Thing {
     constructor(x, y) {
-        super(x, y, PLAYER_W, PLAYER_H, { kind: 'player', creature: true, hp: ITEM.startHp, gravity: PHYS.gravity, fallMax: PHYS.fallMax, bounceY: 0.5 });
-        this.state = 'air'; this.stateT = 0;
+        super(x, y, PLAYER_W, PLAYER_H, { kind: 'player', creature: true, hp: startHpOf(), gravity: PHYS.gravity, fallMax: PHYS.fallMax, bounceY: 0.5 });
+        this.cls = clsOf(game.cls); this.atkCd = 0; this.state = 'air'; this.stateT = 0;
         this.hold = null; this.hook = null;
         this.weapon = null; this.boom = null; this.ammo = 0; this.gunCd = 0; this.items = {}; this.gliding = false; this.safe = null; this.safeAt = -9;
         this.bombs = ITEM.startBombs; this.ropes = ITEM.startRopes; this.gold = 0;
@@ -5138,7 +5220,8 @@ class Player extends Thing {
         if (this.dead || this.state === 'stun') return;
         this.actions(level, ax, up, down);
         if (this.gunCd > 0) this.gunCd -= dt;
-        pogoStep(this, level, dt);
+        if (this.atkCd > 0) this.atkCd -= dt;
+        pogoStep(this, level, dt); alchStep(this, level, dt);
         if (this.whipT >= 0) { this.whipT += dt; if (this.whipT >= WHIP.total) { this.whipT = -1; if (this.chargeArm && inp.held('attack')) this.chargeT = 0; this.chargeArm = false; } }          // H4c: nhát chém thường vừa hết mà vẫn giữ nút chém → bắt đầu nạp
         if (this.whipBuf > 0) { this.whipBuf -= dt; if (this.whipCan() && !this.hold && this.state !== 'climb' && this.state !== 'hang' && this.state !== 'stun' && !this.dead) { this.whipBuf = 0; this.whipStart(this.whipBufUp ? 1 : 0); } }
         this.chargeStep(level, dt);
@@ -5377,7 +5460,7 @@ class Player extends Thing {
     // v0.44: Tròn luôn là KIẾM (activeEquip giữ lại cho chỗ cũ). Đồ phụ có kho riêng: subList (món còn đồ) · sel (món đang chọn) · cycleSel (L1 / Tab / lăn chuột) · useSel (Tam giác) — chọn một lần, dùng nhiều lần.
     activeEquip() { return 'sword'; }
     subList() {
-        const l = ['boomerang'];          // v0.84 (Dan): boomerang có sẵn từ đầu, vĩnh viễn (tách khỏi p.weapon nên đi cùng súng); bom / dây đã có phím riêng (F / D) nên bỏ khỏi danh sách
+        const l = [];          // v0.99 (Dan): boomerang KHÔNG còn là đồ phụ / không bán — chỉ Thợ Săn có (vũ khí chính); Tam giác chỉ còn súng / bình; bom / dây đã có phím riêng
         if (this.weapon === 'shotgun' && this.ammo > 0) l.push('shotgun');
         if (subHas(this)) l.push('sub');
         return l;
@@ -5390,7 +5473,7 @@ class Player extends Thing {
     }
     useSel(level, up, down) {          // Tam giác: dùng đồ phụ đang chọn
         if (this.dead || this.state === 'stun' || this.shocked()) return false;
-        const it = this.selItem(); if (!it || this.whipT >= 0 || this.hold) return false;
+        const it = this.selItem(); if (!it || this.whipT >= 0 || (this.hold && it !== 'rope')) return false;          // v0.94: đang ôm thú cưng / công chúa / chìa khoá vẫn dùng được móc
         const canAct = this.state !== 'climb' || this.hold;
         if (it === 'bomb') { if (!down && this.stickBomb(level, up)) return true; this.throwBomb(up, down); return true; }
         if (it === 'rope') return hookThrow(level, this, inp.axisX(), up);          // v0.69: dây → móc
@@ -5429,7 +5512,7 @@ class Player extends Thing {
                 this.whipT = -1;
             } else if (down && this.onGround) {
                 carryPick(this, carryFind(this));
-            } else if (down && !this.onGround && this.state === 'air' && this.whipT < 0 && !this.shocked()) {          // bước 6: dính Giật thì không chém xuống (rơi xuống nhánh chém cuối => báo từ chối)
+            } else if (down && !this.onGround && this.state === 'air' && this.whipT < 0 && !this.shocked() && classHas('pogo')) {          // bước 6: dính Giật thì không chém xuống (rơi xuống nhánh chém cuối => báo từ chối)
                 pogoStart(this);
             } else if (this.state !== 'climb' && this.state !== 'hang') {
                 if (this.shocked()) this.shockDeny();          // bước 6: dính Giật => không chém, không xếp hàng đợi nút
@@ -5443,8 +5526,9 @@ class Player extends Thing {
     }
     shocked() { return statusActive(this, 'shock'); }          // bước 6 (A15): dính Giật = không chém, không lướt (09a_abilities); vẫn chạy, nhảy, ném, dùng bom / dây
     shockDeny() { if (game.time - (this.shockDenyAt || -9) > 0.25) { this.shockDenyAt = game.time; sndPlay('st_shock', { x: this.cx, p: 1.6, vol: 0.35 }); } }          // báo "không chém được" (chống kêu liên tục khi bấm dồn)
-    whipCan() { return !this.shocked() && (this.whipT < 0 || this.whipT >= WHIP.hitStart + WHIP.recover); }
+    whipCan() { return !this.shocked() && (this.whipT < 0 || this.whipT >= WHIP.hitStart + WHIP.recover) && !(this.cls !== 'sword' && (this.atkCd > 0 || this.boom)); }
     whipStart(dir, power) {          // power = true: đòn nạp (H4c)
+        if (this.cls !== 'sword' && classAttack(this, dir, power)) return;          // v0.95: Giả Kim = gậy phép · Thợ Săn = boomerang (13x_classweapon)
         this.whipT = power ? WHIP.chargeSkip : 0; this.whipDir = dir ? 1 : 0; this.whipHits = new Set(); this.whipBuf = 0;
         this.whipPower = !!power; this.slashFlick = false; this.whipFireDone = false; this.whipIceDone = false; this.chargeT = -1; this.chargeArm = !power; this.chargeDir = this.whipDir;          // chỉ nhát thường mới mở được nạp; đòn nạp xong không tự nạp tiếp
         sndPlay(this.whipDir ? 'swingUp' : 'swing', power ? { x: this.cx, p: 0.75 } : { x: this.cx });          // bước 8: chém lên có tiếng riêng (swingUp)
@@ -5509,8 +5593,10 @@ class Player extends Thing {
     // Vẽ một khung 1:1 trên canvas nội bộ (khung fw×fh điểm = fw/RES × fh/RES pixel logic), chân ở đáy hitbox, tâm hitbox ở giữa khung, lật theo hướng nhìn. white = bóng trắng (chớp khi bị đánh).
     blitFrame(ctx, alpha, fr, white) {
         const A = HERO_ANIMS[fr.a]; if (!A) return false;
-        let img = white ? assetWhite(A.img) : assetGet(A.img); if (!img) return false;
-        if (!white && this.blade && BLADE[this.blade] && fr.a !== 'idle' && fr.a !== 'run') img = assetBlade(A.img, BLADE[this.blade].col, BLADE[this.blade].col2) || img;          // v0.66: lưỡi kiếm theo hệ (lúc rút kiếm: chém / lướt)
+        let nm = A.img; if (this.cls === 'alch' || this.cls === 'hunt') { const v = nm.replace('hero_a_', 'hero_' + this.cls + '_'); if (assets.img[v]) nm = v; }          // v0.96: hình riêng của Giả Kim / Thợ Săn (tools/gen_class_sprites.py); không có (chém) thì dùng hình Kiếm Sĩ
+        let img = white ? assetWhite(nm) : assetGet(nm); if (!img) return false;
+        if (!white && this.cls === 'sword' && this.blade && BLADE[this.blade] && fr.a !== 'idle' && fr.a !== 'run') img = assetBlade(A.img, BLADE[this.blade].col, BLADE[this.blade].col2) || img;          // v0.66: lưỡi kiếm theo hệ (lúc rút kiếm: chém / lướt)
+        if (!white && this.cls === 'alch') img = assetOrb(nm, elemOf(this)) || img;          // v0.99: ngọc gậy theo hệ
         const cx = Math.round((this.drawX(alpha) + this.w / 2) * RES) / RES, by = Math.round((this.drawY(alpha) + this.h) * RES) / RES;
         const dw = A.fw / RES, dh = A.fh / RES, left = (this.facing < 0) !== !!fr.flip;
         ctx.save(); ctx.translate(cx, by);
@@ -5636,7 +5722,7 @@ function whipReflect(level, p, e, b) {
     else if (e.kind === 'arrow') ok = e.flying && e.thrower !== p && e.speed > ITEM.impactSpeed;     // mũi tên nằm im / do mình ném thì không
     if (!ok) return false;
     const d = whipDirVec(p, b), v = Math.max(e.speed, WHIP.reflectMin) * WHIP.reflectMul;
-    e.vx = d.x * v; e.vy = d.y * v;
+    e.vx = d.x * v; e.vy = d.y * v; if (abilityHas('reflect2')) e.reflMul = 2;          // v0.95: thưởng Kiếm Sĩ — phản đạn ×2 sát thương
     if (e.kind === 'arrow') { e.thrower = p; e.safeT = 0.4; e.hitSet = null; e.flying = true; e.facing = e.vx >= 0 ? 1 : -1; }
     else {
         e.owner = p;                                                                    // đổi chủ: từ giờ hại quái (foeFriendlyFire), không hại người chơi
@@ -5725,7 +5811,7 @@ function playerWhipStep(level) {
     const fdir = p.facing >= 0 ? 1 : -1, b2 = (p.whipPower && b.front && !b.up) ? { x: fdir > 0 ? p.x + p.w - 2 : p.x - TILE + 2, y: b.y - TILE + 2, w: TILE, h: TILE } : null;          // v0.77 (Dan): đòn nạp ngang trúng cả ô phía TRÊN ô ngay trước mặt (tổng 3 ô: 2 ô trước mặt + 1 ô chéo trên)
     for (const e of game.entities) {
         if (e === p || !e.alive || e.holder || p.whipHits.has(e)) continue;
-        if (b.front && overlapBox(b, e) && (whipReflect(level, p, e, b) || whipLaunch(level, p, e, b))) { p.whipHits.add(e); continue; }
+        if (b.front && overlapBox(b, e) && ((classHas('reflect') && whipReflect(level, p, e, b)) || whipLaunch(level, p, e, b))) { p.whipHits.add(e); continue; }
         if (!(e.creature || e.breakOnImpact)) continue;
         if (!overlapBox(b, e) && !(b2 && overlapBox(b2, e))) continue;
         p.whipHits.add(e);
@@ -5750,16 +5836,17 @@ function playerWhipStep(level) {
 //   Dữ liệu: game.abilities = { dash, doubleJump } (lưu trong RUN_STORE, trường ab). Số ABIL ở 01_config (bảng G chỉnh được).
 //   Móc vào Player: constructor (dashT, dashCd, dashDir, dashUsed, djUsed) · update() gọi abilityStep() · stepMove() gọi playerDoubleJump() · stun()/die() xoá dashT.
 
-function abilitiesNone() { return { dash: true, doubleJump: false, shadowDash: false }; }          // v0.84: lướt thường có sẵn từ đầu (yếu); Lướt Bóng học sau khi hạ Thợ săn tuyết
-function abilitySanitize(d) {
-    const o = abilitiesNone();
+function abilitiesNone(cls) { const c = CLASS_START[clsOf(cls === undefined ? (typeof game !== 'undefined' ? game.cls : null) : cls)]; return { dash: c.dash, doubleJump: c.doubleJump, shadowDash: false, pogoAuto: false, reflect2: false, flaskFast: false, teleport: false, hookDiag: false }; }          // v0.84: lướt thường có sẵn từ đầu (yếu); Lướt Bóng học sau khi hạ Thợ săn tuyết
+function abilitySanitize(d, cls) {
+    const o = abilitiesNone(cls);
     if (d && typeof d === 'object') {
-        o.doubleJump = d.doubleJump === true;
+        if (d.doubleJump === true) o.doubleJump = true;
+        for (const k of ['pogoAuto', 'reflect2', 'flaskFast', 'teleport', 'hookDiag']) if (d[k] === true) o[k] = true;
         o.shadowDash = 'shadowDash' in d ? d.shadowDash === true : d.dash === true;             // bản lưu cũ: dash:true (đã hạ Thợ săn) -> Lướt Bóng
     }
     return o;
 }
-function dashPar(p) { return abilityHas('shadowDash') ? { t: ABIL.shadowT, spd: ABIL.shadowSpeed, inv: ABIL.shadowInv, shadow: true } : { t: ABIL.dashT, spd: ABIL.dashSpeed, inv: ABIL.dashInv, shadow: false }; }
+function dashPar(p) { return abilityHas('shadowDash') ? { t: ABIL.shadowT, spd: ABIL.shadowSpeed, inv: ABIL.shadowInv, shadow: true } : { t: ABIL.dashT, spd: ABIL.dashSpeed, inv: p && p.cls === 'hunt' ? ABIL.dashInvHunt : ABIL.dashInv, shadow: false }; }          // v0.95: lướt của Thợ Săn bất tử 0,15 s
 function abilityHas(id) { return !!(game.abilities && game.abilities[id]); }
 // Cấp năng lực (announce = hiện bảng "ĐÃ HỌC" + tiếng). Trả true nếu vừa mới học.
 function abilityGrant(id, announce) {
@@ -5768,13 +5855,13 @@ function abilityGrant(id, announce) {
     if (game.abilities[id]) return false;
     game.abilities[id] = true;
     if (announce) {
-        game.learn = { id, t: 0, trial: { act: id === 'doubleJump' ? 'jump' : 'dash', need: id === 'doubleJump' ? 2 : 1, got: 0, last: -9, done: false, doneT: 0, fx: [] } };          // v0.91: đứng hình + bắn pháo hoa vàng, bấm thử đúng mới chơi tiếp
-        sndPlay('victory'); trialFirework(game.learn.trial, 0);
+        game.learn = { id, t: 0, trial: !(id === 'doubleJump' || id === 'shadowDash' || id === 'dash') ? null : { act: id === 'doubleJump' ? 'jump' : 'dash', need: id === 'doubleJump' ? 2 : 1, got: 0, last: -9, done: false, doneT: 0, fx: [] } };          // v0.91: đứng hình + bắn pháo hoa vàng, bấm thử đúng mới chơi tiếp
+        sndPlay('victory'); if (game.learn.trial) trialFirework(game.learn.trial, 0);
     }
     return true;
 }
 // Hạ boss ở level levelIdx => nhận năng lực tương ứng (nếu có)
-function abilityReward(levelIdx) { const id = ABILITY_REWARD[BOSS_LEVELS[levelIdx]]; if (id) abilityGrant(id, true); }
+function abilityReward(levelIdx) { const t = ABILITY_REWARD[clsOf(game.cls)], id = t && t[BOSS_LEVELS[levelIdx]]; if (id) abilityGrant(id, true); }
 
 // ---- Nhảy đôi ----
 // Gọi trong Player.stepMove NGAY SAU khối nhảy thường: phím nhảy còn nhớ (bufferT > 0) mà không có đất / coyote để nhảy thường => dùng nhảy đôi.
@@ -5794,9 +5881,10 @@ function playerDoubleJump(p, level, wasGround) {
 // Gọi từ gearAir (13m_gear) mỗi khung. Thang ưu tiên hơn lượn: tryClimb chạy sau gearAir trong stepMove
 // nên nếu ↑ đang bám được thang thì trạng thái đổi sang leo và không lượn nữa. Không tính vào genReach (đường chính không đòi lượn).
 function playerGlide(p, level, wet) {
+    if (p.cls !== 'alch') { p.glideHT = 0; p.gliding = false; return; }          // v0.95: chỉ Giả Kim có Lượn
     p.glideHT = (inp.held('jump') && !p.onGround) ? (p.glideHT || 0) + 1 / 60 : 0;
-    const on = !wet && !p.onGround && p.state === 'air' && !(p.dashT > 0) && p.vy > ABIL.glideVy && p.glideHT >= ABIL.glideHold;
-    if (on) { p.vy = ABIL.glideVy; p.fallT = 0; }
+    const on = !wet && !p.onGround && p.state === 'air' && !(p.dashT > 0) && p.vy > ABIL.glideVy * ALCH.glideMul && p.glideHT >= ABIL.glideHold;
+    if (on) { p.vy = ABIL.glideVy * ALCH.glideMul; p.fallT = 0; }
     p.gliding = on;
 }
 
@@ -5809,10 +5897,11 @@ function abilityStep(p, level, dt) {
     // v0.37 (ý từ Metroidvania: dashBuf): đọc phím lướt MỖI KHUNG, kể cả lúc đang lướt / đang hồi chiêu, rồi NHỚ trong ABIL.dashBuf giây — trước đây chạm nút trong lúc lướt hay sát hết hồi chiêu bị bỏ mất nên không lướt liên tục được.
     //   Đếm riêng thời gian giữ nút chạy (tapT) vì runHeldT chỉ cập nhật sau abilityStep và bị dashStart xoá.
     if (p.whistleCd > 0) p.whistleCd -= dt;
-    if (inp.pressed('dash') && inp.held('up') && !p.hold && p.onGround && Math.abs(p.vx) < 8 && p.dashT <= 0) { whistleTry(p); }          // v0.78 (Dan): ↑ + Vuông / E (trước: ↓) = HUÝT SÁO (luôn dùng được, không cần học lướt)
+    if (WHISTLE.on && inp.pressed('dash') && inp.held('up') && !p.hold && p.onGround && Math.abs(p.vx) < 8 && p.dashT <= 0) { whistleTry(p); }          // v0.78 (Dan): ↑ + Vuông / E (trước: ↓) = HUÝT SÁO (luôn dùng được, không cần học lướt)
     else if (inp.pressed('dash')) p.dashBufT = ABIL.dashBuf + (p.dashT > 0 ? p.dashT + ABIL.dashCd : Math.max(0, p.dashCd)); else if (p.dashBufT > 0) p.dashBufT -= dt;           // bấm lúc đang lướt / hồi chiêu: nhớ cho tới khi sẵn sàng + dashBuf (Metroidvania chỉ nhớ 0,1 s nên hồi chiêu 0,35 s vẫn làm mất lệnh)           // phím riêng 'dash': mặc định TRỐNG, chỉ có tác dụng nếu người chơi tự gán
     if (p.dashT > 0) return dashStep(p, level, dt);
     if (p.dashBufT <= 0) return false;
+    if (p.cls === 'alch') { p.dashBufT = 0; return false; }          // v0.99: Giả Kim — Vuông: chạm = Dịch chuyển, giữ = đổi loại bình (13y_alchemist.alchStep)
     if (!abilityHas('dash')) { p.dashBufT = 0; return false; }              // chưa học: IM LẶNG (không thông báo gì, người chơi chưa biết hero sẽ có Lướt)
     if (p.shocked()) { p.dashBufT = 0; p.shockDeny(); return false; }        // bước 6 (A15): dính Giật thì không lướt khởi động được (cú lướt đang chạy thì lướt nốt, xem dashT ở trên)
     if (!DASH_STATES[p.state] || p.dashCd > 0 || (p.dashUsed && !p.onGround)) return false;           // chưa đủ điều kiện: giữ lệnh nhớ tới khi hết dashBuf
@@ -6031,9 +6120,10 @@ function dmgImpacts(level) {
             if (!overlapBox(p, t)) continue;
             (p.hitSet || (p.hitSet = new Set())).add(t);
             const kind = p.kind === 'arrow' ? DMG.ARROW : DMG.IMPACT;
+            const hp0 = t.hp;
             if (t.hurt({ kind, dmg: p.impactDmg, x: p.cx, y: p.cy, vx: p.vx, by: p })) {
                 t.vx += p.vx * 0.3; if (t === game.player && !t.dead) t.stun(1);
-                { const stone = p.kind !== 'arrow' && !(p instanceof Corpse) && t.creature && t !== game.player; sndPlay(stone ? 'hitBigHigh1' : 'hit', { x: t.cx }); }          // v0.94: vật bay (viên đá…) trúng quái = hitBigHigh1
+                { const stone = p.kind !== 'arrow' && !(p instanceof Corpse) && t.creature && t !== game.player; sndPlay(stone ? (t.alive ? 'hitBigHigh1' : hitSoundFor(t, hp0)) : 'hit', { x: t.cx }); }          // v0.94: đá giết quái = đúng tiếng chém giết quái          // v0.94: vật bay (viên đá…) trúng quái = hitBigHigh1
                 level.spawnBurst(t.cx, t.cy, 4, t.creature ? '#d23a3a' : t.col, 80);
                 p.vx *= -0.3; p.vy = Math.min(p.vy, -60);
                 if (p.onHitTarget) p.onHitTarget(level, t);
@@ -6050,6 +6140,7 @@ function dmgSpikes(level) {
         const c0 = Math.floor((e.cx - 4) / TILE), c1 = Math.floor((e.cx + 4) / TILE), r0 = Math.floor((e.y + e.h - 8) / TILE), r1 = Math.floor((e.y + e.h) / TILE);
         let hit = false;
         for (let r = r0; r <= r1 && !hit; r++) for (let c = c0; c <= c1; c++) if (level.tile(c, r) === T_SPIKE && e.y + e.h > r * TILE + 6) { hit = true; break; }
+        if (hit && e === game.player && abilityHas('pogoAuto') && e.vy > 0) { pogoBounce(e, level); e.invulnT = Math.max(e.invulnT, 0.1); sndPlay('spike', { x: e.cx, p: 1.5 }); continue; }          // v0.95: Pogo tự động — nảy lại, không mất máu
         if (hit) { if (e === game.player) { if (e.invulnT > 0) continue; } else e.invulnT = 0; if (e.hurt({ kind: DMG.SPIKE, dmg: 99, x: e.cx, y: e.y + e.h })) { if (e === game.player && !e.dead) playerKnockOut(e, e.cx + (game.rngFx.next() < 0.5 ? -1 : 1)); else { e.vx = 0; e.vy = 0; } level.spawnBurst(e.cx, e.y + e.h, 8, '#d23a3a', 60); sndPlay('spike', { x: e.cx }); } }
     }
 }
@@ -6063,7 +6154,8 @@ function dmgContacts(level) {
         if (!e.alive || !(e instanceof Enemy) || e.holder || e.harmless || !overlapBox(p, e)) continue;
         // Đạp đầu: người chơi đang rơi và chân ở nửa trên của quái
         if (p.vy > 0 && p.py + p.h <= e.py + e.h * 0.5 + 2) {
-            const dmg = (Math.floor(p.fallT / PHYS.stunFallT) + 1) ;   // SC: hp −= 1 × (floor(fallTimer/16) + 1)
+            let dmg = (Math.floor(p.fallT / PHYS.stunFallT) + 1);
+            if (classHas('spikeBoots')) dmg *= 2 * (abilityHas('pogoAuto') ? 1.5 : 1);          // v0.95 Kiếm Sĩ: giày gai ×2, thưởng boss vùng 2 ×1,5 nữa   // SC: hp −= 1 × (floor(fallTimer/16) + 1)
             const hp0 = e.hp;
             if (e.hurt({ kind: DMG.STOMP, dmg, x: p.cx, y: p.y + p.h, by: p })) {
                 p.vy = ITEM.stompVy - 0.2 * p.vy; p.fallT = 0; p.jumpHeld = false;
@@ -6776,7 +6868,7 @@ function foeFriendlyFire(box, src, owner) {
     let hit = false;
     for (const e of game.entities) {
         if (!e.alive || e === owner || e.holder || !(e instanceof Enemy) || e.isBoss || !overlapBox(box, e)) continue;
-        if (e.hurt(Object.assign({ dmg: 1, x: box.x + box.w / 2, y: box.y + box.h / 2 }, src))) { hit = true; game.level.spawnBurst(e.cx, e.cy, 4, '#d23a3a', 70); if (e.alive && statusOf(owner) === 'poison') envPoison(e); }      // chủ đạn hệ độc: quái bị trúng (không cùng hệ) trúng độc, đi chậm ×0.8 trong 5 giây
+        if (e.hurt(Object.assign({ dmg: box.reflMul || 1, x: box.x + box.w / 2, y: box.y + box.h / 2 }, src))) { hit = true; game.level.spawnBurst(e.cx, e.cy, 4, '#d23a3a', 70); if (e.alive && statusOf(owner) === 'poison') envPoison(e); }      // chủ đạn hệ độc: quái bị trúng (không cùng hệ) trúng độc, đi chậm ×0.8 trong 5 giây
     }
     return hit;
 }
@@ -7394,7 +7486,7 @@ class Boss extends Enemy {
         sndPlay('bossRoar'); fxShake(2, 0.6); fxScreenFlash('#ffffff', 0.18, 0.4); game.banner = { text: this.bossName || this.def.name, t: 0 };
     }
     enterPhase2(level) {
-        const pl = game.player; if (pl && !pl.dead && this.def.final && pl.hp < ITEM.startHp + 2 * HP_UNIT) { pl.hp += HP_UNIT; level.spawnBurst(pl.cx, pl.cy, 10, '#ff7a9a', 90); game.pickupMsg = { t: 0, text: 'Ánh tinh thể hồi 1 máu' }; }
+        const pl = game.player; if (pl && !pl.dead && this.def.final && pl.hp < startHpOf() + 2 * HP_UNIT) { pl.hp += HP_UNIT; level.spawnBurst(pl.cx, pl.cy, 10, '#ff7a9a', 90); game.pickupMsg = { t: 0, text: 'Ánh tinh thể hồi 1 máu' }; }
         this.phase = 2; this.go('roar'); this.vx = 0; sndPlay('bossRoar'); fxShake(3, 0.8); fxScreenFlash('#ff6040', 0.25, 0.5);
         level.spawnBurst(this.cx, this.cy, 24, this.def.col, 170);
     }
@@ -7454,7 +7546,7 @@ function bossDefeated(level, boss) {
     for (const e of game.entities) if (e !== boss && e.alive && (e instanceof BossHazard || (e instanceof Enemy && !(e instanceof Boss)))) { e.alive = false; level.spawnBurst(e.cx, e.cy, 10, e.col, 120); }
     const R = game.rngFx;
     for (let i = 0; i < 8; i++) { const g = new Gold(boss.cx - 3, boss.cy - 6, i < 2 ? 150 : 50); g.vx = (R.next() - 0.5) * 140; g.vy = -120 - R.next() * 80; entAdd(g); }
-    const p = game.player; if (p && !p.dead) p.hp = Math.max(p.hp, ITEM.startHp) + HP_UNIT;
+    const p = game.player; if (p && !p.dead) p.hp = Math.max(p.hp, startHpOf()) + HP_UNIT;
     fxScreenFlash('#ffffff', 0.35, 0.8); sndPlay('victory'); fxShake(2, 0.5);
     level.spawnBurst(boss.cx, boss.cy, 30, '#ffe9a8', 160);
     game.banner = { text: 'ĐÃ HẠ ' + boss.def.name, t: 0 };
@@ -8348,7 +8440,7 @@ class Pot extends Thing {
 const FLASK_SHOCK = { r: 40, dmg: 1, stun: 1, gap: 2 * TILE, chainDmg: 1, chainStun: 0.5 };          // v0.76: bình = một nửa kiếm (1 máu + choáng 1 s; lan 1 máu + 0,5 s) nhưng tầm rộng hơn (r 40) · lan ≤ 2 ô như sét · lớp nước mỏng dẫn điện          // v0.75: 2 máu + choáng 2 s; lan khi hai quái cách ≤ 1 ô; trong nước thì lan cả khối nước
 class ShockFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'shockflask', carryable: true, hurtsOnImpact: true, impactDmg: 1, breakOnImpact: true, hp: 1, mass: 1, col: '#4aa8d8' }); }
-    onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }
+    onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
     shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
@@ -8359,10 +8451,10 @@ class ShockFlask extends Thing {
         for (const e of game.entities) {          // v0.75 (Dan): quái trong tầm: choáng 2 s + mất 2 máu, rồi giật LAN sang quái cách ≤ 1 ô (không giới hạn); người chơi chỉ mất 1 máu + Giật
             if (!e.alive || e === this || e === p || e.dead || !e.creature) continue;
             if (Math.hypot(e.cx - x, e.cy - y) > FLASK_SHOCK.r) continue;
-            shockBolt(x, y, e.cx, e.cy); shockZap(L, e, this, FLASK_SHOCK.dmg, FLASK_SHOCK.stun); if (affinityOf(e, 'shock') !== 'resist') seeds.push(e);          // v0.79: quái kháng sét trúng nửa, không làm nguồn lan
+            shockBolt(x, y, e.cx, e.cy); shockZap(L, e, this, FLASK_SHOCK.dmg * (this.dmgMul || 1), FLASK_SHOCK.stun); if (affinityOf(e, 'shock') !== 'resist') seeds.push(e);          // v0.79: quái kháng sét trúng nửa, không làm nguồn lan
         }
-        if (seeds.length) shockChain(L, seeds, FLASK_SHOCK.gap, FLASK_SHOCK.chainDmg, FLASK_SHOCK.chainStun, this, BLADE.chainMax);
-        puddleShock(L, this, this, FLASK_SHOCK.dmg, FLASK_SHOCK.stun);
+        if (seeds.length) shockChain(L, seeds, FLASK_SHOCK.gap, FLASK_SHOCK.chainDmg * (this.dmgMul || 1), FLASK_SHOCK.chainStun, this, BLADE.chainMax);
+        puddleShock(L, this, this, FLASK_SHOCK.dmg * (this.dmgMul || 1), FLASK_SHOCK.stun);
         shockIgnite(L, this, FLASK_SHOCK.gap);          // v0.76: tia sét bình điện cũng châm thùng dầu / vũng dầu gần đó          // v0.76: bình vỡ trên lớp nước mỏng → giật cả lớp nước
         if (p && !p.dead && Math.hypot(p.cx - x, p.cy - y) <= FLASK_SHOCK.r) { shockBolt(x, y, p.cx, p.cy); if (p.hurt({ kind: DMG.SHOCK, dmg: 1, x, y, by: this })) statusApply(p, 'shock'); }
     }
@@ -8376,7 +8468,7 @@ function frostBurst(L, cx, cy, r, by) {
     const out = { frozen: 0, ice: 0, stone: 0 }, p = game.player;
     L.spawnBurst(cx, cy, 14, '#bfe9ff', 130); L.spawnBurst(cx, cy, 6, '#ffffff', 90); sndPlay('st_slow', { x: cx });
     const hit = [];
-    for (const e of game.entities) if (e.alive && e !== by && e.creature && Math.hypot(e.cx - cx, e.cy - cy) <= r && freezeFoe(e, FROST.dur)) { out.frozen++; hit.push(e); e.invulnT = 0; e.hurt({ kind: DMG.ICE, dmg: FROST.hit, x: cx, y: cy, raw: true }); }
+    for (const e of game.entities) if (e.alive && e !== by && e.creature && Math.hypot(e.cx - cx, e.cy - cy) <= r && freezeFoe(e, FROST.dur)) { out.frozen++; hit.push(e); e.invulnT = 0; e.hurt({ kind: DMG.ICE, dmg: FROST.hit * ((by && by.dmgMul) || 1), x: cx, y: cy, raw: true }); }
     if (hit.length) elemChain(hit, BLADE.chainGap1, by, BLADE.chainMax, 'ice', o => { if (freezeFoe(o, FROST.chainDur)) out.frozen++; });
     if (by) puddleFreeze(L, by, FROST.chainDur, 0);          // v0.76: lớp nước mỏng đóng băng lan: quái đứng trong đó bị đóng 1 s, người chơi Chậm nửa thời gian
     if (p && !p.dead && Math.hypot(p.cx - cx, p.cy - cy) <= r) statusApply(p, 'slow');
@@ -8401,7 +8493,7 @@ function iceMeltStep(L, dt) {
 }
 class FrostFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'frostflask', carryable: true, hurtsOnImpact: true, impactDmg: 1, breakOnImpact: true, hp: 1, mass: 1, col: '#9fd8ff' }); }
-    onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }
+    onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
     shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
@@ -8413,7 +8505,7 @@ class FrostFlask extends Thing {
 const TOXFLASK = { w: 52, h: 30, life: 5, waterDur: 10, dur: 3.2, chainDur: 1.6 };          // v0.76: đám độc rộng hơn (52×30), độc 3,2 s = 2 nhịp = 2 máu (nửa kiếm 3 máu… tầm rộng bù lại); lan ≤ 1 ô: 1 nhịp
 class PoisonFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'poisonflask', carryable: true, hurtsOnImpact: true, impactDmg: 1, breakOnImpact: true, hp: 1, mass: 1, col: '#7be06a' }); }
-    onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }
+    onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
     shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
@@ -8877,7 +8969,7 @@ function shopPick(p) {
 class ShopGoods extends Thing {
     constructor(x, y, type) {
         super(x, y, 12, 12, { kind: 'goods', carryable: true, mass: 1, dmgFrom: [], hurtsOnImpact: false, col: '#ffd24a' });
-        this.type = type === 'heart' || type === 'rope' || type === 'bomb' || type === 'kit' || type === 'item' || type === 'shotgun' || type === 'machete' || type === 'boomerang' ? type : (type === 'crate' ? 'kit' : 'bomb');
+        this.type = type === 'heart' || type === 'rope' || type === 'bomb' || type === 'kit' || type === 'item' || type === 'shotgun' || type === 'machete' ? type : (type === 'crate' ? 'kit' : 'bomb');
         this.gear = null; this.sub = null; this.blade = null;
         if (this.type === 'machete') this.blade = bladePick();          // v0.45: ô dao rựa cũ → kiếm hệ ngẫu nhiên theo vùng (13s_blade.bladePick)
         if (this.type === 'kit') { this.sub = SUB_LIST[game.rngPlay.int(0, SUB_LIST.length - 1)]; }          // v0.43: "bộ đồ nghề" → bình đồ phụ ngẫu nhiên
@@ -8897,7 +8989,7 @@ class ShopGoods extends Thing {
     }
     inShop() { return overlapBox(this.shopBox, { x: this.cx, y: this.cy, w: 1, h: 1 }); }
     keeper() { return thingsWhere(e => e.kind === 'shopkeeper')[0]; }
-    label() { return this.gear ? GEAR_DEFS[this.gear].name : this.blade ? BLADE[this.blade].name : this.sub ? SUB[this.sub].name + ' ×' + SUB[this.sub].n : this.amt ? '+' + this.amt + (this.type === 'bomb' ? ' bom' : ' móc') : SHOP.name[this.type]; }
+    label() { return this.gear ? GEAR_DEFS[this.gear].name : this.blade ? BLADE[this.blade].name.replace('Kiếm', 'Vũ khí') : this.sub ? SUB[this.sub].name + ' ×' + SUB[this.sub].n : this.amt ? '+' + this.amt + (this.type === 'bomb' ? ' bom' : ' móc') : SHOP.name[this.type]; }
     apply(p) {
         if (this.gear) { gearGive(p, this.gear); return; }
         if (this.sub) { subGive(p, this.sub); return; }
@@ -9683,6 +9775,7 @@ function gearDrawHud() {
 //   đuổi theo và chủ cửa hàng nổi giận. Dao rựa: vẫn là nhát roi nhưng sát thương 2 và với xa hơn.
 const WPN = { cd: 0.7, ammo: 12, pellets: 5, spread: 0.13, v: 340, life: 0.42, recoil: 70, noiseR: 220, noiseT: 4, keeperR: 150, macheteDmg: 2, macheteReach: 6 };
 function weaponGive(p, id) {
+    if (id === 'boomerang') p.boomOwned = true;
     p.weapon = id; p.boom = null; if (id === 'shotgun') p.ammo = WPN.ammo; else p.ammo = 0;
     if (id === 'shotgun' || id === 'boomerang') p.sel = id;          // v0.44: mua xong tự chọn làm đồ phụ (Tam giác để bắn / ném)
 }
@@ -9714,31 +9807,39 @@ function weaponFire(p, level) {
 const BOOM_BREAKS = new Set(['pot', 'barrel', 'waterbarrel', 'shockflask', 'frostflask', 'poisonflask', 'waterflask', 'oilflask']);
 const BOOM = { v: 230, decel: 380, back: 260, stun: 1.6, life: 4, catchR: 12 };
 class Boomerang extends Thing {
-    constructor(x, y, owner) { super(x, y, 8, 8, { kind: 'boomerang', mass: 0, gravity: 0, triggersTraps: false, dmgFrom: [], col: '#e0a84a' }); this.owner = owner; this.age = 0; this.back = false; this.hit = new Set(); }
+    constructor(x, y, owner, mode) { super(x, y, 8, 8, { kind: 'boomerang', mass: 0, gravity: 0, triggersTraps: false, dmgFrom: [], col: '#e0a84a' }); this.owner = owner; this.age = 0; this.back = false; this.hit = new Set(); this.mode = mode || 'old'; this.pierceN = 0; this.el = mode === 'far' ? elemOf(owner) : null; }
+    turn() { this.back = true; }
     physStep(level, dt) {
-        const p = this.owner; this.age += dt;
+        const p = this.owner; this.age += dt; const M = this.mode === 'far' ? CW.boomF : this.mode === 'near' ? CW.boomN : null, decel = M ? M.decel : BOOM.decel;
         if (!p || p.dead || this.age > BOOM.life) { this.finish(); return; }
-        if (!this.back) { const s = Math.sign(this.vx) || 1; this.vx -= s * BOOM.decel * dt; if (Math.sign(this.vx) !== s) { this.back = true; this.hit.clear(); } }
-        if (this.back) { const dx = p.cx - this.cx, dy = p.cy - this.cy, d = Math.hypot(dx, dy) || 1; this.vx = dx / d * BOOM.back; this.vy = dy / d * BOOM.back; if (d < BOOM.catchR) { this.finish(); return; } }
+        if (!this.back) { const s = Math.sign(this.vx) || 1; this.vx -= s * decel * dt; if (Math.sign(this.vx) !== s) { this.back = true; if (!M) this.hit.clear(); } }
+        if (this.back) { const dx = p.cx - this.cx, dy = (p.cy - (M ? 8 : 0)) - this.cy, d = Math.hypot(dx, dy) || 1; this.vx = dx / d * BOOM.back; this.vy = dy / d * BOOM.back; if (Math.hypot(p.cx - this.cx, p.cy - this.cy) < BOOM.catchR) { this.finish(); return; } }          // v0.95: vòng về nhắm cao hơn tâm người 1/2 ô → quái cao 1 ô cũng dính
         physMove(level, this, dt);
-        if (!this.back && (this.hitL || this.hitR)) { this.back = true; this.hit.clear(); }
+        if (!this.back && (this.hitL || this.hitR)) { this.back = true; if (!M) this.hit.clear(); }
         for (const e of game.entities) {
             if (!e.alive || !e.creature || e === p || e.holder || this.hit.has(e) || !overlapBox(this, e)) continue;
-            this.hit.add(e); e.stunT = Math.max(e.stunT || 0, BOOM.stun); e.vx = Math.sign(this.vx || 1) * 40; sndPlay('hit', { x: e.cx, p: 1.3 });
-            level.spawnBurst(e.cx, e.cy, 3, '#e0a84a', 50);
+            this.hit.add(e);
+            if (!M) { e.stunT = Math.max(e.stunT || 0, BOOM.stun); e.vx = Math.sign(this.vx || 1) * 40; sndPlay('hit', { x: e.cx, p: 1.3 }); level.spawnBurst(e.cx, e.cy, 3, '#e0a84a', 50); continue; }
+            const bm = e.boss || e.isBoss ? CW.boomBossMul : 1, hp0 = e.hp;
+            if (e.hurt({ kind: DMG.WHIP, dmg: M.dmg, x: this.cx, y: this.cy, by: p })) {
+                if (e.alive && !(e.boss || e.isBoss)) e.stunT = Math.max(e.stunT || 0, M.stun * bm);
+                if (this.el) elemApply(level, p, e, this.el);
+                sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, this.el ? elemCol(this.el) : '#e0a84a', 60);
+            }
+            if (++this.pierceN >= M.pierce) this.back = true;          // gần: không xuyên (trúng 1 quái là quay) · xa: xuyên ≤ 3
         }
         for (const e of game.entities) {          // v0.87 (DEV2): phá bình gốm / thùng dầu / thùng nước / bình nguyên tố nằm trên đất (không phá thùng gỗ, hàng cửa hàng, bom), rồi bay về
             if (!e.alive || e.holder || !BOOM_BREAKS.has(e.kind) || !overlapBox(this, e)) continue;
             e.die({ kind: DMG.WHIP, dmg: 1, x: this.cx, y: this.cy, by: p }); sndPlay('hit', { x: e.cx, p: 1.1 });
-            if (!this.back) { this.back = true; this.hit.clear(); }
+            if (!this.back) { this.back = true; if (!M) this.hit.clear(); }
         }
     }
     finish() { this.alive = false; if (this.owner) this.owner.boom = null; }
     draw(ctx, alpha) { if (ITEM_HP) { drawBoomerangHp(this, ctx, alpha); return; } const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)), k = Math.floor(this.age * 20) % 2; ctx.fillStyle = '#e0a84a'; if (k) { ctx.fillRect(x, y + 3, 8, 2); ctx.fillRect(x + 3, y, 2, 4); } else { ctx.fillRect(x + 3, y, 2, 8); ctx.fillRect(x, y + 3, 5, 2); } }
 }
-function weaponThrowBoom(p) {
-    const f = p.facing, b = entAdd(new Boomerang(p.cx - 4, p.cy - 6, p));
-    b.vx = f * BOOM.v; b.vy = 0; p.boom = b; sndPlay('swing', { x: p.cx, p: 1.4 });
+function weaponThrowBoom(p, mode) {
+    const f = p.facing, b = entAdd(new Boomerang(p.cx - 4, p.cy - 6, p, mode)), M = mode === 'far' ? CW.boomF : mode === 'near' ? CW.boomN : null;
+    b.vx = f * (M ? M.v : BOOM.v); b.vy = 0; p.boom = b; sndPlay('swing', { x: p.cx, p: 1.4 }); return b;
 }
 
 // ---- Pogo (lần 22; học Hollow Knight): trên không ↓ + đánh = chém xuống dưới chân. Trúng quái → quái mất máu như roi, người NẢY lên (hết thời gian rơi => không đau
@@ -10331,19 +10432,20 @@ const SUB = {
 };
 const SUB_FLASK_OF = { fire: 'oil', ice: 'frost', shock: 'shock', poison: 'poison' };          // hệ → id bình
 const SUB_LIST = ['water', 'oil'];
-function subGive(p, id) { if (!SUB[id]) return false; p.sub = { id, n: SUB[id].n }; p.sel = 'sub'; return true; }          // mua / nhặt xong tự chọn món mới
+function subGive0(p, id) { if (!SUB[id]) return false; p.sub = { id, n: SUB[id].n }; p.sel = 'sub'; return true; }
+function subGive(p, id) { return typeof alchGiveFlask === 'function' ? alchGiveFlask(p, id) : subGive0(p, id); }          // mua / nhặt xong tự chọn món mới
 function subHas(p) { return !!(p && p.sub && SUB[p.sub.id] && p.sub.n > 0); }
-function subSanitize(s) { return s && typeof s === 'object' && SUB[s.id] && Number.isFinite(s.n) && s.n > 0 ? { id: s.id, n: Math.min(10, Math.round(s.n)) } : null; }
+function subSanitize(s, cls) { return s && typeof s === 'object' && SUB[s.id] && Number.isFinite(s.n) && s.n > 0 ? { id: s.id, n: Math.min((cls || (typeof game !== 'undefined' && game.cls)) === 'alch' ? 20 : 10, Math.round(s.n)) } : null; }
 function subThrow(p, up, down) {          // dùng 1 lần: tạo bình, ném như bom
     if (!subHas(p)) return false;
     const id = p.sub.id, x = p.cx - 5, y = p.cy - 5, f = id === 'water' ? new WaterFlask(x, y) : id === 'shock' ? new ShockFlask(x, y) : id === 'frost' ? new FrostFlask(x, y) : id === 'poison' ? new PoisonFlask(x, y) : new OilFlask(x, y);
-    entAdd(f); carryThrow(p, f, up, down);
+    f.dmgMul = classMul('dmg', p.cls); entAdd(f); carryThrow(p, f, up, down);
     if (--p.sub.n <= 0) p.sub = null;
     return true;
 }
 class WaterFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'waterflask', carryable: true, hurtsOnImpact: true, impactDmg: 0, breakOnImpact: true, hp: 1, mass: 1, col: '#7fb8ff' }); }
-    onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }
+    onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
     shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
@@ -10352,7 +10454,7 @@ class WaterFlask extends Thing {
 }
 class OilFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'oilflask', carryable: true, hurtsOnImpact: true, impactDmg: 0, breakOnImpact: true, hp: 1, mass: 1, col: '#c8a050' }); }
-    onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }
+    onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
     shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
@@ -10367,7 +10469,7 @@ class OilFlask extends Thing {
 
 // ---- HUÝT SÁO (v0.44; ↓ + Vuông / E): kỹ năng MIỄN PHÍ, không chiếm ô đồ phụ, hồi chiêu WHISTLE.cd giây. Quái trong WHISTLE.r px "để ý" người chơi WHISTLE.noiseT giây (dùng lại cơ chế tiếng súng: noiseT + noiseMul →
 //   Foe.sees() trả true trong tầm rộng hơn, quái đi bộ chuyển sang báo → lao tới; không xuyên khỏi tầm nhìn dọc). Dùng để dụ quái vào bẫy / dung nham — hoặc tự hại mình. Chủ cửa hàng không để ý.
-const WHISTLE = { r: 176, cd: 6, noiseT: 4, noiseMul: 2.6 };
+const WHISTLE = { on: false, r: 176, cd: 6, noiseT: 4, noiseMul: 2.6 };
 function whistleTry(p) {
     if (!p || p.dead || p.whistleCd > 0 || p.state === 'stun') return false;
     p.whistleCd = WHISTLE.cd; let n = 0;
@@ -10511,7 +10613,7 @@ function bladeHit(level, p, e) {
 //   v0.57 (Dan): «đồ thưởng» nay là một trong: bom (+RELIC.bombs) · vàng (RELIC.gold) · súng hoa cải · ĐỒ BÍ MẬT (Ankh hoặc 1 trong 4 bùa kháng hệ; chỉ có ở đây) · HỒI ĐẦY máu (lên trần máu tối đa, dù đang còn bao nhiêu) · bình đồ phụ · kiếm hệ khác. Trọng số RELIC.pool; trùng thì đổi sang bom.
 //   Phòng ẩn còn có 1–2 quái canh (relicGuards, 11_enemies lúc tạo quái; theo bảng quái của vùng, KHÔNG đổi bộ sinh).
 const RELIC = { shard: 1, maxUp: 20, flaskChance: 0.5, bombs: 6, gold: 400, pool: { bomb: 18, gold: 16, gun: 12, heal: 14, flask: 10, blade: 12, gear: 18 }, guards: { aerie: 2, chasm: 2, push: 1 } };
-function maxHpOf(p) { return ITEM.startHp + (p && p.hpUp ? p.hpUp | 0 : 0); }
+function maxHpOf(p, cls) { return startHpOf(cls !== undefined ? cls : p && p.cls) + (p && p.hpUp ? p.hpUp | 0 : 0); }
 class Relic extends Thing {
     constructor(x, y, type) {
         super(x, y, 12, 12, { kind: 'relic', gravity: 0, mass: 0, dmgFrom: [], triggersTraps: false, col: '#ff7aa8' });
@@ -10527,7 +10629,7 @@ class Relic extends Thing {
             else this.pick = { k };
         }
     }
-    label() { return this.type === 'shard' ? 'Mảnh tim' : this.pick.sub ? SUB[this.pick.sub].name : this.pick.gear ? GEAR_DEFS[this.pick.gear].name : this.pick.blade ? BLADE[this.pick.blade].name : { bomb: '+' + RELIC.bombs + ' bom', gold: '+' + RELIC.gold + ' vàng', gun: 'Súng hoa cải', heal: 'Hồi đầy máu' }[this.pick.k]; }
+    label() { return this.type === 'shard' ? 'Mảnh tim' : this.pick.sub ? SUB[this.pick.sub].name : this.pick.gear ? GEAR_DEFS[this.pick.gear].name : this.pick.blade ? BLADE[this.pick.blade].name.replace('Kiếm', 'Vũ khí') : { bomb: '+' + RELIC.bombs + ' bom', gold: '+' + RELIC.gold + ' vàng', gun: 'Súng hoa cải', heal: 'Hồi đầy máu' }[this.pick.k]; }
     light() { return { r: 20, col: this.type === 'shard' ? '#ff7aa8' : '#ffe08a', a: 0.4 }; }
     update(level, dt) {
         this.age += dt; const p = game.player;
@@ -10538,7 +10640,7 @@ class Relic extends Thing {
                 else { p.hpUp = (p.hpUp | 0) + RELIC.shard; p.hp += RELIC.shard; msg = 'Mảnh tim: +' + (RELIC.shard / HP_UNIT) + ' tim tối đa'; }
             } else if (this.pick.sub) { subGive(p, this.pick.sub); msg = '+' + SUB[this.pick.sub].name; }
             else if (this.pick.gear) { gearGive(p, this.pick.gear); msg = 'Nhận ' + GEAR_DEFS[this.pick.gear].name; }
-            else if (this.pick.blade) { bladeGive(p, this.pick.blade); msg = 'Nhận ' + BLADE[this.pick.blade].name; }
+            else if (this.pick.blade) { bladeGive(p, this.pick.blade); msg = 'Nhận ' + BLADE[this.pick.blade].name.replace('Kiếm', 'Vũ khí'); }
             else {
                 const k = this.pick.k;
                 if (k === 'bomb') { p.bombs += RELIC.bombs; msg = '+' + RELIC.bombs + ' bom'; }
@@ -10590,7 +10692,7 @@ function drawSecretGates(c, cx, cy) {
 const HOOK = { speed: 560, range: 8 * 16, reel: 70, pump: 620, damp: 0.5, maxV: 280, minLen: 20, releaseVy: 70, hop: 150, autoUp: 240, autoIn: 130, autoMax: 1.8, ledgeDx: 4, ledgeR: 3 * 16 + 4, farR: 8 * 16 - 6 };
 // v0.74b (Dan): KHÔNG còn hướng. Bấm dùng → (1) có MÉP GỜ trong 3 ô phía trên: móc vào góc ngoài của gờ rồi tự kéo lên đứng trên gờ; (2) không có: móc THẲNG LÊN TRẦN ngay trên đầu (tầm HOOK.range) rồi tự thu dây kéo lên. Đang tự kéo mà bấm BẤT KỲ phím nào (HOOK_STOP_KEYS) thì dừng, treo lơ lửng; sau đó ↑ = kéo tiếp, ↓ = tụt xuống, ←/→ đu, nhảy = nhả. Không có trần trong tầm thì không ném (không mất móc).
 const HOOK_STOP_KEYS = ['left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'swap', 'swapBack'];          // bấm một trong các phím này khi đang tự kéo = dừng kéo
-function hookFindLedge(level, p) {
+function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ Săn có móc chéo: ưu tiên gờ phía mũi tên đang giữ)
     const c0 = Math.floor(p.cx / TILE), r0 = Math.floor(p.y / TILE), need = Math.max(1, Math.ceil(p.h / TILE)), hx = p.cx, hy = p.y + 2; let best = null;
     const losOk = (x1, y1) => { const dx = x1 - hx, dy = y1 - hy, n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4)); for (let i = 1; i <= n; i++) if (level.isSolid(Math.floor((hx + dx * i / n) / TILE), Math.floor((hy + dy * i / n) / TILE))) return false; return true; };
     for (let r = r0 - 8; r <= r0 + 1; r++) for (let c = c0 - HOOK.ledgeDx - 1; c <= c0 + HOOK.ledgeDx + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
@@ -10607,7 +10709,8 @@ function hookFindLedge(level, p) {
                 const lo = Math.min(cc, c0), hi = Math.max(cc, c0); for (let k = lo; k <= hi && shaft; k++) if (level.isSolid(k, r0)) shaft = false;
                 if (!shaft) continue;
             }
-            const d = Math.hypot(ex - hx, topY - hy); if (d > HOOK.farR) continue;
+            const d = Math.hypot(ex - hx, topY - hy); if (d > hookReach(p)) continue;
+            if (side && (ex - p.cx) * side < 0) continue;
             if (!best || d < best.d) best = { c, r, dir, ex, topY, tx, ty, d };
         }
     }
@@ -10619,11 +10722,12 @@ function hookAim(ax, up) {
     if (ax !== 0) return { x: ax * 0.7071, y: -0.7071 };
     return { x: 0, y: -1 };
 }
+function hookReach(p) { return p.cls === 'hunt' && !abilityHas('hookDiag') ? HOOK.ledgeR : HOOK.farR; }          // v0.95: Thợ Săn cơ bản chỉ tự tìm gờ ≤ ~3 ô (+ trần); thưởng boss vùng 2 = móc chéo ~8 ô, chọn hướng
 function hookThrow(level, p, ax, up) {
     if (p.hook) { hookRelease(p, true); return true; }          // bấm lần nữa = thu móc
-    if (p.ropes <= 0 || p.dead) return false;
+    if ((p.ropes <= 0 && p.cls !== 'hunt') || p.dead) return false;          // v0.95: Thợ Săn móc KHÔNG giới hạn
     // v0.74b (Dan): KHÔNG còn hướng. (1) có MÉP GỜ trong 3 ô phía trên → móc vào đó, tự kéo lên bám / đứng trên gờ; (2) không có → móc thẳng lên trần ngay trên đầu, tự kéo lên. Bấm bất kỳ phím nào = dừng kéo (treo lơ lửng); ↑ = lên tiếp, ↓ = tụt xuống.
-    let g = hookFindLedge(level, p);
+    let g = p.cls === 'hunt' && abilityHas('hookDiag') && ax ? (hookFindLedge(level, p, ax > 0 ? 1 : -1) || hookFindLedge(level, p)) : hookFindLedge(level, p);
     if (!g) {
         const c = Math.floor(p.cx / TILE); let r = Math.floor((p.y + 2) / TILE) - 1;
         while (level.inside(c, r) && !level.isSolid(c, r) && (p.y + 2) - (r + 1) * TILE <= HOOK.range) r--;
@@ -10643,7 +10747,7 @@ function hookRelease(p, quiet) {
 // Gọi mỗi khung từ Player.update (sau abilityStep). Trả true nếu móc ĐANG ĐU và đã tự lo toàn bộ di chuyển của khung này (bỏ qua stepMove).
 function hookStep(p, level, dt, ax, up, down) {
     const h = p.hook; if (!h) return false;
-    if (p.dead || p.state === 'stun' || p.hold || p.dashT > 0 || level.inWater(p)) { hookRelease(p, true); return false; }
+    if (p.dead || p.state === 'stun' || p.dashT > 0 || level.inWater(p)) { hookRelease(p, true); return false; }
     if (h.ph === 'fly') {
         h.tx = p.cx; h.ty = p.y + 2; h.t += dt;
         if (h.tgt) {                                                    // v0.74: bay thẳng tới mép gờ đã chọn rồi ghim
@@ -10652,7 +10756,7 @@ function hookStep(p, level, dt, ax, up, down) {
                 const g = h.tgt; if (!level.isSolid(g.c, g.r)) { hookRelease(p, true); return false; }
                 h.ph = 'on'; h.x = h.ax = g.tx; h.y = h.ay = g.ty; h.c = g.c; h.r = g.r; h.minL = g.ceil ? 2 : HOOK.minLen; h.L = clamp(Math.hypot(h.ax - p.cx, h.ay - (p.y + 2)), h.minL, HOOK.range + 8); h.auto = { ph: 0, t: 0 };          // v0.77: móc trần thu dây tới SÁT trần (đầu chạm trần) để đặt bom ô sát trần h.auto = { ph: 0, t: 0 };
                 if (g.ceil && p.onGround) { p.vy = -HOOK.hop; p.onGround = false; }
-                p.ropes = Math.max(0, p.ropes - 1);
+                if (p.cls !== 'hunt') p.ropes = Math.max(0, p.ropes - 1);
                 if (p.state === 'climb' || p.state === 'hang' || p.state === 'cling') p.setState('air');
                 sndPlay('clang', { x: h.ax, p: 1.6, vol: 0.5 }); level.spawnBurst(h.ax, h.ay, 4, '#b8b8c8', 70);
             }
@@ -10772,6 +10876,126 @@ function dmgPopDraw(camX, camY) {
             ctx.globalAlpha = fade; drawText(String(q.n), sx, sy, '#9aa0aa', 'center'); ctx.globalAlpha = 1;
         }
     }
+}
+
+// 13x_classweapon — VŨ KHÍ CHÍNH THEO LỚP (v0.95, DESIGN_CLASSES_v3.md). Nút Tròn (attack):
+//   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
+//   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
+const CW = {
+    staff: { v: 250, life: 0.46, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.6, size: 6, spread: 0.14 },
+    boomN: { v: 230, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 70 px ≈ 4,3 ô
+    boomF: { v: 320, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 128 px = 8 ô
+    boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
+};
+function elemOf(p) { return (p && p.blade) || 'fire'; }
+function elemCol(el) { return el === 'ice' ? '#7fd8ff' : el === 'shock' ? '#ffe45a' : el === 'poison' ? '#7be06a' : '#ff9a3a'; }
+// áp hiệu ứng hệ lên một quái (dùng chung cho đạn gậy và boomerang hệ). Lửa: bắt cháy (không khi ướt / trong nước); hệ khác đi qua bladeHit (13s_blade).
+function elemApply(level, p, e, el) {
+    if (!e.alive || !e.creature || e === p) return;
+    if (el === 'fire') {
+        if (e.boss || e.isBoss || e.wetT > 0 || level.inWater(e)) return;
+        const res = affinityOf(e, 'fire') === 'resist'; e.burnT = FIRE.burnT * (res ? ELEM.resMul : 1); e.burnRes = res; e.burnTick = FIRE.burnTick; e.burnDmg = BLADE.fireBurn;
+        return;
+    }
+    const keep = p.blade; p.blade = el; try { bladeHit(level, p, e); } finally { p.blade = keep; }
+}
+// ---- Đạn gậy phép ----
+class StaffShot extends Thing {
+    constructor(x, y, vx, vy, owner, power) {
+        super(x - 3, y - 3, 6, 6, { kind: 'staffshot', gravity: 0, mass: 0, dmgFrom: [], col: '#bfe9ff', triggersTraps: false });
+        this.vx = vx; this.vy = vy; this.owner = owner; this.power = !!power; this.el = power ? elemOf(owner) : null; this.life = power ? CW.staff.lifeP : CW.staff.life; this.mul = 1;
+    }
+    update(level, dt) {
+        this.timers(dt); this.x += this.vx * dt; this.y += this.vy * dt;
+        const col = this.power ? elemCol(this.el) : '#bfe9ff';
+        if ((this.life -= dt) <= 0 || level.solidAt(this.cx, this.cy)) { level.spawnBurst(this.cx, this.cy, 3, col, 50); this.alive = false; return; }
+        const p = this.owner;
+        for (const e of game.entities) {
+            if (!e.alive || e === p || e.holder || !(e.creature || e.breakOnImpact) || !overlapBox(this, e)) continue;
+            const hp0 = e.hp, dmg = CW.staff.dmg * this.mul + (this.power ? 1 : 0);
+            if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p })) {
+                if (this.power) elemApply(level, p, e, this.el);
+                sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, col, 70);
+            }
+            this.alive = false; return;
+        }
+    }
+    draw(ctx, alpha) {
+        const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)), c = this.power ? elemCol(this.el) : '#bfe9ff', s = this.power ? 8 : 6, o = (6 - s) / 2;
+        ctx.fillStyle = c; ctx.fillRect(x + o, y + o, s, s); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 2, 2, 2);
+    }
+}
+function staffFire(p, up, power) {
+    const f = p.facing >= 0 ? 1 : -1, C = CW.staff, v = power ? C.vP : C.v, mk = (ang, mul) => {
+        const dx = up ? 0 : f, dy = up ? -1 : 0, ca = Math.cos(ang), sa = Math.sin(ang), vx = (dx * ca - dy * sa) * v, vy = (dx * sa + dy * ca) * v;
+        const s = new StaffShot(p.cx + (up ? 0 : f * 8), p.cy - (up ? 8 : 4), vx, vy, p, power); s.mul = mul * (up ? C.upMul : 1); entAdd(s);
+    };
+    if (power) { mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1); }          // đạn hệ có lan: 3 tia nhỏ
+    else mk(0, 1);
+    p.atkCd = (power ? C.cdP : C.cd) * (p.gliding ? ALCH.glideShotMul : 1); p.poseK = 'throw'; p.poseT = 0.2;
+    sndPlay(power ? 'swing' : 'swingUp', { x: p.cx, p: power ? 0.7 : 1.6, vol: 0.5 });
+}
+// ---- Boomerang chính của Thợ Săn ----
+function hunterThrow(p, power) {
+    if (p.boom) return false;
+    const b = weaponThrowBoom(p, power ? 'far' : 'near'); p.atkCd = power ? CW.boomF.cd : CW.boomN.cd; return !!b;
+}
+// vào từ Player.whipStart. Trả true nếu đã xử lý (không vung kiếm).
+function classAttack(p, dir, power) {
+    if (p.cls === 'alch') { staffFire(p, !!dir, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = dir ? 1 : 0; } return true; }
+    if (p.cls === 'hunt') { hunterThrow(p, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = 0; } return true; }
+    return false;
+}
+
+// 13y_alchemist — GIẢ KIM (v0.95): bình ném mạnh nhất · ĐỔI LOẠI bình (đứng yên giữ Tab / L1: 2 s, sau boss vùng 2 còn 1 s; mang tối đa 10 → 20 bình) · LƯỢN mạnh hơn (chỉ Giả Kim có Lượn) · DỊCH CHUYỂN 3 ô (thưởng boss vùng 6).
+//   CLASS_MUL (một bảng, chia theo thuộc tính): hiện chỉ có «dmg» của bình (lớp khác ×0,6; khống chế — choáng / đóng băng / chậm — giữ nguyên).
+const ALCH = { convT: 2, convFast: 1, cap: 10, capFast: 20, glideMul: 0.7, glideShotMul: 1.6, startFlask: 'shock', tapT: 0.2, tpDist: 3 * TILE, tpCd: 4.5, tpStep: 2 };
+const CLASS_MUL = { dmg: { alch: 1, sword: 0.6, hunt: 0.6 } };          // sát thương bình ném theo lớp; mở rộng thêm: radius / duration / environment
+function classMul(attr, cls) { const t = CLASS_MUL[attr]; const c = cls || (typeof game !== 'undefined' && game.cls) || 'sword'; return t && t[c] !== undefined ? t[c] : 1; }
+const FLASK_ORDER = ['water', 'oil', 'shock', 'frost', 'poison'];
+function subCap() { return abilityHas('flaskFast') ? ALCH.capFast : ALCH.cap; }
+// Mua / nhặt bình: Giả Kim cùng loại thì CỘNG DỒN (tới sức chứa), khác loại thì thay như cũ.
+function alchGiveFlask(p, id) {
+    if (!SUB[id]) return false;
+    if (p.cls === 'alch' && p.sub && p.sub.id === id && p.sub.n > 0) { p.sub.n = Math.min(subCap(), p.sub.n + SUB[id].n); p.sel = 'sub'; return true; }
+    return subGive0(p, id);
+}
+// Vuông (dash) của Giả Kim: CHẠM (thả trong ALCH.tapT) = Dịch chuyển (sau boss vùng 6) · GIỮ đứng yên = đổi loại bình (2 s, sau boss vùng 2: 1 s). Tiến trình p.convT hiện bằng thanh nhỏ trên đầu (alchDraw).
+function alchStep(p, level, dt) {
+    if (p.cls !== 'alch') { p.convT = 0; p.sqT = 0; return; }
+    if (p.tpCd > 0) p.tpCd -= dt;
+    if (inp.held('dash')) {
+        if (p.sqLock) { p.convT = 0; return; }
+        p.sqT = (p.sqT || 0) + dt;
+        const ok = subHas(p) && p.onGround && !p.hold && !p.dead && p.state !== 'stun' && Math.abs(p.vx) < 8;
+        if (!ok) { p.convT = 0; return; }
+        p.convT = p.sqT;
+        const need = abilityHas('flaskFast') ? ALCH.convFast : ALCH.convT;
+        if (p.convT >= need) {
+            p.convT = 0; p.sqLock = true; const i = FLASK_ORDER.indexOf(p.sub.id); p.sub.id = FLASK_ORDER[(i + 1) % FLASK_ORDER.length];
+            sndPlay('ui', { x: p.cx, p: 1.8 }); level.spawnBurst(p.cx, p.y, 6, SUB[p.sub.id].col, 70); game.pickupMsg = { t: 0, text: 'Đổi sang ' + SUB[p.sub.id].name };
+        }
+    } else {
+        const tap = (p.sqT || 0) > 0 && p.sqT <= ALCH.tapT && !p.sqLock;
+        p.sqT = 0; p.convT = 0; p.sqLock = false;
+        if (tap && abilityHas('teleport')) alchTeleport(p, level);
+    }
+}
+function alchDraw(ctx, alpha) {
+    const p = game.player; if (!p || p.cls !== 'alch' || !(p.convT > ALCH.tapT)) return;
+    const need = abilityHas('flaskFast') ? ALCH.convFast : ALCH.convT, k = clamp(p.convT / need, 0, 1), x = Math.round(p.drawX(alpha) + p.w / 2) - 7, y = Math.round(p.drawY(alpha)) - 6;
+    ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, 16, 4); ctx.fillStyle = SUB[p.sub.id].col; ctx.fillRect(x, y, Math.round(14 * k), 2);
+}
+// Dịch chuyển (thưởng boss vùng 6): dùng phím lướt. Không bất tử, không xuyên tường (dừng trước vật cản).
+function alchTeleport(p, level) {
+    if (p.tpCd > 0 || !DASH_STATES[p.state] || p.shocked()) return false;
+    const ax = inp.axisX(), dir = ax !== 0 ? ax : (p.facing || 1); let d = 0;
+    for (let s = ALCH.tpStep; s <= ALCH.tpDist; s += ALCH.tpStep) { if (boxHitsSolid(level, p.x + dir * s, p.y, p.w, p.h)) break; d = s; }
+    if (d < 4) { sndPlay('step', { x: p.cx, p: 1.3, vol: 0.3 }); p.dashBufT = 0; return false; }
+    for (let i = 0; i < 6; i++) level.spawnBurst(p.cx, p.cy, 1, '#b48cff', 60);
+    p.x += dir * d; p.px = p.x; p.facing = dir; p.tpCd = ALCH.tpCd; p.dashBufT = 0; p.vy = Math.min(p.vy, 0) * 0.5;
+    level.spawnBurst(p.cx, p.cy, 8, '#d8c0ff', 90); sndPlay('dash', { x: p.cx, p: 1.6 }); sndPlay('ui', { x: p.cx, p: 2.2, vol: 0.5 });
+    return true;
 }
 
 // 14_atmosphere — BẦU KHÔNG KHÍ (GĐ6a; chuyển từ Metroidvania, reserve/mv_stash.js khối 6): hạt thời tiết theo vùng, quầng sáng, LEVEL TỐI.
@@ -10917,6 +11141,17 @@ function profLoad() {
 }
 function profSave() { try { const k = slotKey(PROF_STORE); if (k) localStorage.setItem(k, JSON.stringify(PROF)); } catch (e) { /* bị chặn: bỏ qua */ } }          // hồ sơ theo slot (v0.60)
 function profReset() { for (const k in PROF) delete PROF[k]; Object.assign(PROF, profBlank()); profSave(); }
+// HỒ SƠ THEO LỚP (v0.98): chung mọi slot, KHÔNG bị xoá khi xoá slot — { sword|alch|hunt: { runs, wins, bestDepth, bestGold } }. Hardcore mở khi có lớp nào từng thắng.
+const CLSPROF_STORE = 'honzy_clsprof_v1';
+function clsProfLoad() {
+    let o = null; try { o = JSON.parse(localStorage.getItem(CLSPROF_STORE)); } catch (e) { }
+    const r = {}; for (const c of CLASS_LIST) { const s = o && o[c] || {}; r[c] = { runs: s.runs | 0, wins: s.wins | 0, bestDepth: s.bestDepth | 0, bestGold: s.bestGold | 0 }; }
+    return r;
+}
+function clsProfAdd(cls, outcome, depth, gold) {
+    const r = clsProfLoad(), s = r[clsOf(cls)]; s.runs++; if (outcome === 'win') s.wins++; s.bestDepth = Math.max(s.bestDepth, depth); s.bestGold = Math.max(s.bestGold, gold | 0);
+    try { localStorage.setItem(CLSPROF_STORE, JSON.stringify(r)); } catch (e) { }
+}
 // Ghi kết quả một ván: outcome = 'dead' | 'win'. Gọi đúng một lần mỗi ván.
 function profRecord(outcome) {
     const s = game.stats || {}, p = game.player;
@@ -10932,6 +11167,7 @@ function profRecord(outcome) {
         PROF.top.push({ score: sc, depth: game.levelIdx + 1, win: outcome === 'win' }); PROF.top.sort((a, b) => b.score - a.score); PROF.top.length = Math.min(PROF.top.length, 5);
         game.newRecord = PROF.top[0].score === sc;
     }
+    clsProfAdd(game.cls, outcome, game.levelIdx + 1, p ? p.gold : 0);
     profSave();
 }
 // Nguyên nhân chết hay gặp nhất: 'rơi vào gai ×3' hoặc ''
@@ -10948,8 +11184,8 @@ profLoad();
 //   Khoá 'honzy_run_v2' (đổi tên từ spelunky_run_v2, chuyển dữ liệu ở 01_config storeMigrate); 'honzy_run_v1' (bố cục 4×4) bị xoá khi gặp.
 const RUN_STORE = 'honzy_run_v2';
 const RUN_STORE_V1 = 'honzy_run_v1';
-const SAVE_VERSION = 2, SAVE_MIN = 2;
-const SAVE_MIGRATE = {};          // SAVE_MIGRATE[v] = d => d: nâng bản v lên v+1 (chưa cần: v2 là bản đầu còn đọc được)
+const SAVE_VERSION = 3, SAVE_MIN = 2;
+const SAVE_MIGRATE = { 2: d => { d.cls = 'sword'; return d; } };          // v2 → v3: thêm lớp nhân vật (bản cũ = Kiếm Sĩ)          // SAVE_MIGRATE[v] = d => d: nâng bản v lên v+1 (chưa cần: v2 là bản đầu còn đọc được)
 
 // Nâng bản cũ lên bản hiện tại. Trả về {ok, data, why}: why = 'newer' | 'old' | 'corrupt'. `target` chỉ để test chạy thử chuỗi nâng cấp.
 function saveMigrate(d, target) {
@@ -10976,9 +11212,9 @@ function saveSanitize(d) {
     if (d.stats && typeof d.stats === 'object') for (const k in d.stats) if (Number.isFinite(d.stats[k])) stats[k] = clamp(Math.round(d.stats[k]), 0, 1e9);
     if (p.items && typeof p.items === 'object') for (const k in p.items) if (p.items[k] === true && gearUsable(k, DIFF[d.diff] ? d.diff : null)) items[k] = true;          // v0.84: bỏ đồ ẩn (găng / phản lực) / không biết; Hardcore bỏ Ankh
     return {
-        v: SAVE_VERSION, gv: Number.isFinite(d.gv) ? d.gv : 0, diff: DIFF[d.diff] ? d.diff : null, tries, bench, hs: d.hs && typeof d.hs === 'object' ? d.hs : {}, seed: d.seed, lvl: d.lvl, runT: Number.isFinite(d.runT) ? clamp(d.runT, 0, 3600 * 9999) : 0, wanted: d.wanted === true, stats,
-        ab: abilitySanitize(d.ab), ci: Array.isArray(d.ci) ? d.ci.filter(k => typeof k === 'string').slice(0, CARRYOVER.max) : [], dda: d.dda && typeof d.dda === 'object' ? d.dda : null,
-        p: { hp: clamp(p.hp, 1, 999), bombs: int(p.bombs, 0, 99, 0), ropes: int(p.ropes, 0, 99, 0), gold: int(p.gold, 0, 1e9, 0), items, sub: subSanitize(p.sub), blade: bladeSanitize(p.blade), hpUp: int(p.hpUp, 0, RELIC.maxUp, 0), weapon: typeof p.weapon === 'string' && p.weapon !== 'boomerang' ? p.weapon : null, ammo: int(p.ammo, 0, 999, 0) }
+        v: SAVE_VERSION, cls: clsOf(d.cls), gv: Number.isFinite(d.gv) ? d.gv : 0, diff: DIFF[d.diff] ? d.diff : null, tries, bench, hs: d.hs && typeof d.hs === 'object' ? d.hs : {}, seed: d.seed, lvl: d.lvl, runT: Number.isFinite(d.runT) ? clamp(d.runT, 0, 3600 * 9999) : 0, wanted: d.wanted === true, stats,
+        ab: abilitySanitize(d.ab, clsOf(d.cls)), ci: Array.isArray(d.ci) ? d.ci.filter(k => typeof k === 'string').slice(0, CARRYOVER.max) : [], dda: d.dda && typeof d.dda === 'object' ? d.dda : null,
+        p: { hp: clamp(p.hp, 1, 999), bombs: int(p.bombs, 0, 99, 0), ropes: int(p.ropes, 0, 99, 0), gold: int(p.gold, 0, 1e9, 0), items, sub: subSanitize(p.sub, clsOf(d.cls)), blade: bladeSanitize(p.blade), hpUp: int(p.hpUp, 0, RELIC.maxUp, 0), weapon: typeof p.weapon === 'string' && p.weapon !== 'boomerang' ? p.weapon : null, boomOwned: p.boomOwned === true, ammo: int(p.ammo, 0, 999, 0) }
     };
 }
 
@@ -11006,8 +11242,8 @@ function saveWrite(d) {
 }
 function saveRun() {
     const p = game.player; if (!p || !game.genMeta) return false;
-    return saveWrite({ v: SAVE_VERSION, gv: GEN_VERSION, diff: game.diff || 'normal', tries: game.tries || {}, bench: game.bench || {}, hs: game.hpSnap || {}, seed: game.seed, lvl: game.levelIdx, runT: game.runT, wanted: !!game.wanted, stats: game.stats, ab: game.abilities, ci: game.carryIn || [], dda: ddaSave(),
-        p: { sub: p.sub || null, blade: p.blade || null, hpUp: p.hpUp | 0, hp: p.hp, bombs: p.bombs, ropes: p.ropes, gold: p.gold, items: p.items, weapon: p.weapon, ammo: p.ammo } });
+    return saveWrite({ v: SAVE_VERSION, cls: clsOf(game.cls), gv: GEN_VERSION, diff: game.diff || 'normal', tries: game.tries || {}, bench: game.bench || {}, hs: game.hpSnap || {}, seed: game.seed, lvl: game.levelIdx, runT: game.runT, wanted: !!game.wanted, stats: game.stats, ab: game.abilities, ci: game.carryIn || [], dda: ddaSave(),
+        p: { sub: p.sub || null, blade: p.blade || null, hpUp: p.hpUp | 0, hp: p.hp, bombs: p.bombs, ropes: p.ropes, gold: p.gold, items: p.items, weapon: p.weapon, boomOwned: !!p.boomOwned, ammo: p.ammo } });
 }
 function clearRun(slot) { try { const key = slotKey(RUN_STORE, slot); if (key) localStorage.removeItem(key); localStorage.removeItem(RUN_STORE_V1); } catch (e) { } }
 
@@ -11034,13 +11270,14 @@ function slotInfo(s) {
     if (r.state === 'nostore') return { st: 'nostore', a: 'Trình duyệt chặn lưu trữ', b: 'Vẫn chơi được nhưng không lưu', c: '', col: '#ffcf8a' };
     return { st: 'none', a: pr && pr.runs ? best : 'Trống', b: pr && pr.runs ? 'Vào = ván mới' : 'Vào = ván mới', c: '', col: '#8a93ad' };
 }
+function anyWins() { let w = PROF && PROF.wins > 0; if (!w) { const r = clsProfLoad(); for (const c of CLASS_LIST) if (r[c].wins > 0) w = true; } for (let s = 1; s <= SLOT.n && !w; s++) { const pr = slotProf(s); if (pr && pr.wins > 0) w = true; } return !!w; }          // v0.95: Hardcore mở khi phá đảo ở BẤT KỲ slot nào
 function slotChoose(s) {
     const t = game.title, r = saveRead(s);
     if (r.state === 'newer') { if (t) t.msg = 'Slot ' + s + ' thuộc phiên bản game mới hơn — không mở được'; return false; }
     SLOT.cur = s; try { localStorage.setItem(SLOT.lastKey, String(s)); } catch (e) { }
     profLoad();
     if (r.state === 'ok') { titleClose(); resumeRun(r.data); game.banner = { text: 'Người chơi ' + s + ' — tiếp tục ' + game.level.name, t: 0 }; }
-    else { if (!game.title) titleOpen('diff'); const tt = game.title; tt.page = 'diff'; tt.sel = 1; tt.msg = ''; tt.fromSlots = true; }          // v0.80: slot trống → chọn độ khó
+    else { if (!game.title) titleOpen('class'); const tt = game.title; tt.page = 'class'; tt.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); tt.msg = ''; tt.fromSlots = true; }          // v0.80: slot trống → chọn độ khó
     return true;
 }
 function slotWipe(s) {
@@ -11076,7 +11313,7 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
     if (t.page === 'main') {
         const it = [];
         if (menuCanResume()) it.push({ text: 'Tiếp tục', act: titleClose });
-        it.push({ text: 'Ván mới', act: go('diff') });          // v0.80: chọn độ khó trước
+        it.push({ text: 'Ván mới', act: go('class') });          // v0.80: chọn độ khó trước
         it.push({ text: 'Đổi người chơi (Slot ' + SLOT.cur + ')', act: slotsOpen });
         it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Hướng dẫn', act: go('help') });
         return it;
@@ -11089,10 +11326,15 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
         return it;
     }
     if (t.page === 'seed') return [{ text: 'Bắt đầu', act: titleStart }, back];
-    if (t.page === 'diff') {          // v0.80 (Dan): chọn độ khó cho ván mới; Hardcore chỉ hiện khi slot đã phá đảo
-        const l = DIFF_LIST.filter(k => k !== 'hardcore' || (PROF && PROF.wins > 0));
-        const it = l.map(k => ({ text: DIFF[k].name, diff: k, act: () => { game.diff = k; titleClose(); newRun(); game.banner = { text: 'Ván mới — ' + DIFF[k].name, t: 0 }; } }));
+    if (t.page === 'class') {          // v0.95: chọn lớp nhân vật trước độ khó
+        const it = CLASS_LIST.map(k => ({ text: CLASSES[k].name, cls: k, act: () => { game.cls = k; t.page = 'diff'; t.sel = 1; t.msg = ''; } }));
         it.push({ text: '← Quay lại', act: () => { if (menuCanResume() && !t.fromSlots) go('main')(); else { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; } } });
+        return it;
+    }
+    if (t.page === 'diff') {          // v0.80 (Dan): chọn độ khó cho ván mới; Hardcore chỉ hiện khi slot đã phá đảo
+        const l = DIFF_LIST.filter(k => k !== 'hardcore' || anyWins());
+        const it = l.map(k => ({ text: DIFF[k].name, diff: k, act: () => { game.diff = k; titleClose(); newRun(); game.banner = { text: 'Ván mới — ' + DIFF[k].name, t: 0 }; } }));
+        it.push({ text: '← Quay lại', act: () => { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; } });
         return it;
     }
     return [back];
@@ -11135,7 +11377,8 @@ function titleKey(e) {
         return true;
     }
     const items = menuItems(t), n = items.length;
-    if (e.code === 'Escape' && t.page === 'diff' && t.fromSlots) { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; return true; }          // v0.90: Esc ở bảng độ khó (mở từ màn slot) → về màn slot
+    if (e.code === 'Escape' && t.page === 'diff') { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; return true; }
+    if (e.code === 'Escape' && t.page === 'class' && t.fromSlots) { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; return true; }          // v0.90: Esc ở bảng độ khó (mở từ màn slot) → về màn slot
     if (e.code === 'Escape') { if (t.page === 'main') { if (menuCanResume()) titleClose(); } else { t.page = 'main'; t.sel = 0; t.msg = ''; } return true; }
     if (e.code === 'ArrowUp') { t.sel = (t.sel + n - 1) % n; return true; }
     if (e.code === 'ArrowDown') { t.sel = (t.sel + 1) % n; return true; }
@@ -11148,7 +11391,7 @@ function drawTitle() {
     t.t += 1 / 60;
     ctx.globalAlpha = 0.8; ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1;
     if (t.page === 'welcome' || t.page === 'slots' || t.page === 'del') { drawSlotScreens(t); return; }
-    const overSlots = t.page === 'diff' && !!t.fromSlots;          // v0.90 (Dan): chọn độ khó từ màn chọn slot → nền vẫn là màn chọn slot, bảng độ khó đè lên
+    const overSlots = (t.page === 'diff' || t.page === 'class') && !!t.fromSlots;          // v0.90 (Dan): chọn độ khó từ màn chọn slot → nền vẫn là màn chọn slot, bảng độ khó đè lên
     if (overSlots) { const bg = t.slotBg || (t.slotBg = {}); Object.assign(bg, t, { page: 'slots', sel: Math.max(0, SLOT.cur - 1), hit: null }); drawSlotScreens(bg); ctx.globalAlpha = 0.65; ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     muiDrawMenu(t, overSlots ? sceneTheme(t) : undefined);          // v0.91: bảng độ khó dùng bảng màu của màn chọn nhân vật
     // xoá hàng chữ (chữ HUD / chữ slot) — lớp chữ nằm TRÊN mọi hình nên chữ nền sẽ đè lên bảng          // v0.78: menu pixel + chuột (15d_menuui)
@@ -11348,7 +11591,7 @@ function sceneIcon(id, x, y) {          // icon ô 12×12 px (vẽ bằng sprite
 function sceneFlask(id, x, y) { const d = SUB[id] || { col: '#7fb8ff' }; ctx.fillStyle = SPR_OUT; ctx.fillRect(x + 3, y - 1, 6, 3); ctx.fillRect(x + 1, y + 2, 10, 10); ctx.fillStyle = '#d8e4f0'; ctx.fillRect(x + 4, y, 4, 2); ctx.fillStyle = d.col; ctx.fillRect(x + 2, y + 5, 8, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 3, y + 3, 2, 5); }
 function slotHero(d, x, floorY, empty) {
     const p = new Player(0, 0); p.facing = 1; p.state = 'idle'; p.vx = p.vy = 0; p.onGround = true;
-    if (d) { p.items = d.p.items || {}; p.blade = d.p.blade || null; p.weapon = d.p.weapon || null; p.ammo = d.p.ammo | 0; p.hp = d.p.hp; p.hpUp = d.p.hpUp | 0; p.sub = d.p.sub || null; }
+    if (d) { p.items = d.p.items || {}; p.blade = d.p.blade || null; p.weapon = d.p.weapon || null; p.ammo = d.p.ammo | 0; p.cls = clsOf(d.cls); p.hp = d.p.hp; p.hpUp = d.p.hpUp | 0; p.sub = d.p.sub || null; }
     p.x = x - p.w / 2; p.y = floorY - p.h; p.px = p.x; p.py = p.y;
     ctx.save(); if (empty) ctx.globalAlpha = 0.45; try { p.draw(ctx, 1); } catch (err) { } ctx.restore();
 }
@@ -11365,26 +11608,26 @@ function drawSlotScreens(t) {
     sceneBackdrop(sceneLevel('slots', th));
     const blink = Math.floor(t.t * 3) % 2;
     for (let i = 0; i < SLOT.n; i++) {
-        const top = 32 + i * 64, sel = i === t.sel, inf = slotInfo(i + 1), r = saveRead(i + 1), d = r.state === 'ok' ? r.data : null;
-        if (!sel) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#05060c'; ctx.fillRect(16, top, VIEW_W - 32, 48); ctx.globalAlpha = 1; }
-        slotHero(d, 40, top + 48, !d);
+        const top = SLOT_ROW.y0 + i * SLOT_ROW.pitch, sel = i === t.sel, inf = slotInfo(i + 1), r = saveRead(i + 1), d = r.state === 'ok' ? r.data : null;
+        if (!sel) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#05060c'; ctx.fillRect(16, top, VIEW_W - 32, SLOT_ROW.h); ctx.globalAlpha = 1; }
+        slotHero(d, 40, top + SLOT_ROW.h - 2, !d);
         const x0 = 62, cur = SLOT.cur === i + 1;
-        drawText('NGƯỜI CHƠI ' + (i + 1) + (cur ? ' (đang chơi)' : ''), x0, top + 4, sel ? '#ffd24a' : '#9aa7c4');
+        drawText('NGƯỜI CHƠI ' + (i + 1) + (d ? ' · ' + CLASSES[clsOf(d.cls)].name : '') + (cur ? ' (đang chơi)' : ''), x0, top + 3, sel ? '#ffd24a' : '#9aa7c4');
         if (d) {
-            drawText((DIFF[d.diff] ? DIFF[d.diff].name + ' · ' : '') + profLevelName(d.lvl + 1) + ' · ' + fmtTime(d.runT), VIEW_W - 22, top + 4, sel ? '#ffe9a8' : '#7a86a6', 'right');
-            const maxHp = maxHpOf({ hpUp: d.p.hpUp }), n = Math.ceil(maxHp / HP_UNIT);
-            if (n <= 15) drawHearts(d.p.hp, maxHp, x0, top + 15); else { drawHearts(d.p.hp, HP_UNIT, x0, top + 15); drawText('x' + Math.ceil(d.p.hp / HP_UNIT) + '/' + n, x0 + 12, top + 15, '#ff9aa8'); }
-            let x = x0; const y = top + 29, add = (draw, label, w) => { draw(x); if (label) drawText(label, x + 14, y + 2, '#cfd6e6'); x += w; };
+            drawText((DIFF[d.diff] ? DIFF[d.diff].name + ' · ' : '') + profLevelName(d.lvl + 1) + ' · ' + fmtTime(d.runT), VIEW_W - 22, top + 3, sel ? '#ffe9a8' : '#7a86a6', 'right');
+            const maxHp = maxHpOf({ hpUp: d.p.hpUp }, clsOf(d.cls)), n = Math.ceil(maxHp / HP_UNIT);
+            if (n <= 15) drawHearts(d.p.hp, maxHp, x0, top + 12); else { drawHearts(d.p.hp, HP_UNIT, x0, top + 12); drawText('x' + Math.ceil(d.p.hp / HP_UNIT) + '/' + n, x0 + 12, top + 12, '#ff9aa8'); }
+            let x = x0; const y = top + 24, add = (draw, label, w) => { draw(x); if (label) drawText(label, x + 14, y + 2, '#cfd6e6'); x += w; };
             add(xx => sceneIcon('bomb', xx, y - 3), String(d.p.bombs), 27); add(xx => sceneIcon('rope', xx, y - 3), String(d.p.ropes), 27);
             drawText('$' + d.p.gold, x, y + 2, '#ffd24a'); x += 7 * String(d.p.gold).length + 14;
             if (d.p.blade) add(xx => sceneIcon('blade:' + d.p.blade, xx, y - 3), '', 18);
             if (d.p.weapon === 'shotgun') add(xx => sceneIcon('shotgun', xx, y - 3), String(d.p.ammo), 26);
             if (d.p.sub && d.p.sub.n > 0) add(xx => sceneFlask(d.p.sub.id, xx, y), 'x' + d.p.sub.n, 26);
             for (const k of Object.keys(d.p.items)) if (GEAR_DEFS[k]) add(xx => sceneIcon('gear:' + k, xx, y - 3), '', 17);
-        } else drawText(inf.st === 'none' ? 'Trống — vào để bắt đầu ván mới' : inf.a + ' · ' + inf.b, x0, top + 20, inf.st === 'none' ? '#7a86a6' : inf.col);
-        if (sel) { ctx.fillStyle = blink ? '#ffe9a8' : '#ffd24a'; ctx.fillRect(16, top - 1, VIEW_W - 32, 2); ctx.fillRect(16, top + 47, VIEW_W - 32, 2); ctx.fillRect(16, top - 1, 2, 50); ctx.fillRect(VIEW_W - 18, top - 1, 2, 50); }
+        } else drawText(inf.st === 'none' ? 'Trống — vào để bắt đầu ván mới' : inf.a + ' · ' + inf.b, x0, top + 16, inf.st === 'none' ? '#7a86a6' : inf.col);
+        if (sel) { ctx.fillStyle = blink ? '#ffe9a8' : '#ffd24a'; ctx.fillRect(16, top - 1, VIEW_W - 32, 2); ctx.fillRect(16, top + SLOT_ROW.h - 1, VIEW_W - 32, 2); ctx.fillRect(16, top - 1, 2, SLOT_ROW.h + 2); ctx.fillRect(VIEW_W - 18, top - 1, 2, SLOT_ROW.h + 2); }
     }
-    drawText(t.page === 'del' ? '' : 'Chuột / ↑↓ chọn · bấm / Enter / 1-3 vào chơi · Delete xoá · Esc quay lại', cx, VIEW_H - 12, '#c9b48a', 'center');
+    drawText(t.page === 'del' ? '' : 'Chuột / ↑↓ chọn · bấm / Enter / 1-5 vào chơi · Delete xoá · Esc quay lại', cx, VIEW_H - 12, '#c9b48a', 'center');
     if (t.msg) drawText(t.msg, cx, 8, '#ffb0b0', 'center');
     if (t.page === 'del') {          // v0.78: bảng pixel + 2 nút bấm được bằng chuột
         muiPalSet(th); TEXT.q.length = 0; const pw = 236, ph = 76, px = Math.round(cx - pw / 2), py = 78; ctx.globalAlpha = 0.6; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1;
@@ -11402,7 +11645,7 @@ function drawSlotScreens(t) {
 //   Mục (menuItems, 15b_screens): kind 'btn' (nút giữa) · 'tog' (nhãn + công tắc, get()) · 'slider' (nhãn + 10 khối, get(), muted(), set(v)) · 'key' (nhãn + phím, action).
 //   Chuột ở màn khác: Welcome bấm = vào chọn slot · chọn slot: rê = chọn, bấm = vào chơi · xoá slot: nút Xoá / Giữ lại · bảng qua màn / chết / thắng: bấm = như bấm phím.
 const MUI = {
-    rowH: { diff: 16, main: 20, opts: 16, keys: 11, seed: 20, help: 20, prof: 20 },
+    rowH: { class: 18, diff: 16, main: 20, opts: 16, keys: 11, seed: 20, help: 20, prof: 20 },
     mouse: { x: -1, y: -1, moved: false }
 };
 // BẢNG MÀU = màu ô đất của màn người chơi đang ở (THEMES[theme]): top = mép sáng nơi người chơi đứng · solid[0] = đất · edge = tối nhất. Đặt lại mỗi khung (muiPalSet)
@@ -11459,17 +11702,31 @@ function muiWrap(text, w) {
     for (const word of text.split(' ')) { const t = cur ? cur + ' ' + word : word; if (cur && ctx.measureText(t).width > w) { out.push(cur); cur = word; } else cur = t; }
     if (cur) out.push(cur); return out;
 }
+// v0.99: chữ hướng dẫn theo LỚP đang chơi (game.cls)
+function clsHelpText(k) {
+    const c = clsOf(game.cls), who = { sword: 'Kiếm Sĩ', alch: 'Giả Kim', hunt: 'Thợ Săn' }[c];
+    const jump = { sword: 'Nhảy · bấm lần 2 trên không = nhảy đôi', alch: 'Nhảy · giữ khi đang rơi = lượn', hunt: 'Nhảy' }[c];
+    const atk = { sword: 'Chém (giữ = chém nạp) · ↑ + ' + k('attack') + ' chém lên · trên không ↓ + ' + k('attack') + ' chém xuống · đang cầm đồ = ném',
+        alch: 'Bắn gậy phép (↑ + ' + k('attack') + ' bắn lên · giữ rồi thả = đạn hệ 3 tia) · đang cầm đồ = ném',
+        hunt: 'Ném boomerang (gần, 1 mục tiêu · giữ rồi thả = boomerang hệ xa, xuyên ≤ 3 quái) · đang cầm đồ = ném' }[c];
+    const dash = { sword: 'Chưa dùng (Kiếm Sĩ không có lướt)', alch: 'GIỮ đứng yên 2 s = đổi loại bình (hạ Vệ binh đá: 1 s) · chạm nhanh = Dịch chuyển 3 ô (mở sau khi hạ Thợ săn tuyết)',
+        hunt: 'Lướt (bất tử ngắn; hạ Thợ săn tuyết → Lướt Bóng)' }[c];
+    const rope = c === 'hunt' ? 'Móc KHÔNG giới hạn: tự móc mép gờ / trần rồi kéo lên (hạ Vệ binh đá → móc chéo xa, giữ ← → chọn hướng)' : 'Móc ngay (tốn 1 móc): tự móc mép gờ / trần rồi kéo lên';
+    const swap = 'Dùng đồ phụ đang chọn (súng, bình) · ' + k('swap') + ' đổi đồ phụ';
+    return { who, jump, atk, dash, rope, swap };
+}
 function muiHelpRows(dw) {          // [{k, lines}] — cột trái = phím (theo phím đang gán / nút PS), cột phải = mô tả tự ngắt dòng
-    const k = a => inp.label(a, 1), R = [
+    const k = a => inp.label(a, 1), H = clsHelpText(k), R = [
+        ['Lớp', H.who],
         ['← →', 'Đi trái / phải'],
-        [k('jump'), 'Nhảy · giữ khi đang rơi = lượn'],
+        [k('jump'), H.jump],
         [k('run'), 'Giữ = chạy nhanh (Luôn chạy BẬT: giữ = đi chậm)'],
-        [k('attack'), 'Chém (giữ = chém nạp) · ↑ + ' + k('attack') + ' chém lên · trên không ↓ + ' + k('attack') + ' chém xuống · đang cầm đồ = ném'],
+        [k('attack'), H.atk],
         ['↓ + ' + k('attack'), 'Nhặt / đặt / mở thùng'],
-        [k('dash'), 'Lướt (có sẵn; đánh bại Thợ săn tuyết → Lướt Bóng) · đứng yên + ↑ + ' + k('dash') + ' huýt sáo dụ quái'],
-        [k('rope'), 'Móc ngay: tự móc mép gờ / trần rồi kéo lên'],
+        [k('dash'), H.dash],
+        [k('rope'), H.rope],
         [k('bomb'), 'Bom ngay: ↓ đặt dưới chân · ↑ hoặc ← → sát đất = gắn bom · còn lại ném'],
-        [k('item'), 'Dùng đồ phụ đang chọn (boomerang, súng, bình…) · ' + k('swap') + ' đổi đồ phụ'],
+        [k('item'), H.swap],
         ['↑', 'Leo thang · vào cửa · cứu công chúa / thú cưng (+1 máu)'],
         ['Cửa hàng', 'Đủ vàng thì nhặt hàng · trộm hàng = bị truy nã']
     ];
@@ -11479,19 +11736,29 @@ function muiHelpRows(dw) {          // [{k, lines}] — cột trái = phím (the
 // vẽ trang menu (mọi trang trừ welcome / slots / del) — gọi từ drawTitle
 function muiDrawMenu(t, themeName) {
     muiPalSet(themeName); TEXT.q.length = 0;          // menu che hết chữ HUD / gợi ý của màn đang chơi (đã xếp hàng trước trong khung này)
-    const cx = VIEW_W / 2, name = { diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', help: 'HƯỚNG DẪN' }[t.page] || '';
+    const cx = VIEW_W / 2, name = { class: 'CHỌN LỚP NHÂN VẬT', diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', help: 'HƯỚNG DẪN' }[t.page] || '';
     const items = menuItems(t), rh = t.page === 'help' ? 16 : (MUI.rowH[t.page] || 16), blink = Math.floor(t.t * 3) % 2;
-    const pw = t.page === 'main' || t.page === 'diff' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
+    const pw = t.page === 'main' || t.page === 'diff' || t.page === 'class' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
         t.page === 'help' ? 304 : 292, KW = 64, dw = pw - 20 - KW - 6;
     const rows = t.page === 'help' ? muiHelpRows(dw) : null, LH = 9.5;
-    let gap = 3, info = t.page === 'prof' ? 5 * 12 : t.page === 'seed' ? 36 : t.page === 'diff' ? (PROF && PROF.wins > 0 ? 0 : 12) : 0;
+    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'seed' ? 36 : t.page === 'class' ? 46 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
     if (rows) { const lines = rows.reduce((a, r) => a + r.lines.length, 0); info = lines * LH + rows.length * gap + 4; if (info + rh + 34 > VIEW_H - 18) { gap = 1; info = lines * LH + rows.length * gap + 4; } }
     const ph = Math.min(VIEW_H - 18, info + items.length * rh + 32), px = Math.round(cx - pw / 2), py = Math.max(6, Math.round((VIEW_H - 12 - ph) / 2));
     muiPanel(px, py, pw, ph); muiTitle(name, cx, py + 7);
     const line = (txt, y, col) => drawText(txt, cx, y, col || MUI.txt, 'center');
     let y = py + 24;
-    if (t.page === 'diff') {          // v0.80: mô tả độ khó đang chọn
-        if (!(PROF && PROF.wins > 0)) line('Phá đảo để mở Hardcore', y - 2, MUI.dim2);          // v0.90 (Dan): bỏ dòng giải thích luật chết / ma / truy nã
+    if (t.page === 'class') {
+        const k = CLASS_LIST[Math.min(t.sel, CLASS_LIST.length - 1)];
+        if (k) {
+            line(CLASSES[k].desc, y - 2, CLASSES[k].col); line(CLASS_INFO[k], y + 10, MUI.dim);
+            CLASS_LIST.forEach((c, i) => {          // v0.96: ba nhân vật xếp hàng, lớp đang chọn sáng + nhún nhẹ
+                const im = assets.img[c === 'sword' ? 'hero_a_idle' : 'hero_' + c + '_idle']; if (!im) return;
+                const fx = Math.floor(t.t * 3) % 4, sel = c === k, dx = px + pw / 2 - 8 + (i - 1) * 54, dy = y + 22 + (sel ? Math.round(Math.sin(t.t * 6)) : 0);
+                ctx.globalAlpha = sel ? 1 : 0.45; ctx.drawImage(im, fx * 32, 0, 32, 34, dx, dy, 16, 17); ctx.globalAlpha = 1;
+            });
+        }
+    } else if (t.page === 'diff') {          // v0.80: mô tả độ khó đang chọn
+        if (!anyWins()) line('Phá đảo để mở Hardcore', y - 2, MUI.dim2);          // v0.90 (Dan): bỏ dòng giải thích luật chết / ma / truy nã
     } else if (t.page === 'seed') {
         line('Gõ chữ/số làm seed (cùng seed = cùng bản đồ).', y, MUI.dim);
         const sx = px + 30; muiRect(sx, y + 14, pw - 60, 13, MUI.ink); muiFrame(sx, y + 14, pw - 60, 13, MUI.bd, 1);
@@ -11504,6 +11771,7 @@ function muiDrawMenu(t, themeName) {
             line('Giết ' + PROF.kills + ' quái · cứu ' + PROF.rescued + ' · mua ' + PROF.bought + ' · trộm ' + PROF.stolen, y + 24);
             if (PROF.top.length) line('Điểm cao: ' + PROF.top.map(x => '$' + x.score).join(' · '), y + 36, MUI.gold2);
             const td = profTopDeath(); if (td) line('Hay chết vì: ' + td, y + 48, '#ff9a9a');
+            { const cr = clsProfLoad(); CLASS_LIST.forEach((c, i) => line(CLASSES[c].name + ': ' + cr[c].runs + ' ván · thắng ' + cr[c].wins + ' · xa nhất ' + profLevelName(cr[c].bestDepth), y + 62 + i * 11, CLASSES[c].col)); }
         }
     } else if (rows) {
         let yy = y - 4;
@@ -11518,7 +11786,7 @@ function muiDrawMenu(t, themeName) {
     items.forEach((it, i) => {
         const sel = i === t.sel, ry = y + i * rh, kind = it.kind || 'btn';
         if (kind === 'btn') {
-            const bw = t.page === 'diff' ? Math.round(Math.min(pw - 40, 170) * 0.75) : Math.min(pw - 40, 170), bx = Math.round(cx - bw / 2), bh = Math.min(16, rh - 2);
+            const bw = t.page === 'diff' || t.page === 'class' ? Math.round(Math.min(pw - 40, 170) * 0.75) : Math.min(pw - 40, 170), bx = Math.round(cx - bw / 2), bh = Math.min(16, rh - 2);
             muiButton(bx, ry, bw, bh, it.text, sel);
             hit.push({ x: bx, y: ry, w: bw, h: bh, i });
             return;
@@ -11551,7 +11819,7 @@ function muiPos(e) {
     return { x: (e.clientX - r.left) * VIEW_W / r.width, y: (e.clientY - r.top) * VIEW_H / r.height };
 }
 function muiFind(t, p) { const h = t.hit || []; for (let k = h.length - 1; k >= 0; k--) { const b = h[k]; if (p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.h) return b; } return null; }
-function muiSlotAt(p) { for (let i = 0; i < SLOT.n; i++) { const top = 32 + i * 64; if (p.x >= 16 && p.x < VIEW_W - 16 && p.y >= top && p.y < top + 48) return i; } return -1; }
+function muiSlotAt(p) { for (let i = 0; i < SLOT.n; i++) { const top = SLOT_ROW.y0 + i * SLOT_ROW.pitch; if (p.x >= 16 && p.x < VIEW_W - 16 && p.y >= top && p.y < top + SLOT_ROW.h) return i; } return -1; }
 function muiMove(e) {
     const t = game.title, p = muiPos(e); if (!p) return; MUI.mouse.x = p.x; MUI.mouse.y = p.y;
     if (!t || t.cap) return;
@@ -11607,6 +11875,7 @@ const game = {
 function diffApply() { const d = diffOf(); GHOST.spawnT = d.ghost; GHOST.warnT = d.ghost - 30; }          // v0.80: ma theo độ khó
 function newRun(seed) {
     if (!DIFF[game.diff]) game.diff = SETTINGS.easy ? 'easy' : 'normal'; diffApply();
+    game.cls = clsOf(game.cls);
     if (seed === undefined) seed = (Date.now() ^ (performance.now() * 1000)) >>> 0;
     game.seed = rngSeedOf(seed);
     game.rngPlay = rngPlayFor(game.seed); game.rngFx = rngFxFor(game.seed);
@@ -11619,6 +11888,8 @@ function newRun(seed) {
     game.tries = {}; game.bench = {}; game.carryIn = [];    // H1: số lần chết trong từng vùng (đổi bản đồ) · vùng nào đã chạm ghế nghỉ · quái sót mang sang (trống khi ván mới)
     const g = genFor(0);
     loadLevel(g.def, true);
+    if (game.cls === 'hunt') game.player.bombs += 4;          // v0.95: Thợ Săn nhiều bom hơn
+    if (game.cls === 'alch') { subGive(game.player, ALCH.startFlask); game.player.sel = 'sub'; }          // v0.95: Giả Kim bắt đầu với 10 bình Sét
 }
 // Sang level kế (cửa ra)
 function nextLevel() {
@@ -11644,12 +11915,12 @@ function loadTestRoom() {
 }
 // Tự lưu / mở lại ván: xem 15a_save.js (saveRun, clearRun, readSavedRun, saveRead; có số phiên bản + nâng cấp bản cũ + làm sạch dữ liệu hỏng).
 function resumeRun(d) {
-    game.diff = DIFF[d.diff] ? d.diff : (SETTINGS.easy ? 'easy' : 'normal'); diffApply();
+    game.diff = DIFF[d.diff] ? d.diff : (SETTINGS.easy ? 'easy' : 'normal'); diffApply(); game.cls = clsOf(d.cls);
     game.seed = d.seed; game.rngPlay = rngPlayFor(game.seed); game.rngFx = rngFxFor(game.seed);
     game.wanted = !!d.wanted; game.runT = d.runT || 0; game.deathCause = ''; game.deadShown = false; game.levelIdx = d.lvl;
     game.trans = null; game.screen = 'play'; game.recorded = false; game.won = false; game.wonT = 0; game.retrySame = game.toTitle = false;
     game.stats = Object.assign({ kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }, d.stats || {});
-    game.abilities = abilitySanitize(d.ab); game.learn = null; game.abBackup = null;
+    game.abilities = abilitySanitize(d.ab, game.cls); game.learn = null; game.abBackup = null;
     game.dda = null; game.dda = ddaLoad(d.dda);
     game.tries = {}; game.bench = {}; game.hpSnap = {};
     if (d.hs && typeof d.hs === 'object') for (const k of Object.keys(d.hs)) if (/^[zb]\d{1,2}$/.test(k) && Number.isFinite(d.hs[k])) game.hpSnap[k] = clamp(Math.round(d.hs[k]), 0, RELIC.maxUp);
@@ -11664,7 +11935,7 @@ function resumeRun(d) {
 // Chế độ dễ: chết ở màn nào thì hồi sinh lại đúng màn đó (cùng seed => cùng bố cục), đầy máu, giữ vàng/đồ.
 function easyRespawn() {
     game.stats.deaths = (game.stats.deaths || 0) + 1; ddaOnDeath();
-    const hp = Math.max(ITEM.startHp, game.lvlHp || 0), g = genFor(game.levelIdx), up0 = game.lvlHpUp | 0;          // chế độ dễ: cùng lần thử => cùng bản đồ
+    const hp = Math.max(startHpOf(), game.lvlHp || 0), g = genFor(game.levelIdx), up0 = game.lvlHpUp | 0;          // chế độ dễ: cùng lần thử => cùng bản đồ
     loadLevel(g.def, false);
     game.player.hpUp = up0; game.lvlHpUp = up0;          // v0.74: hồi sinh cùng màn → máu tối đa về mức lúc vào màn (không cày mảnh tim)
     game.player.hp = hp;
@@ -11696,7 +11967,7 @@ function loadLevel(def, fresh) {
     game.entities = []; game.blasts = [];
     const old = game.player;
     const p = new Player(0, 0);
-    if (!fresh && old) { p.hp = old.hp; p.bombs = old.bombs; p.ropes = old.ropes; p.gold = old.gold; p.items = old.items; p.weapon = old.weapon; p.ammo = old.ammo; p.sub = subSanitize(old.sub); p.blade = bladeSanitize(old.blade); p.hpUp = old.hpUp | 0; }
+    if (!fresh && old) { p.hp = old.hp; p.bombs = old.bombs; p.ropes = old.ropes; p.gold = old.gold; p.items = old.items; p.weapon = old.weapon; p.boomOwned = !!old.boomOwned; p.ammo = old.ammo; p.sub = subSanitize(old.sub); p.blade = bladeSanitize(old.blade); p.hpUp = old.hpUp | 0; }
     p.placeAt(L.spawn);
     game.player = p; game.entities.push(p);
     if (L.id !== 'test') game.lvlHpUp = p.hpUp | 0;          // v0.74: mức máu tối đa lúc vào level (chế độ dễ hồi sinh cùng màn về mức này)
@@ -11746,7 +12017,7 @@ function stepGame() {
     for (let i = 0; i < game.entities.length; i++) { const e = game.entities[i]; if (e !== p && e.alive) e.update(L, STEP); }
     for (const e of game.entities) if (e.holder && e.alive) e.followHolder();
     if (game.god && p.hp < 1 && !p.dead) p.hp = 1;
-    if (L.id === 'test' && !p.dead && p.hp < ITEM.startHp) { game.testHealT = (game.testHealT || 0) + STEP; if (game.testHealT >= 0.8) { p.hp = ITEM.startHp; game.testHealT = 0; } } else game.testHealT = 0;          // phòng thử: mất máu rồi 0,8 s sau tự đầy lại (Player.die cũng không chết ở đây)
+    if (L.id === 'test' && !p.dead && p.hp < startHpOf()) { game.testHealT = (game.testHealT || 0) + STEP; if (game.testHealT >= 0.8) { p.hp = startHpOf(); game.testHealT = 0; } } else game.testHealT = 0;          // phòng thử: mất máu rồi 0,8 s sau tự đầy lại (Player.die cũng không chết ở đây)
     dmgStep(L);
     trapStep(L);
     ghostStep(L, p); pushStep(L, p); crushStep(L, p); lavaStep(L, p); lavaPopStep(L, p); envStep(L); fireStep(L); affixStep(STEP); fireSoundStep(); boltsStep(STEP); iceMeltStep(L, STEP); flowStep(L, STEP); springStep(L, p); statusStep(L, p);
@@ -11819,7 +12090,7 @@ function renderFrame(alpha) {
     drawRopes(L, cx + sx, cy + sy);
     drawSecretGates(ctx, cx + sx, cy + sy);          // v0.56: dải sáng cổng phòng ẩn
     for (const e of game.entities) if (e !== p && !e.holder) { drawEntity(e, ctx, alpha); if (e.frozenT > 0) drawFrozen(e, ctx, alpha); }      // quái ám màu theo vùng (06c_sprites)
-    p.draw(ctx, alpha); pogoDraw(ctx, alpha); statusDrawHero(alpha);
+    p.draw(ctx, alpha); pogoDraw(ctx, alpha); alchDraw(ctx, alpha); statusDrawHero(alpha);
     for (const e of game.entities) if (e.holder) drawEntity(e, ctx, alpha);          // vật đang cầm vẽ trước mặt người chơi
     drawWater(ctx, L, cx, cy); drawBlasts(); drawLights(L, cx, cy); boltsDraw(ctx);
     drawFx(L);
@@ -11842,12 +12113,11 @@ function drawHud() {
     const y = 15;
     // v0.44: hàng đồ phụ dưới thanh máu — bom · dây luôn hiện; súng / boomerang / bình khi đang có. Món đang chọn (Tam giác dùng) gạch chân vàng, đổi bằng L1 / Tab / lăn chuột. Đếm lần dùng cạnh icon
     const slots = [['bomb', '' + p.bombs, p.bombs > 0], ['rope', '' + p.ropes, p.ropes > 0]];
-    slots.push(['boomerang', '∞', true]);          // v0.84: có sẵn từ đầu
     if (p.weapon === 'shotgun') slots.push(['shotgun', '' + Math.max(0, p.ammo), p.ammo > 0]);
     if (subHas(p)) slots.push(['sub', '' + p.sub.n, true, p.sub.id]);          // v0.74: col = id bình (hudIcon vẽ biểu tượng riêng)
     const sel = p.selItem(); let sx = 6;
     for (const s of slots) { hudIcon(s[0], sx, y, s[3]); drawText(s[1], sx + 10, y - 1, s[2] ? '#ffffff' : '#7a7f90'); if (s[0] === sel) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(sx - 1, y + 9, 10 + 5 * s[1].length + 2, 1); } sx += 26; }
-    if (p.blade) { hudIcon('blade', sx + 1, y, p.blade); sx += 14; }
+    { const el = p.cls === 'sword' ? p.blade : elemOf(p); if (el) { hudIcon('blade', sx + 1, y, el); sx += 14; } }          // v0.96: Giả Kim / Thợ Săn luôn có hệ (mặc định Lửa)
     hudIcon('gold', sx + 2, y); drawText('' + p.gold, sx + 12, y - 1, '#ffd24a');
     if (p.whistleCd > 0.05 && game.level.id !== 'test') { ctx.fillStyle = '#3a3f50'; ctx.fillRect(6, y + 12, 24, 1); ctx.fillStyle = '#9fd8ff'; ctx.fillRect(6, y + 12, Math.round(24 * (1 - p.whistleCd / WHISTLE.cd)), 1); }          // hồi chiêu huýt sáo (thanh mảnh)
     if (game.level.id !== 'test') {            // đồng hồ level (góc phải); đỏ khi ma sắp / đã xuất hiện
@@ -11866,8 +12136,8 @@ function drawHud() {
     if (game.lockMsgT > 0) { game.lockMsgT -= 1 / 60; drawText(game.lockArena ? 'Cửa bị khoá — hạ quái trong phòng để mở (còn ' + (game.level.arenaLeft || 0) + ')' : 'Cửa bị phong ấn — hạ boss để mở', VIEW_W / 2, 40, '#ff8a6a', 'center'); if (game.lockMsgT <= 0) game.lockArena = false; }
     if (game.levelT < 9 && !p.dead) {
         ctx.globalAlpha = clamp(9 - game.levelT, 0, 1);
-        drawText('←→ đi · ' + inp.label('run', 1) + ' giữ chạy · ' + inp.label('jump', 1) + ' nhảy · ' + inp.label('attack', 1) + ' kiếm · ' + inp.label('item', 1) + ' dùng đồ phụ (' + inp.label('swap', 1) + ' đổi) · ↓+' + inp.label('attack', 1) + ' nhặt/mở thùng', VIEW_W / 2, VIEW_H - 22, '#ffe9a8', 'center');
-        drawText(inp.label('rope', 1) + ' móc · ' + inp.label('bomb', 1) + ' bom · giữ ' + inp.label('jump', 1) + ' khi rơi = lượn · ↑ leo thang · ép vào mép khi nhảy = bám mép', VIEW_W / 2, VIEW_H - 12, '#cfe3ff', 'center');
+        drawText('←→ đi · ' + inp.label('run', 1) + ' giữ chạy · ' + inp.label('jump', 1) + ' nhảy · ' + inp.label('attack', 1) + ' ' + ({ sword: 'kiếm', alch: 'gậy', hunt: 'boomerang' }[p.cls] || 'kiếm') + ' · ' + inp.label('item', 1) + ' dùng đồ phụ (' + inp.label('swap', 1) + ' đổi) · ↓+' + inp.label('attack', 1) + ' nhặt/mở thùng', VIEW_W / 2, VIEW_H - 22, '#ffe9a8', 'center');
+        drawText(inp.label('rope', 1) + ' móc · ' + inp.label('bomb', 1) + ' bom · ' + ({ sword: 'nhảy lần 2 = nhảy đôi', alch: 'giữ ' + inp.label('jump', 1) + ' khi rơi = lượn', hunt: inp.label('dash', 1) + ' lướt' }[p.cls] || '') + ' · ↑ leo thang · ép vào mép khi nhảy = bám mép', VIEW_W / 2, VIEW_H - 12, '#cfe3ff', 'center');
         ctx.globalAlpha = 1;
     }
     if (game.exitMsgT > 0) drawText('Cửa ra (phòng thử nghiệm) — bấm N để chơi level sinh ngẫu nhiên', VIEW_W / 2, 40, '#ffe9a8', 'center');
