@@ -262,8 +262,8 @@ const KEY_ACTIONS = [
     { id: 'up', label: 'Lên · leo · chém lên · vào cửa', need: true }, { id: 'down', label: 'Xuống · ngồi · nhặt (↓ + Tròn)', need: true },
     { id: 'jump', label: 'Nhảy (X) · giữ khi rơi = lượn', need: true }, { id: 'attack', label: 'Chém / ném (Tròn)', need: true },
     { id: 'dash', label: 'Lướt / Dịch chuyển / đổi bình (Vuông)', need: false }, { id: 'item', label: 'Dùng đồ phụ (Tam giác)', need: false },
-    { id: 'rope', label: 'Móc ngay (L1)', need: false }, { id: 'bomb', label: 'Bom ngay (R1)', need: false },
-    { id: 'run', label: 'Chạy (R2) · Luôn chạy BẬT = đi chậm', need: false },
+    { id: 'rope', label: 'Móc ngay (L1)', need: false }, { id: 'bomb', label: 'Bom ngay (R2)', need: false },
+    { id: 'run', label: 'Chạy (R1) · Luôn chạy BẬT = đi chậm', need: false },
     { id: 'swap', label: 'Đổi đồ phụ → (L2 / lăn xuống)', need: false }, { id: 'swapBack', label: 'Đổi đồ phụ ← (lăn lên)', need: false }
 ];
 // Phím không cho gán: Esc, Tab, F1–F12, Ctrl/Alt/Meta và phím debug của 17_debug (v0.12: đúng bộ đang dùng; T, M, B, U, O, 9 đã bỏ nên gán lại được)
@@ -906,12 +906,12 @@ const GPAD = {
     // chỉ số nút chuẩn -> { play: hành động khi chơi, menu: mã phím khi đang ở menu/màn hình phụ, code: mã phím cố định cho cả hai }
     btn: {      // PlayStation (v0.78): X nhảy (giữ khi rơi = lượn) · Tròn kiếm / nhặt (↓) / ném · Vuông lướt (↑ = huýt sáo) · Tam giác dùng đồ phụ · L1 đổi đồ phụ · L2 móc ngay · R1 chạy (giữ) · R2 bom ngay
         0: { play: 'jump', menu: 'Enter' }, 1: { play: 'attack', menu: 'Escape' }, 2: { play: 'dash', menu: 'Backspace' }, 3: { play: 'item', menu: null },
-        4: { play: 'rope', menu: null }, 5: { play: 'bomb', menu: null }, 6: { play: 'swap', menu: null }, 7: { play: 'run', menu: null },          // v1.05 (Dan): L1 móc · R1 bom · L2 đổi đồ phụ · R2 chạy
+        4: { play: 'rope', menu: null }, 5: { play: 'run', menu: null }, 6: { play: 'swap', menu: null }, 7: { play: 'bomb', menu: null },          // v1.07 (Dan): L1 móc · L2 đổi đồ phụ · R1 chạy · R2 bom
         9: { code: 'Escape' },
         12: { play: 'up', menu: 'ArrowUp' }, 13: { play: 'down', menu: 'ArrowDown' }, 14: { play: 'left', menu: 'ArrowLeft' }, 15: { play: 'right', menu: 'ArrowRight' }
     },
     axis: { 'ax0-': { play: 'left', menu: 'ArrowLeft' }, 'ax0+': { play: 'right', menu: 'ArrowRight' }, 'ax1-': { play: 'up', menu: 'ArrowUp' }, 'ax1+': { play: 'down', menu: 'ArrowDown' } },
-    names: { jump: 'X', attack: 'Tròn', dash: 'Vuông', item: 'Tam giác', run: 'R2', swap: 'L2', rope: 'L1', bomb: 'R1' },      // tên nút để hiện trong chữ hướng dẫn khi đang dùng tay cầm (inp.label, 03_input)
+    names: { jump: 'X', attack: 'Tròn', dash: 'Vuông', item: 'Tam giác', run: 'R1', swap: 'L2', rope: 'L1', bomb: 'R2' },      // tên nút để hiện trong chữ hướng dẫn khi đang dùng tay cầm (inp.label, 03_input)
     src: {},                                      // nguồn đang giữ: id nguồn -> mã phím đã gửi (để thả đúng mã dù ngữ cảnh đổi giữa chừng)
     count: {},                                    // mã phím -> số nguồn đang giữ nó (cần gạt + D-pad cùng hướng không thả sớm)
     name: '', on: false                           // tên tay cầm đang dùng ('' = chưa có), có dữ liệu ở khung vừa rồi
@@ -1325,7 +1325,7 @@ const SND_DEFS = {
     throwFoe: [(ac, o, t, p) => { sndNoise(ac, o, t, { f: 400 * p, f2: 1600 * p, q: 0.7, dur: 0.2, vol: 0.3 }); sndTone(ac, o, t, { f: 200 * p, f2: 110 * p, dur: 0.14, vol: 0.1, type: 'triangle' }); sndTone(ac, o, t, { f: 150 * p, f2: 90 * p, dur: 0.12, vol: 0.08, type: 'sawtooth', lp: 600 }); }, 0.25, 0.1, 0],
     reflect:  [(ac, o, t, p) => { sndTone(ac, o, t, { f: 1760 * p, f2: 1500 * p, dur: 0.22, vol: 0.18, type: 'square', lp: 5000 }); sndTone(ac, o, t, { f: 2640 * p, dur: 0.16, vol: 0.1, type: 'square', lp: 5000 }); sndNoise(ac, o, t, { type: 'highpass', f: 4000, q: 0.5, dur: 0.07, vol: 0.22 }); sndTone(ac, o, t + 0.03, { f: 880 * p, f2: 1320 * p, dur: 0.12, vol: 0.1, type: 'triangle' }); sndNoise(ac, o, t, { f: 600 * p, f2: 2600 * p, q: 0.8, dur: 0.1, vol: 0.25 }); }, 0.3, 0.06, 1],
     // --- v0.92 (Dan): bộ âm mới ---
-    hitSmall: [sx('hitSmall'), 0.15, 0.04, 0], hitArmored: [sx('hitArmored'), 0.36, 0.04, 0], hitBigHigh1: [sx('hitBigHigh1'), 0.34, 0.04, 0],
+    hitSmall: [sx('hitSmall'), 0.15, 0.04, 0], hitArmored: [(ac, o, t, p) => { sx('hitArmored')(ac, o, t, p * 0.6); sndTone(ac, o, t, { f: 150 * p, f2: 45 * p, dur: 0.2, vol: 0.55 }); sndNoise(ac, o, t, { f: 800, f2: 220, q: 1, dur: 0.09, vol: 0.32 }); }, 0.36, 0.04, 0], hitBigHigh1: [sx('hitBigHigh1'), 0.34, 0.04, 0],
     throwGas: [sx('throwGas'), 0.4, 0.1, 0], placeBomb: [sx('placeBomb'), 0.13, 0.08, 0], throwBomb: [sx('throwBomb'), 0.34, 0.1, 0],
     fire: [sx('fire'), 2.0, 0.1, 0], fireA: [sx('fireA'), 2.0, 0.1, 0], fireB: [sx('fireB'), 2.0, 0.1, 0],
     coinMedium2: [sx('coinMedium2'), 0.34, 0.03, 0], coin: [sx('coin'), 0.32, 0.03, 0], coinLarge1: [sx('coinLarge1'), 0.5, 0.03, 0],
@@ -1611,7 +1611,8 @@ const MUS_ZONES = {
     boss:     { root: 38, scale: [0, 1, 3, 6, 7], vol: 1.0, fade: 0.6, pad: { notes: [0, 6, 12], type: 'sawtooth', lp: 320, g: 0.08 }, noise: { type: 'bandpass', f: 380, q: 0.7, g: 0.03 },
                 ev: [{ k: 'pulse', gap: [0.6, 0.6] }, { k: 'stab', gap: [2.4, 2.4] }] }
 };
-MUS_ZONES.mines = Object.assign({}, MUS_ZONES.cave, { pad: Object.assign({}, MUS_ZONES.cave.pad, { notes: [7, 12] }) });          // v1.05 (Dan): bỏ nốt TRẦM NHẤT của lớp pad kéo dài (nốt gốc, ~220 Hz) — còn quãng 5 + quãng 8;          // Hầm mỏ chưa có nhạc riêng (trước đây rơi về 'cave' do mặc định): giữ BẢN SINH NGẪU NHIÊN cũ của Hang ngầm, kể cả khi 'cave' đã đổi sang phong cách CozyWorld (MUS_STYLE bên dưới)
+MUS_ZONES.mines = Object.assign({}, MUS_ZONES.cave, { pad: Object.assign({}, MUS_ZONES.cave.pad, { notes: [] }), ev: MUS_ZONES.cave.ev.map(e => e.k === 'tom' ? Object.assign({}, e, { v: 0.14 }) : e.k === 'flute' ? Object.assign({}, e, { v: 0.8 }) : e) });          // v1.07 (Dan, chỉnh bằng mines_music_lab): TẮT hẳn pad kéo dài + vang (hết ù), trống ×0,14, sáo ×0,8
+//          // v1.05 (Dan): bỏ nốt TRẦM NHẤT của lớp pad kéo dài (nốt gốc, ~220 Hz) — còn quãng 5 + quãng 8;          // Hầm mỏ chưa có nhạc riêng (trước đây rơi về 'cave' do mặc định): giữ BẢN SINH NGẪU NHIÊN cũ của Hang ngầm, kể cả khi 'cave' đã đổi sang phong cách CozyWorld (MUS_STYLE bên dưới)
 const MUS = { zone: null, bus: null, old: [], seed: 20261022, n: 0 };
 function musLevel() { return typeof SND.music === 'number' ? SND.music : 1; }
 function musVolOf(name) { const st = MUS_STYLE[name]; return st ? MUS_STYLE_DEF[st].vol : MUS_ZONES[name].vol; }          // vùng dùng phong cách CozyWorld: độ to theo MUS_STYLE_DEF
@@ -1653,7 +1654,7 @@ function musBuild(name) {
     }
     // lần 26 (học từ CW cw_audio.js): ngõ vào chung `inp` → khô + vang (reverb ồn trắng 3.2s, cắt trầm 240Hz cho hết "ù")
     inp.connect(g); const wet = ac.createGain(), hp = ac.createBiquadFilter(), rv = musReverb(ac), rg = ac.createGain();
-    wet.gain.value = name === 'boss' ? 0.25 : 0.8; hp.type = 'highpass'; hp.frequency.value = 240; rg.gain.value = 0.7; inp.connect(wet); wet.connect(hp); hp.connect(rv); rv.connect(rg); rg.connect(g);
+    wet.gain.value = name === 'boss' ? 0.25 : name === 'mines' ? 0 : 0.8; hp.type = 'highpass'; hp.frequency.value = 240; rg.gain.value = 0.7; inp.connect(wet); wet.connect(hp); hp.connect(rv); rv.connect(rg); rg.connect(g);
     return { name, g, inp, stops, nx: Z.ev.map(e => now + 0.4 + musRand() * e.gap[1]) };
 }
 function musFadeOut(bus) {
@@ -5857,19 +5858,22 @@ function whipFreeze(level, p, b) {
     }
     if (n) sndPlay('st_slow', { x: p.cx, p: 1.3, vol: 0.6 });
 }
+// Đẩy khối T_PUSH trong hộp b theo hướng người chơi đang quay mặt (đòn nạp của kiếm; v1.06: cả đòn nạp của gậy / boomerang — 13x_classweapon.classAttack)
+function pushBlocksBox(level, p, b, hits) {
+    if (!level.pushes || !level.pushes.length) return;
+    const dir = p.facing >= 0 ? 1 : -1;
+    for (const pb of level.pushes.slice().sort((a, b2) => (b2.c - a.c) * dir)) {          // v0.55: khối XA hơn đẩy trước (hai khối liền nhau thì cả hai cùng đi)
+        if ((hits && hits.has(pb)) || pb.fallT >= 0 || level.tile(pb.c, pb.r) !== T_PUSH) continue;
+        if (!overlapBox(b, { x: pb.c * TILE, y: pb.r * TILE, w: TILE, h: TILE })) continue;
+        if (hits) hits.add(pb);
+        let n = 0; while (n < WHIP.chargePush && pushCellFree(level, pb.c + dir, pb.r, true)) { pushMove(level, pb, pb.c + dir, pb.r); n++; }
+        if (n) { const x = (pb.c + 0.5 - dir * 0.5) * TILE, y = (pb.r + 1) * TILE; level.spawnDust(x, y, 6, 60, 14); sndPlay('rock', { x, vol: 0.7 }); fxShake(1.5, 0.1); }
+    }
+}
 function playerWhipStep(level) {
     const p = game.player; if (!p || p.dead) return;
     const b = p.whipBox(); if (!b) return;
-    if (p.whipPower && b.front && !b.up && level.pushes && level.pushes.length) {          // H4c: đòn nạp ngang đẩy khối T_PUSH (tối đa WHIP.chargePush ô; 13f_pushblock lo phần rơi / đè)
-        const dir = p.facing >= 0 ? 1 : -1;
-        for (const pb of level.pushes.slice().sort((a, b) => (b.c - a.c) * dir)) {          // v0.55: khối XA hơn đẩy trước (hai khối liền nhau thì cả hai cùng đi)
-            if (p.whipHits.has(pb) || pb.fallT >= 0 || level.tile(pb.c, pb.r) !== T_PUSH) continue;
-            if (!overlapBox(b, { x: pb.c * TILE, y: pb.r * TILE, w: TILE, h: TILE })) continue;
-            p.whipHits.add(pb);
-            let n = 0; while (n < WHIP.chargePush && pushCellFree(level, pb.c + dir, pb.r, true)) { pushMove(level, pb, pb.c + dir, pb.r); n++; }
-            if (n) { const x = (pb.c + 0.5 - dir * 0.5) * TILE, y = (pb.r + 1) * TILE; level.spawnDust(x, y, 6, 60, 14); sndPlay('rock', { x, vol: 0.7 }); fxShake(1.5, 0.1); }
-        }
-    }
+    if (p.whipPower && b.front && !b.up) pushBlocksBox(level, p, b, p.whipHits);          // H4c: đòn nạp ngang đẩy khối T_PUSH (tối đa WHIP.chargePush ô; 13f_pushblock lo phần rơi / đè)
     if (p.whipPower && p.blade === 'ice' && !p.whipIceDone && b.front) { p.whipIceDone = true; whipFreeze(level, p, b); }          // v0.70: kiếm băng đóng băng nước
     if (p.whipPower && p.blade === 'fire' && !p.whipFireDone && b.front) { p.whipFireDone = true; whipIgnite(level, p, b); }          // H4c-lửa: một lần cho mỗi đòn nạp, TRƯỚC vòng trúng mục tiêu (thùng dầu vỡ vì lửa thì không bị chém lại)
     const fdir = p.facing >= 0 ? 1 : -1, b2 = (p.whipPower && b.front && !b.up) ? { x: fdir > 0 ? p.x + p.w - 2 : p.x - TILE + 2, y: b.y - TILE + 2, w: TILE, h: TILE } : null;          // v0.77 (Dan): đòn nạp ngang trúng cả ô phía TRÊN ô ngay trước mặt (tổng 3 ô: 2 ô trước mặt + 1 ô chéo trên)
@@ -11026,6 +11030,7 @@ function hunterThrow(p, power) {
 }
 // vào từ Player.whipStart. Trả true nếu đã xử lý (không vung kiếm).
 function classAttack(p, dir, power) {
+    if (power && !dir && game.level) { const f = p.facing >= 0 ? 1 : -1, R = WHIP.fx1 + WHIP.chargeReach; pushBlocksBox(game.level, p, { x: f > 0 ? p.cx : p.cx - R, y: p.cy - 8, w: R, h: 16 }, null); }          // v1.06 (Dan): đòn nạp của Giả Kim / Thợ Săn cũng đẩy khối sắt (như Kiếm Sĩ) → vào được phòng bí mật
     if (p.cls === 'alch') { staffFire(p, !!dir, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = dir ? 1 : 0; } return true; }
     if (p.cls === 'hunt') { hunterThrow(p, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = 0; } return true; }
     return false;
