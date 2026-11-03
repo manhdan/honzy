@@ -292,7 +292,7 @@ function clsOf(c) { return CLASSES[c] ? c : 'sword'; }
 function classHpUnits(c) { return (CLASSES[clsOf(c === undefined ? (typeof game !== 'undefined' ? game.cls : null) : c)].hp) * HP_UNIT; }
 function startHpOf(c) { return ITEM.startHp + classHpUnits(c); }
 // ô vẽ cố định của màn chọn slot (5 hàng)
-const SLOT_ROW = { y0: 18, pitch: 40, h: 36 };
+const SLOT_ROW = { y0: 14, pitch: 64, h: 48, vis: 3 };          // v1.04 (Dan): ô slot cao như bản cũ (đủ thông tin nhân vật); 5 slot nên CUỘN, hiện 3 ô một lúc
 const DIFF_LIST = ['easy', 'normal', 'hard', 'hardcore'];
 function diffOf() { return DIFF[(typeof game !== 'undefined' && game.diff) || 'normal'] || DIFF.normal; }
 function slotKey(base, s) { s = s === undefined ? SLOT.cur : s; return s < 1 || s > SLOT.n ? null : s === 1 ? base : base + '_s' + s; }
@@ -375,7 +375,7 @@ const GEN = { foeBase: 8.5, foeEarly: [1.4, 1.35], foeLo: 0.75, foeHi: 1.5, walk
     roomFly: 2, roomRanged: 2,          // v0.89 (Dan: 1-1 ít quái quá): earlyMul[levelIdx] = hệ số mật độ quái cho các màn đầu
     x5Mul: 1.3,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
     trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0.4, crumbleDropP: 0.22, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống
-    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 30, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.22, aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 0.95, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
+    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 30, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.22, aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 0.95, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
 const LOCK_SPARE = 1;          // đấu trường: cửa ra mở khi còn ≤ chừng này quái trong phòng (quái rơi khỏi phòng tính là đã hạ)
 // QUÁI SÓT MANG SANG LEVEL KẾ (cơ chế luôn bật, không có tuỳ chọn tắt). Qua cửa ra: lấy frac (làm tròn lên) số quái còn sống (kể cả quái đã mang sang mà chưa giết), chọn NGẪU NHIÊN (game.rngPlay), rải ở level kế. Hết vùng (zoneIdx đổi) thì xoá. Phòng boss/màn cuối không nhận.
 //   minLeft: sót ít hơn số này thì không mang (1 = sót 1 con cũng mang) · max: trần số quái mang · minDist: cách điểm vào tối thiểu (ô, Manhattan) · avoidR/avoid: tránh quanh cửa hàng/bàn thờ/rương/công chúa/ghế nghỉ · pick: số ô ứng viên thử cho mỗi con (chọn ô xa quái khác nhất => rải đều)
@@ -389,7 +389,7 @@ const CARRYOVER = { frac: 0.5, minLeft: 1, max: 12, minDist: 12, avoidR: 6, pick
 //   Thuật toán: sfc32 (nhanh, chất lượng tốt, 4 số 32-bit trạng thái), khởi tạo từ chuỗi/số bằng băm splitmix32.
 //   Phiên bản bộ sinh level: GEN_VERSION (đổi bộ sinh => tăng số này; hiện cạnh seed, ghi vào báo lỗi).
 
-const GEN_VERSION = 49;     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
+const GEN_VERSION = 50;     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
 
 function rngHash(x) {      // splitmix32: số nguyên 32-bit -> số nguyên 32-bit "trộn đều"
     x = (x + 0x9E3779B9) | 0;
@@ -1329,6 +1329,58 @@ const SND_DEFS = {
     throwGas: [sx('throwGas'), 0.4, 0.1, 0], placeBomb: [sx('placeBomb'), 0.13, 0.08, 0], throwBomb: [sx('throwBomb'), 0.34, 0.1, 0],
     fire: [sx('fire'), 2.0, 0.1, 0], fireA: [sx('fireA'), 2.0, 0.1, 0], fireB: [sx('fireB'), 2.0, 0.1, 0],
     coinMedium2: [sx('coinMedium2'), 0.34, 0.03, 0], coin: [sx('coin'), 0.32, 0.03, 0], coinLarge1: [sx('coinLarge1'), 0.5, 0.03, 0],
+    // --- v1.04 (Dan): 11 âm mới thiết kế trong sound_tuner (SND_TUNE ghi kèm) ---
+    chargeLoop: [(ac, o, t, p) => {
+        sndTone(ac, o, t, { f: 100 * p, f2: 240 * p, dur: 0.45, vol: 0.14, type: 'sawtooth', lp: 700, att: 0.06 });
+        sndTone(ac, o, t, { f: 270 * p, f2: 660 * p, dur: 0.4, vol: 0.07, type: 'triangle', att: 0.1 });
+        sndNoise(ac, o, t, { type: 'bandpass', f: 800, f2: 2400, q: 1.5, dur: 0.4, vol: 0.05, att: 0.1 });
+    }, 0.5, 0.2, 0],
+    chargeReady: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 1320, dur: 0.12, vol: 0.22, type: 'triangle', att: 0.005 });
+        sndTone(ac, o, t, { f: 1980, dur: 0.14, vol: 0.14, type: 'sine', att: 0.005 });
+        sndTone(ac, o, t + 0.04, { f: 2640, dur: 0.1, vol: 0.08, type: 'sine', att: 0.005 });
+    }, 0.2, 0.15, 1],
+    chargeRelease: [(ac, o, t, p) => {
+        sndNoise(ac, o, t, { type: 'bandpass', f: 400 * p, f2: 2600 * p, q: 1.2, dur: 0.35, vol: 0.32, att: 0.02 });
+        sndNoise(ac, o, t, { type: 'highpass', f: 2500, f2: 3500, dur: 0.2, vol: 0.12, att: 0.02 });
+        sndTone(ac, o, t + 0.05, { f: 180 * p, f2: 45 * p, dur: 0.25, vol: 0.28, att: 0.005 });
+        sndTone(ac, o, t + 0.05, { f: 720 * p, f2: 380 * p, dur: 0.15, vol: 0.08, type: 'triangle', att: 0.005 });
+    }, 0.4, 0.1, 1],
+    crusherGrind: [(ac, o, t) => {
+        sndNoise(ac, o, t, { type: 'lowpass', f: 350, f2: 700, dur: 0.5, vol: 0.32, att: 0.08 });
+        sndTone(ac, o, t, { f: 130, f2: 180, dur: 0.5, vol: 0.18, type: 'sawtooth', lp: 400, att: 0.08 });
+        sndTone(ac, o, t, { f: 420, f2: 280, dur: 0.35, vol: 0.05, type: 'triangle', att: 0.2 });
+    }, 0.55, 0.5, 1],
+    stalactiteCrack: [(ac, o, t) => {
+        sndNoise(ac, o, t, { f: 1500, f2: 800, q: 2, dur: 0.08, vol: 0.3 });
+        sndNoise(ac, o, t + 0.03, { f: 2200, f2: 1200, q: 2.5, dur: 0.06, vol: 0.2 });
+        sndTone(ac, o, t, { f: 260, f2: 180, dur: 0.1, vol: 0.12, type: 'triangle' });
+    }, 0.15, 0.3, 1],
+    iceMelt: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 700, f2: 1100, dur: 0.12, vol: 0.08, type: 'sine' });
+        sndNoise(ac, o, t + 0.02, { f: 2200, q: 1.2, dur: 0.06, vol: 0.05 });
+    }, 0.15, 0.15, 0],
+    menuOpen: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 520, f2: 780, dur: 0.06, vol: 0.14, type: 'triangle' });
+        sndTone(ac, o, t + 0.04, { f: 1040, f2: 1560, dur: 0.08, vol: 0.08, type: 'sine' });
+    }, 0.15, 0.1, 0],
+    menuClose: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 780, f2: 520, dur: 0.06, vol: 0.14, type: 'triangle' });
+        sndTone(ac, o, t + 0.04, { f: 390, dur: 0.06, vol: 0.08, type: 'sine' });
+    }, 0.15, 0.1, 0],
+    menuMove: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 880, dur: 0.025, vol: 0.08, type: 'triangle' });
+    }, 0.05, 0.04, 0],
+    bossPhase2: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 60, f2: 40, dur: 0.28, vol: 0.4, att: 0.02 });
+        sndTone(ac, o, t + 0.35, { f: 55, f2: 35, dur: 0.28, vol: 0.32, att: 0.02 });
+        sndTone(ac, o, t, { f: 100, f2: 70, dur: 1.3, vol: 0.18, type: 'sawtooth', lp: 500, att: 0.3 });
+        sndNoise(ac, o, t, { type: 'lowpass', f: 400, f2: 120, dur: 1.3, vol: 0.35, att: 0.3 });
+    }, 1.5, 0.5, 2],
+    lavaBubble: [(ac, o, t) => {
+        sndTone(ac, o, t, { f: 180, f2: 320, dur: 0.08, vol: 0.16, type: 'sine' });
+        sndNoise(ac, o, t + 0.02, { type: 'lowpass', f: 600, f2: 200, dur: 0.1, vol: 0.1 });
+    }, 0.12, 0.1, 0],
 };
 const SND_NAMES = Object.keys(SND_DEFS);
 // ---------- chỉnh âm (bước 8; từ trang tools/sound_tuner.html, Dan chốt) ----------
@@ -1336,6 +1388,8 @@ const SND_NAMES = Object.keys(SND_DEFS);
 //   · tone / noise (âm lượng riêng phần tông / phần nhiễu) · att (độ mở đầu, nhân vào att) · layers: { "chỉ số lớp": { vol, freq } } (chi tiết từng lớp, chưa dùng). Trường thiếu = 1 (không đổi).
 //   Áp dụng trong sndPlay (vol, dur) và lớp bọc sndTone / sndNoise (còn lại). Không có trong bảng = giữ nguyên tiếng gốc. Tiếng ghi chú "DỰ TRỮ" đã chỉnh sẵn nhưng game chưa gọi.
 const SND_TUNE = {
+    chargeLoop: { vol: 0.6, pitch: 1, dur: 1 }, chargeReady: { vol: 0.15, pitch: 0.65 }, chargeRelease: { vol: 1, pitch: 1.3, dur: 0.75 },          // v1.04 (Dan, sound_tuner)
+    menuOpen: { vol: 1.1, pitch: 1 }, menuClose: { vol: 1.1, pitch: 1 }, menuMove: { vol: 1.6, pitch: 0.8 },
     placeBomb: { vol: 0.5625 },          // v0.94: đặt bom còn 75%
     swing: { vol: 0.3 },          // v0.94 (Dan): chém hụt 50% rồi 75% nữa = 0.375 so với gốc (tiếng mới của v0.92 giữ nguyên hình dạng)
     swingUp: { vol: 0.45, pitch: 1.32, bright: 0.52, tone: 0, att: 1.01 },
@@ -1405,6 +1459,7 @@ const SND_VI = {
     diveWind: 'Điềm báo bổ nhào', diveGo: 'Quái bổ nhào', mortarWind: 'Điềm báo pháo', mortarShot: 'Bắn pháo', boom: 'Nổ',
     bossRoar: 'Boss gầm', bossWind: 'Boss điềm báo', bossSlam: 'Boss đập', bossRush: 'Boss lao', bossStep: 'Boss bước', rock: 'Đá / vật rơi', shard: 'Mảnh tinh thể', shardBreak: 'Mảnh vỡ', queenCast: 'Bà chúa niệm chú', bossHurt: 'Boss trúng đòn', bossDie: 'Boss chết', victory: 'Chiến thắng',
     hitSmall: 'Chém trúng quái nhỏ', hitArmored: 'Chém trúng quái giáp / nhát đầu', hitBigHigh1: 'Chém quái to / nhát kết', throwGas: 'Ném bình', placeBomb: 'Đặt bom', throwBomb: 'Ném bom', fire: 'Lửa bùng (bản gốc)', fireA: 'Lửa bùng (bản A)', fireB: 'Lửa bùng (bản B)', coinMedium2: 'Nhặt vàng bé', coin: 'Nhặt vàng vừa', coinLarge1: 'Nhặt vàng lớn',
+    chargeLoop: 'Tụ lực (đang giữ)', chargeReady: 'Tụ lực đầy', chargeRelease: 'Chém / bắn tụ lực', crusherGrind: 'Máy nghiền báo', stalactiteCrack: 'Thạch nhũ nứt', iceMelt: 'Băng tan', menuOpen: 'Mở menu', menuClose: 'Đóng menu', menuMove: 'Di chuyển menu', bossPhase2: 'Boss vào pha 2', lavaBubble: 'Dung nham sủi',
     splash: 'Rơi xuống nước', splashBig: 'Rơi xuống nước mạnh', fireIgnite: 'Dầu bốc cháy', fireCrackle: 'Lửa lách tách', arrowShot: 'Bắn tên', arrowHit: 'Tên trúng', throwFoe: 'Ném quái / xác', reflect: 'Phản đòn'
 };
 const SND_HERO = { bombBoom: 1, hitSmall: 1, hitArmored: 1, hitBigHigh1: 1, throwGas: 1, placeBomb: 1, throwBomb: 1, coinMedium2: 1, coin: 1, coinLarge1: 1, swing: 1, swingUp: 1, hit: 1, hitHeavy: 1, dash: 1, jump: 1, djump: 1, land: 1, step: 1, hurt: 1, dead: 1, st_poison: 1, st_burn: 1, st_slow: 1, st_stun: 1, st_shock: 1, st_tick: 1, bench: 1, orb: 1, door: 1, unlock: 1, gate: 1, ui: 1, reflect: 1, splash: 1, splashBig: 1, victory: 1 };
@@ -4790,6 +4845,12 @@ function genTry(R, levelIdx, seedForDark, mul) {
         counts.elemObj = eo;
         counts.dropped = dropped; counts.extraFoe = extraFoe; counts.extraLoot = extraLoot;
     }
+    // ---- v1.04 (Dan): máy nghiền ('Z') KHÔNG đặt ngay TRÊN hoặc ngay BÊN CẠNH cửa vào — chuyển thành đất thường ('#'; vẫn đặc nên đường đi không đổi) ----
+    { let nz = 0; for (let r = B; r < H + B; r++) for (let c = B; c < W + B; c++) {
+        if (full[r][c] !== 'Z') continue;
+        const above = Math.abs(c - s.c) <= GEN.crushSafeX && r <= s.r + 1 && s.r - r <= GEN.crushSafeUp, beside = Math.abs(r - s.r) <= 2 && Math.abs(c - s.c) <= GEN.crushSafeSide;
+        if (above || beside) { full[r][c] = '#'; nz++; }
+    } counts.crushSafe = nz; }
     // ---- (H1) luật công bằng quanh cửa vào: quái nào NHÌN THẤY điểm xuất hiện (cách ≤ GEN.spawnSafeR ô và không bị đất che) bị bỏ — người chơi không bị đánh/bắn ngay khi vào màn ----
     {
         const monCh2 = {}; for (const k in zone.floor) monCh2[k] = 1; for (const k in zone.air) monCh2[k] = 1; delete monCh2.x;
@@ -5203,12 +5264,13 @@ class Player extends Thing {
         if (this.dashT > 0) { this.chargeT = -1; this.chargeArm = false; }          // H4c: lướt thì huỷ nạp
         if (abilityStep(this, level, dt)) return;          // 09a_abilities: đang lướt thì bỏ qua phần còn lại của khung này
         // ---- đọc phím ----
-        const ax = inp.axisX(), up = inp.held('up'), down = inp.held('down');
+        const wheel = !!this.wheelOn;          // v1.02: vòng chọn bình của Giả Kim đang mở → mũi tên dùng để CHỌN, không đi / nhảy / đánh
+        const ax = wheel ? 0 : inp.axisX(), up = !wheel && inp.held('up'), down = !wheel && inp.held('down');
         const swinging = hookStep(this, level, dt, ax, up, down);          // v0.69: móc — đang đu thì hookStep lo toàn bộ di chuyển
         if (ax !== 0 && ax === this.lastAx) this.dirHeldT += dt; else this.dirHeldT = ax !== 0 ? dt : 0;
         this.lastAx = ax;
         if (inp.held('run')) this.runHeldT += dt; else this.runHeldT = 0;
-        if (inp.pressed('jump')) this.bufferT = Math.max(assistOf('buffer'), 1e-6); else if (this.bufferT > 0) this.bufferT -= dt;
+        if (inp.pressed('jump') && !wheel) this.bufferT = Math.max(assistOf('buffer'), 1e-6); else if (this.bufferT > 0) this.bufferT -= dt;
         if (inp.pressed('swap')) this.cycleSel(1); if (inp.pressed('swapBack')) this.cycleSel(-1);
         // A17 (v0.9): ↓ + nhảy (↓ + X) KHÔNG còn nhặt / đặt; chỉ còn xuyên bục / nhảy. Nhặt / đặt nay ở ↓ + chém (↓ + O) và phím `use`; MỞ THÙNG chỉ có ↑ + chém (↑ + O) — xem actions().
 
@@ -5218,7 +5280,7 @@ class Player extends Thing {
         else this.stepMove(level, dt, ax, up, down);
 
         if (this.dead || this.state === 'stun') return;
-        this.actions(level, ax, up, down);
+        if (!wheel) this.actions(level, ax, up, down);
         if (this.gunCd > 0) this.gunCd -= dt;
         if (this.atkCd > 0) this.atkCd -= dt;
         pogoStep(this, level, dt); alchStep(this, level, dt);
@@ -5540,10 +5602,12 @@ class Player extends Thing {
         if (this.dead || s === 'climb' || s === 'hang' || s === 'stun' || this.hold || this.dashT > 0 || this.shocked() || this.whipT >= 0 ) { this.chargeT = -1; return; }
         if (inp.held('attack')) {
             const was = this.chargeT; this.chargeT = Math.min(this.chargeT + dt, WHIP.chargeT);
-            if (was < WHIP.chargeT && this.chargeT >= WHIP.chargeT) { sndPlay('ui', { x: this.cx, p: 1.6 }); level.spawnBurst(this.cx, this.cy, 6, '#ffe86a', 80); }          // báo đầy
+            if (this.chargeT > 0.12 && this.chargeT < WHIP.chargeT && (this.chgSndT = (this.chgSndT || 0) - dt) <= 0) { this.chgSndT = 0.4; sndPlay('chargeLoop', { x: this.cx, p: 0.9 + 0.5 * this.chargeT / WHIP.chargeT }); }          // v1.04: tiếng tụ lực lặp mỗi ~0,4 s, cao dần
+            if (was < WHIP.chargeT && this.chargeT >= WHIP.chargeT) { sndPlay('chargeReady', { x: this.cx }); level.spawnBurst(this.cx, this.cy, 6, '#ffe86a', 80); }          // báo đầy
         } else {
             const full = this.chargeT >= WHIP.chargeT; this.chargeT = -1;
-            if (full) this.whipStart(this.chargeDir, true);
+            this.chgSndT = 0;
+            if (full) { sndPlay('chargeRelease', { x: this.cx }); this.whipStart(this.chargeDir, true); }
         }
     }
     // Hộp đòn chém hiện tại (null nếu không có): trước mặt (đòn chính), sau lưng (vung sau; chỉ chém ngang) hoặc phía trên đầu (chém lên)
@@ -7487,7 +7551,7 @@ class Boss extends Enemy {
     }
     enterPhase2(level) {
         const pl = game.player; if (pl && !pl.dead && this.def.final && pl.hp < startHpOf() + 2 * HP_UNIT) { pl.hp += HP_UNIT; level.spawnBurst(pl.cx, pl.cy, 10, '#ff7a9a', 90); game.pickupMsg = { t: 0, text: 'Ánh tinh thể hồi 1 máu' }; }
-        this.phase = 2; this.go('roar'); this.vx = 0; sndPlay('bossRoar'); fxShake(3, 0.8); fxScreenFlash('#ff6040', 0.25, 0.5);
+        this.phase = 2; this.go('roar'); this.vx = 0; sndPlay('bossRoar'); sndPlay('bossPhase2'); fxShake(3, 0.8); fxScreenFlash('#ff6040', 0.25, 0.5);
         level.spawnBurst(this.cx, this.cy, 24, this.def.col, 170);
     }
     // Nhận đòn: chỉ vài nguồn có tác dụng; bom bị chặn ở 4 (không giết ngay); có thời gian hồi
@@ -8215,7 +8279,7 @@ class Stalactite extends BossHazard {
         if (this.st === 'hang') {
             if (!level.solidAt(this.cx, this.y - 2)) { this.floorY = roomFloorY(level, this.cx, this.y + this.h); this.st = 'warn'; this.warnAt = this.t - STAL.warnT * 0.5; return; }     // trần bị nổ / đào: rơi sớm
             if (p && !p.dead && Math.abs(p.cx - this.cx) <= STAL.sightX && p.y > this.y + this.h && p.y - this.y <= STAL.sightY && this.clearBelow(level, p.y)) {
-                this.st = 'warn'; this.warnAt = this.t; this.floorY = roomFloorY(level, this.cx, this.y + this.h); sndPlay('rock', { x: this.cx, vol: 0.5, p: 1.7 });
+                this.st = 'warn'; this.warnAt = this.t; this.floorY = roomFloorY(level, this.cx, this.y + this.h); sndPlay('stalactiteCrack', { x: this.cx });
             }
         } else if (this.st === 'warn') {
             this.x = this.homeX + (Math.floor(this.t * 40) % 2 ? 1 : -1);
@@ -8258,7 +8322,7 @@ function lavaPopStep(L, p) {
     const c0 = Math.max(0, Math.floor((p.cx - POP.range) / TILE)), c1 = Math.min(L.w - 1, Math.floor((p.cx + POP.range) / TILE)), r0 = Math.max(0, Math.floor((p.cy - 110) / TILE)), r1 = Math.min(L.h - 1, Math.floor((p.cy + 110) / TILE)), cand = [];
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (L.tile(c, r) === T_LAVA && !L.isSolid(c, r - 1) && L.tile(c, r - 1) !== T_LAVA) cand.push([c, r]);
     if (!cand.length) return;
-    const [c, r] = cand[Math.floor(game.rngPlay.next() * cand.length)]; q.push({ c, r, x: (c + 0.5) * TILE, y: r * TILE + 6, t: POP.warnT });
+    const [c, r] = cand[Math.floor(game.rngPlay.next() * cand.length)]; q.push({ c, r, x: (c + 0.5) * TILE, y: r * TILE + 6, t: POP.warnT }); sndPlay('lavaBubble', { x: (c + 0.5) * TILE });
 }
 
 // 12c_finale — MÀN CUỐI (level 55 sau vùng 9, lần 40-41): TITAN NÚI LỬA, boss "đố mẹo môi trường" (ý Dan chốt 14:24, kiểu Olmec của Spelunky).
@@ -8488,7 +8552,7 @@ function iceMeltStep(L, dt) {
     const m = L.iceMelt; if (!m || !m.length) return;
     for (let i = m.length - 1; i >= 0; i--) {
         const o = m[i]; if ((o.t -= dt) > 0) continue; m.splice(i, 1);
-        if (L.tile(o.c, o.r) === (o.was || T_ICE)) { L.setTile(o.c, o.r, o.back); L.spawnBurst((o.c + 0.5) * TILE, (o.r + 0.5) * TILE, 3, o.back === T_LAVA ? '#ff8a2a' : '#7fb8ff', 40); }
+        if (L.tile(o.c, o.r) === (o.was || T_ICE)) { L.setTile(o.c, o.r, o.back); sndPlay('iceMelt', { x: (o.c + 0.5) * TILE }); L.spawnBurst((o.c + 0.5) * TILE, (o.r + 0.5) * TILE, 3, o.back === T_LAVA ? '#ff8a2a' : '#7fb8ff', 40); }
     }
 }
 class FrostFlask extends Thing {
@@ -9025,6 +9089,8 @@ class ShopGoods extends Thing {
         else if (t === 'shotgun' || t === 'machete') {
             ctx.fillStyle = '#1c1420'; ctx.fillRect(x + 1, y + 3, 10, 7);
             if (t === 'shotgun') { ctx.fillStyle = '#8a8a9a'; ctx.fillRect(x + 1, y + 4, 10, 2); ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 1, y + 6, 5, 3); ctx.fillRect(x + 2, y + 8, 2, 2); }
+            else if (this.blade && game.cls === 'hunt') { const c = BLADE[this.blade].col; ctx.fillStyle = c; ctx.fillRect(x + 2, y + 3, 8, 2); ctx.fillRect(x + 2, y + 3, 2, 7); ctx.fillStyle = '#fff'; ctx.fillRect(x + 2, y + 3, 2, 2); }          // v1.01d: biểu tượng theo lớp — Boomerang hệ
+            else if (this.blade && game.cls === 'alch') { ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 2, y + 9, 8, 2); ctx.fillRect(x + 5, y + 6, 2, 4); ctx.fillStyle = BLADE[this.blade].col; ctx.fillRect(x + 3, y + 2, 6, 5); ctx.fillStyle = '#fff'; ctx.fillRect(x + 4, y + 3, 2, 2); }          // Gậy hệ
             else { ctx.fillStyle = this.blade ? BLADE[this.blade].col : '#c8d0e0'; ctx.fillRect(x + 4, y + 2, 7, 3); ctx.fillRect(x + 7, y + 5, 3, 1); ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 1, y + 5, 4, 3); }
         }
         else if (t === 'bomb') { ctx.fillStyle = '#2a2a33'; ctx.fillRect(x + 2, y + 3, 8, 8); ctx.fillRect(x + 1, y + 4, 10, 6); ctx.fillStyle = '#6a6a7a'; ctx.fillRect(x + 3, y + 4, 2, 2); ctx.fillStyle = '#9a7a4a'; ctx.fillRect(x + 6, y, 1, 3); }
@@ -9432,8 +9498,9 @@ function crushSee(L, b, p) {
 function crushStep(L, p) {
     for (const b of L.crushers) {
         b.t += STEP; const x = (b.c + 0.5) * TILE;
-        if (b.st === 'idle') { if (b.r === b.hr && crushSee(L, b, p)) { b.st = 'warn'; b.t = 0; sndPlay('ui', { x, p: 0.5 }); } }
+        if (b.st === 'idle') { if (b.r === b.hr && crushSee(L, b, p)) { b.st = 'warn'; b.t = 0; sndPlay('crusherGrind', { x }); } }
         else if (b.st === 'warn') {
+            if (Math.floor(b.t / 0.5) !== Math.floor((b.t - STEP) / 0.5)) sndPlay('crusherGrind', { x });          // v1.04: nghiến lặp mỗi 0,5 s suốt thời gian báo
             if (L.fx.length < 400 && Math.floor(b.t * 30) % 3 === 0) L.spawnDust(x, (b.r + 1) * TILE, 1, 20, 6);
             if (b.t >= CRUSH.warnT) { b.st = 'fall'; b.t = 0; }
         } else if (b.st === 'fall') {
@@ -10689,13 +10756,14 @@ function drawSecretGates(c, cx, cy) {
 //   Móc bay HOOK.speed px/s tới tối đa HOOK.range px; trúng ô đặc thì ghim (TRỪ 1 móc lúc ghim; không trúng thì không mất). Ghim xong: người treo vào điểm đó bằng sợi dây dài L (độ dài lúc ghim):
 //     ←/→ đu (lực HOOK.pump) · ↑ kéo ngắn / ↓ thả dài dây (HOOK.reel px/s) · Nhảy = nhả (kèm một cú bật nhẹ) · Tam giác lần nữa = thu móc về (không mất thêm) · chém, ném bom vẫn dùng được khi đang đu.
 //   Tự nhả khi: chạm đất mà không giữ ↑, vào nước, bị choáng / chết, bế vật, lướt, ô được móc bị phá (bom). Dây không xuyên tường: vận tốc hướng ra khỏi điểm treo bị triệt, chỗ lố được kéo vào bằng physMove nên vẫn va chạm ô như thường.
-const HOOK = { speed: 560, range: 8 * 16, reel: 70, pump: 620, damp: 0.5, maxV: 280, minLen: 20, releaseVy: 70, hop: 150, autoUp: 240, autoIn: 130, autoMax: 1.8, ledgeDx: 4, ledgeR: 3 * 16 + 4, farR: 8 * 16 - 6 };
+const HOOK = { vertTiles: 10, horiz: 3, horizFar: 8, speed: 560, range: 10 * 16 + 8, reel: 70, pump: 620, damp: 0.5, maxV: 280, minLen: 20, releaseVy: 70, hop: 150, autoUp: 240, autoIn: 130, autoMax: 1.8, ledgeDx: 4, ledgeR: 3 * 16 + 4, farR: 8 * 16 - 6 };
 // v0.74b (Dan): KHÔNG còn hướng. Bấm dùng → (1) có MÉP GỜ trong 3 ô phía trên: móc vào góc ngoài của gờ rồi tự kéo lên đứng trên gờ; (2) không có: móc THẲNG LÊN TRẦN ngay trên đầu (tầm HOOK.range) rồi tự thu dây kéo lên. Đang tự kéo mà bấm BẤT KỲ phím nào (HOOK_STOP_KEYS) thì dừng, treo lơ lửng; sau đó ↑ = kéo tiếp, ↓ = tụt xuống, ←/→ đu, nhảy = nhả. Không có trần trong tầm thì không ném (không mất móc).
 const HOOK_STOP_KEYS = ['left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'swap', 'swapBack'];          // bấm một trong các phím này khi đang tự kéo = dừng kéo
 function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ Săn có móc chéo: ưu tiên gờ phía mũi tên đang giữ)
     const c0 = Math.floor(p.cx / TILE), r0 = Math.floor(p.y / TILE), need = Math.max(1, Math.ceil(p.h / TILE)), hx = p.cx, hy = p.y + 2; let best = null;
     const losOk = (x1, y1) => { const dx = x1 - hx, dy = y1 - hy, n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4)); for (let i = 1; i <= n; i++) if (level.isSolid(Math.floor((hx + dx * i / n) / TILE), Math.floor((hy + dy * i / n) / TILE))) return false; return true; };
-    for (let r = r0 - 8; r <= r0 + 1; r++) for (let c = c0 - HOOK.ledgeDx - 1; c <= c0 + HOOK.ledgeDx + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
+    const hMax = hookHorizTiles(p) * TILE, vMax = HOOK.vertTiles * TILE;          // v1.02 (Dan): tầm móc = ≤ 10 ô theo CHIỀU CAO và ≤ 3 ô theo chiều NGANG (tính từ mép gờ tới người chơi); Thợ Săn sau boss vùng 2: ngang ≤ 8 ô
+    for (let r = r0 - HOOK.vertTiles; r <= r0 + 1; r++) for (let c = c0 - Math.ceil(hMax / TILE) - 1; c <= c0 + Math.ceil(hMax / TILE) + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
         if (!level.inside(c, r) || !level.isSolid(c, r)) continue;
         const topY = r * TILE; if (topY > p.y + p.h - 10) continue;                                  // chỉ gờ CAO hơn chân ít nhất 10 px
         let room = true; for (let k = 1; k <= need; k++) if (level.isSolid(c, r - k)) { room = false; break; } if (!room) continue;          // chỗ đứng phía trên
@@ -10709,7 +10777,7 @@ function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ S�
                 const lo = Math.min(cc, c0), hi = Math.max(cc, c0); for (let k = lo; k <= hi && shaft; k++) if (level.isSolid(k, r0)) shaft = false;
                 if (!shaft) continue;
             }
-            const d = Math.hypot(ex - hx, topY - hy); if (d > hookReach(p)) continue;
+            const d = Math.hypot(ex - hx, topY - hy); if (Math.abs(ex - p.cx) > hMax || hy - topY > vMax) continue;
             if (side && (ex - p.cx) * side < 0) continue;
             if (!best || d < best.d) best = { c, r, dir, ex, topY, tx, ty, d };
         }
@@ -10722,18 +10790,21 @@ function hookAim(ax, up) {
     if (ax !== 0) return { x: ax * 0.7071, y: -0.7071 };
     return { x: 0, y: -1 };
 }
-function hookReach(p) { return p.cls === 'hunt' && !abilityHas('hookDiag') ? HOOK.ledgeR : HOOK.farR; }          // v0.95: Thợ Săn cơ bản chỉ tự tìm gờ ≤ ~3 ô (+ trần); thưởng boss vùng 2 = móc chéo ~8 ô, chọn hướng
+function hookHorizTiles(p) { return p.cls === 'hunt' && abilityHas('hookDiag') ? HOOK.horizFar : HOOK.horiz; }
+function hookReach(p) { return HOOK.range; }          // v1.01: mọi lớp cùng tầm ~8 ô (Dan: Thợ Săn đứng cách gờ ~7 ô mà móc không lên)          // v0.95: Thợ Săn cơ bản chỉ tự tìm gờ ≤ ~3 ô (+ trần); thưởng boss vùng 2 = móc chéo ~8 ô, chọn hướng
 function hookThrow(level, p, ax, up) {
     if (p.hook) { hookRelease(p, true); return true; }          // bấm lần nữa = thu móc
     if ((p.ropes <= 0 && p.cls !== 'hunt') || p.dead) return false;          // v0.95: Thợ Săn móc KHÔNG giới hạn
-    // v0.74b (Dan): KHÔNG còn hướng. (1) có MÉP GỜ trong 3 ô phía trên → móc vào đó, tự kéo lên bám / đứng trên gờ; (2) không có → móc thẳng lên trần ngay trên đầu, tự kéo lên. Bấm bất kỳ phím nào = dừng kéo (treo lơ lửng); ↑ = lên tiếp, ↓ = tụt xuống.
-    let g = p.cls === 'hunt' && abilityHas('hookDiag') && ax ? (hookFindLedge(level, p, ax > 0 ? 1 : -1) || hookFindLedge(level, p)) : hookFindLedge(level, p);
-    if (!g) {
+    // v1.01 (Dan): MẶC ĐỊNH móc về phía MẶT người chơi (mép gờ phía đó trước, không có mới tới gờ phía sau); chỉ giữ ↑ mới móc THẲNG LÊN TRẦN (không có trần trong tầm thì rơi về gờ)
+    const face = ax ? (ax > 0 ? 1 : -1) : (p.facing >= 0 ? 1 : -1);
+    const ceilHook = () => {
         const c = Math.floor(p.cx / TILE); let r = Math.floor((p.y + 2) / TILE) - 1;
         while (level.inside(c, r) && !level.isSolid(c, r) && (p.y + 2) - (r + 1) * TILE <= HOOK.range) r--;
-        if (!level.inside(c, r) || !level.isSolid(c, r) || (p.y + 2) - (r + 1) * TILE > HOOK.range) { sndPlay('step', { x: p.cx, p: 1.3, vol: 0.3 }); return false; }          // không có trần trong tầm
-        g = { c, r, ceil: true, tx: p.cx, ty: (r + 1) * TILE + 0.5 };
-    }
+        if (!level.inside(c, r) || !level.isSolid(c, r) || (p.y + 2) - (r + 1) * TILE > HOOK.range) return null;
+        return { c, r, ceil: true, tx: p.cx, ty: (r + 1) * TILE + 0.5 };
+    };
+    let g = up ? (ceilHook() || hookFindLedge(level, p, face) || hookFindLedge(level, p)) : (hookFindLedge(level, p, face) || hookFindLedge(level, p));
+    if (!g) { sndPlay('step', { x: p.cx, p: 1.3, vol: 0.3 }); return false; }
     const dx = g.tx - p.cx, dy = g.ty - (p.y + 2), dd = Math.hypot(dx, dy) || 1;
     p.hook = { ph: 'fly', x: p.cx, y: p.y + 2, dx: dx / dd, dy: dy / dd, tx: p.cx, ty: p.y + 2, ax: 0, ay: 0, L: 0, t: 0, tgt: g, dist: dd, x0: p.cx, y0: p.y + 2 };
     if (g.dir) p.facing = g.dir;
@@ -10882,9 +10953,9 @@ function dmgPopDraw(camX, camY) {
 //   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
-    staff: { v: 250, life: 0.46, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.6, size: 6, spread: 0.14 },
-    boomN: { v: 230, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 70 px ≈ 4,3 ô
-    boomF: { v: 320, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 128 px = 8 ô
+    staff: { v: 250, life: 0.16, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.21, size: 6, spread: 0.14 },
+    boomN: { v: 191, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 48 px = 2× tầm kiếm (24 px từ tâm) — v1.02 (Dan)
+    boomF: { v: 240, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 72 px = 3× tầm kiếm (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
 };
 function elemOf(p) { return (p && p.blade) || 'fire'; }
@@ -10960,31 +11031,45 @@ function alchGiveFlask(p, id) {
     if (p.cls === 'alch' && p.sub && p.sub.id === id && p.sub.n > 0) { p.sub.n = Math.min(subCap(), p.sub.n + SUB[id].n); p.sel = 'sub'; return true; }
     return subGive0(p, id);
 }
-// Vuông (dash) của Giả Kim: CHẠM (thả trong ALCH.tapT) = Dịch chuyển (sau boss vùng 6) · GIỮ đứng yên = đổi loại bình (2 s, sau boss vùng 2: 1 s). Tiến trình p.convT hiện bằng thanh nhỏ trên đầu (alchDraw).
+// Vuông (dash) của Giả Kim: CHẠM (thả trong ALCH.tapT) = Dịch chuyển (sau boss vùng 6) · GIỮ (đứng yên, có bình) = hiện VÒNG CHỌN BÌNH: mũi tên chỉ về loại nào thì loại đó sáng, NHẢ nút = chọn.
+//   Thứ tự theo chiều kim đồng hồ từ trên: nước (↑) · lửa/dầu · sét · băng · độc (FLASK_ORDER). Mở vòng thì mũi tên không còn đi / nhảy (Player.update bỏ qua phím).
+function wheelPick(dx, dy) {          // dx,dy ∈ {-1,0,1}; trả chỉ số 0..4 hoặc -1
+    if (!dx && !dy) return -1;
+    let ang = Math.atan2(dx, -dy); if (ang < 0) ang += Math.PI * 2;
+    return Math.floor(ang / (Math.PI * 2 / FLASK_ORDER.length) + 0.5 + 1e-6) % FLASK_ORDER.length;
+}
 function alchStep(p, level, dt) {
-    if (p.cls !== 'alch') { p.convT = 0; p.sqT = 0; return; }
+    if (p.cls !== 'alch') { p.wheelOn = false; p.sqT = 0; return; }
     if (p.tpCd > 0) p.tpCd -= dt;
     if (inp.held('dash')) {
-        if (p.sqLock) { p.convT = 0; return; }
         p.sqT = (p.sqT || 0) + dt;
-        const ok = subHas(p) && p.onGround && !p.hold && !p.dead && p.state !== 'stun' && Math.abs(p.vx) < 8;
-        if (!ok) { p.convT = 0; return; }
-        p.convT = p.sqT;
-        const need = abilityHas('flaskFast') ? ALCH.convFast : ALCH.convT;
-        if (p.convT >= need) {
-            p.convT = 0; p.sqLock = true; const i = FLASK_ORDER.indexOf(p.sub.id); p.sub.id = FLASK_ORDER[(i + 1) % FLASK_ORDER.length];
-            sndPlay('ui', { x: p.cx, p: 1.8 }); level.spawnBurst(p.cx, p.y, 6, SUB[p.sub.id].col, 70); game.pickupMsg = { t: 0, text: 'Đổi sang ' + SUB[p.sub.id].name };
+        if (!p.wheelOn && p.sqT > ALCH.tapT && subHas(p) && p.onGround && !p.hold && !p.dead && p.state !== 'stun' && Math.abs(p.vx) < 8) {
+            p.wheelOn = true; p.wheelSel = Math.max(0, FLASK_ORDER.indexOf(p.sub.id)); sndPlay('ui', { x: p.cx, p: 1.2, vol: 0.5 });
+        }
+        if (p.wheelOn) {
+            if (!subHas(p) || p.dead || p.state === 'stun') { p.wheelOn = false; return; }
+            const k = wheelPick((inp.held('right') ? 1 : 0) - (inp.held('left') ? 1 : 0), (inp.held('down') ? 1 : 0) - (inp.held('up') ? 1 : 0));
+            if (k >= 0 && k !== p.wheelSel) { p.wheelSel = k; sndPlay('ui', { x: p.cx, p: 1.6, vol: 0.3 }); }
         }
     } else {
-        const tap = (p.sqT || 0) > 0 && p.sqT <= ALCH.tapT && !p.sqLock;
-        p.sqT = 0; p.convT = 0; p.sqLock = false;
+        const tap = (p.sqT || 0) > 0 && p.sqT <= ALCH.tapT && !p.wheelOn;
+        if (p.wheelOn) {
+            p.wheelOn = false; const id = FLASK_ORDER[p.wheelSel];
+            if (subHas(p) && id !== p.sub.id) { p.sub.id = id; sndPlay('ui', { x: p.cx, p: 1.8 }); level.spawnBurst(p.cx, p.y, 6, SUB[id].col, 70); game.pickupMsg = { t: 0, text: 'Đổi sang ' + SUB[id].name }; }
+        }
+        p.sqT = 0;
         if (tap && abilityHas('teleport')) alchTeleport(p, level);
     }
 }
 function alchDraw(ctx, alpha) {
-    const p = game.player; if (!p || p.cls !== 'alch' || !(p.convT > ALCH.tapT)) return;
-    const need = abilityHas('flaskFast') ? ALCH.convFast : ALCH.convT, k = clamp(p.convT / need, 0, 1), x = Math.round(p.drawX(alpha) + p.w / 2) - 7, y = Math.round(p.drawY(alpha)) - 6;
-    ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, 16, 4); ctx.fillStyle = SUB[p.sub.id].col; ctx.fillRect(x, y, Math.round(14 * k), 2);
+    const p = game.player; if (!p || p.cls !== 'alch' || !p.wheelOn) return;
+    const cx = Math.round(p.drawX(alpha) + p.w / 2), cy = Math.round(p.drawY(alpha) + p.h / 2), R = 26, n = FLASK_ORDER.length;
+    ctx.fillStyle = 'rgba(8,8,16,0.55)'; ctx.beginPath(); ctx.arc(cx, cy, R + 9, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2, x = Math.round(cx + Math.sin(a) * R), y = Math.round(cy - Math.cos(a) * R), sel = i === p.wheelSel, r = sel ? 7 : 4, col = SUB[FLASK_ORDER[i]].col;
+        ctx.fillStyle = sel ? '#ffffff' : '#000'; ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = col; ctx.globalAlpha = sel ? 1 : 0.55; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    }
 }
 // Dịch chuyển (thưởng boss vùng 6): dùng phím lướt. Không bất tử, không xuyên tường (dừng trước vật cản).
 function alchTeleport(p, level) {
@@ -11295,9 +11380,9 @@ function bigText(str, x, y, size, col) {
 }
 function titleOpen(page) {
     game.title = { page: page || 'main', sel: 0, seed: '', t: 0, cap: null, msg: '' }; game.screen = 'title';
-    inp.lock(true);
+    inp.lock(true); sndPlay('menuOpen');
 }
-function titleClose() { game.title = null; game.screen = 'play'; inp.lock(false); }
+function titleClose() { if (game.title) sndPlay('menuClose'); game.title = null; game.screen = 'play'; inp.lock(false); }
 function titleStart() {            // dùng cho trang nhập seed
     const seed = game.title.seed.trim();
     titleClose(); newRun(seed === '' ? undefined : seed);
@@ -11380,6 +11465,12 @@ function titleKey(e) {
     if (e.code === 'Escape' && t.page === 'diff') { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; return true; }
     if (e.code === 'Escape' && t.page === 'class' && t.fromSlots) { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; return true; }          // v0.90: Esc ở bảng độ khó (mở từ màn slot) → về màn slot
     if (e.code === 'Escape') { if (t.page === 'main') { if (menuCanResume()) titleClose(); } else { t.page = 'main'; t.sel = 0; t.msg = ''; } return true; }
+    if (t.page === 'class') {          // v1.04 (Dan): chọn lớp theo chiều NGANG; ↓ xuống nút Quay lại, ↑ về lại lớp
+        const nc = CLASS_LIST.length;
+        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { if (t.sel < nc) { t.sel = (t.sel + (e.code === 'ArrowLeft' ? -1 : 1) + nc) % nc; t.lastCls = t.sel; } return true; }
+        if (e.code === 'ArrowDown') { if (t.sel < nc) { t.lastCls = t.sel; t.sel = nc; } return true; }
+        if (e.code === 'ArrowUp') { if (t.sel >= nc) t.sel = t.lastCls || 0; return true; }
+    }
     if (e.code === 'ArrowUp') { t.sel = (t.sel + n - 1) % n; return true; }
     if (e.code === 'ArrowDown') { t.sel = (t.sel + 1) % n; return true; }
     const it = items[Math.min(t.sel, n - 1)];
@@ -11387,6 +11478,7 @@ function titleKey(e) {
     return true;
 }
 function drawTitle() {
+    { const tt = game.title; if (tt) { if (tt._ls !== undefined && tt._lp === tt.page && tt.sel !== tt._ls) sndPlay('menuMove'); tt._ls = tt.sel; tt._lp = tt.page; } }          // v1.04: tiếng di chuyển con trỏ menu (bàn phím / chuột)
     const t = game.title; if (!t) return;
     t.t += 1 / 60;
     ctx.globalAlpha = 0.8; ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1;
@@ -11589,6 +11681,12 @@ function sceneIcon(id, x, y) {          // icon ô 12×12 px (vẽ bằng sprite
     try { drawGoodsHp(o, ctx, x, y); } catch (err) { }
 }
 function sceneFlask(id, x, y) { const d = SUB[id] || { col: '#7fb8ff' }; ctx.fillStyle = SPR_OUT; ctx.fillRect(x + 3, y - 1, 6, 3); ctx.fillRect(x + 1, y + 2, 10, 10); ctx.fillStyle = '#d8e4f0'; ctx.fillRect(x + 4, y, 4, 2); ctx.fillStyle = d.col; ctx.fillRect(x + 2, y + 5, 8, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 3, y + 3, 2, 5); }
+// v1.04: cuộn danh sách slot — hàng đầu đang hiện (t.slotTop) luôn giữ ô đang chọn trong khung nhìn
+function slotFirst(t) {
+    const mx = Math.max(0, SLOT.n - SLOT_ROW.vis); let f = clamp(t.slotTop || 0, 0, mx);
+    if (t.sel < f) f = t.sel; else if (t.sel >= f + SLOT_ROW.vis) f = t.sel - SLOT_ROW.vis + 1;
+    t.slotTop = clamp(f, 0, mx); return t.slotTop;
+}
 function slotHero(d, x, floorY, empty) {
     const p = new Player(0, 0); p.facing = 1; p.state = 'idle'; p.vx = p.vy = 0; p.onGround = true;
     if (d) { p.items = d.p.items || {}; p.blade = d.p.blade || null; p.weapon = d.p.weapon || null; p.ammo = d.p.ammo | 0; p.cls = clsOf(d.cls); p.hp = d.p.hp; p.hpUp = d.p.hpUp | 0; p.sub = d.p.sub || null; }
@@ -11607,27 +11705,33 @@ function drawSlotScreens(t) {
     }
     sceneBackdrop(sceneLevel('slots', th));
     const blink = Math.floor(t.t * 3) % 2;
-    for (let i = 0; i < SLOT.n; i++) {
-        const top = SLOT_ROW.y0 + i * SLOT_ROW.pitch, sel = i === t.sel, inf = slotInfo(i + 1), r = saveRead(i + 1), d = r.state === 'ok' ? r.data : null;
+    const first = slotFirst(t);
+    for (let i = first; i < Math.min(SLOT.n, first + SLOT_ROW.vis); i++) {
+        const top = SLOT_ROW.y0 + (i - first) * SLOT_ROW.pitch, sel = i === t.sel, inf = slotInfo(i + 1), r = saveRead(i + 1), d = r.state === 'ok' ? r.data : null;
         if (!sel) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#05060c'; ctx.fillRect(16, top, VIEW_W - 32, SLOT_ROW.h); ctx.globalAlpha = 1; }
         slotHero(d, 40, top + SLOT_ROW.h - 2, !d);
         const x0 = 62, cur = SLOT.cur === i + 1;
-        drawText('NGƯỜI CHƠI ' + (i + 1) + (d ? ' · ' + CLASSES[clsOf(d.cls)].name : '') + (cur ? ' (đang chơi)' : ''), x0, top + 3, sel ? '#ffd24a' : '#9aa7c4');
+        drawText('NGƯỜI CHƠI ' + (i + 1) + (d ? ' · ' + CLASSES[clsOf(d.cls)].name : '') + (cur ? ' (đang chơi)' : ''), x0, top + 4, sel ? '#ffd24a' : '#9aa7c4');
         if (d) {
-            drawText((DIFF[d.diff] ? DIFF[d.diff].name + ' · ' : '') + profLevelName(d.lvl + 1) + ' · ' + fmtTime(d.runT), VIEW_W - 22, top + 3, sel ? '#ffe9a8' : '#7a86a6', 'right');
+            drawText((DIFF[d.diff] ? DIFF[d.diff].name + ' · ' : '') + profLevelName(d.lvl + 1) + ' · ' + fmtTime(d.runT), VIEW_W - 22, top + 4, sel ? '#ffe9a8' : '#7a86a6', 'right');
             const maxHp = maxHpOf({ hpUp: d.p.hpUp }, clsOf(d.cls)), n = Math.ceil(maxHp / HP_UNIT);
-            if (n <= 15) drawHearts(d.p.hp, maxHp, x0, top + 12); else { drawHearts(d.p.hp, HP_UNIT, x0, top + 12); drawText('x' + Math.ceil(d.p.hp / HP_UNIT) + '/' + n, x0 + 12, top + 12, '#ff9aa8'); }
-            let x = x0; const y = top + 24, add = (draw, label, w) => { draw(x); if (label) drawText(label, x + 14, y + 2, '#cfd6e6'); x += w; };
+            if (n <= 15) drawHearts(d.p.hp, maxHp, x0, top + 15); else { drawHearts(d.p.hp, HP_UNIT, x0, top + 15); drawText('x' + Math.ceil(d.p.hp / HP_UNIT) + '/' + n, x0 + 12, top + 15, '#ff9aa8'); }
+            let x = x0; const y = top + 29, add = (draw, label, w) => { draw(x); if (label) drawText(label, x + 14, y + 2, '#cfd6e6'); x += w; };
             add(xx => sceneIcon('bomb', xx, y - 3), String(d.p.bombs), 27); add(xx => sceneIcon('rope', xx, y - 3), String(d.p.ropes), 27);
             drawText('$' + d.p.gold, x, y + 2, '#ffd24a'); x += 7 * String(d.p.gold).length + 14;
             if (d.p.blade) add(xx => sceneIcon('blade:' + d.p.blade, xx, y - 3), '', 18);
             if (d.p.weapon === 'shotgun') add(xx => sceneIcon('shotgun', xx, y - 3), String(d.p.ammo), 26);
             if (d.p.sub && d.p.sub.n > 0) add(xx => sceneFlask(d.p.sub.id, xx, y), 'x' + d.p.sub.n, 26);
             for (const k of Object.keys(d.p.items)) if (GEAR_DEFS[k]) add(xx => sceneIcon('gear:' + k, xx, y - 3), '', 17);
-        } else drawText(inf.st === 'none' ? 'Trống — vào để bắt đầu ván mới' : inf.a + ' · ' + inf.b, x0, top + 16, inf.st === 'none' ? '#7a86a6' : inf.col);
+        } else drawText(inf.st === 'none' ? 'Trống — vào để bắt đầu ván mới' : inf.a + ' · ' + inf.b, x0, top + 20, inf.st === 'none' ? '#7a86a6' : inf.col);
         if (sel) { ctx.fillStyle = blink ? '#ffe9a8' : '#ffd24a'; ctx.fillRect(16, top - 1, VIEW_W - 32, 2); ctx.fillRect(16, top + SLOT_ROW.h - 1, VIEW_W - 32, 2); ctx.fillRect(16, top - 1, 2, SLOT_ROW.h + 2); ctx.fillRect(VIEW_W - 18, top - 1, 2, SLOT_ROW.h + 2); }
     }
-    drawText(t.page === 'del' ? '' : 'Chuột / ↑↓ chọn · bấm / Enter / 1-5 vào chơi · Delete xoá · Esc quay lại', cx, VIEW_H - 12, '#c9b48a', 'center');
+    if (SLOT.n > SLOT_ROW.vis) {          // thanh cuộn bên phải
+        const bx = VIEW_W - 12, by0 = SLOT_ROW.y0, bh = SLOT_ROW.vis * SLOT_ROW.pitch - (SLOT_ROW.pitch - SLOT_ROW.h), th2 = Math.max(10, Math.round(bh * SLOT_ROW.vis / SLOT.n)), ty = by0 + Math.round((bh - th2) * first / (SLOT.n - SLOT_ROW.vis));
+        ctx.fillStyle = 'rgba(5,6,12,0.7)'; ctx.fillRect(bx, by0, 4, bh); ctx.fillStyle = '#ffd24a'; ctx.fillRect(bx, ty, 4, th2);
+        if (first > 0) drawText('▲', bx + 2, by0 - 11, '#ffe9a8', 'center'); if (first + SLOT_ROW.vis < SLOT.n) drawText('▼', bx + 2, by0 + bh + 1, '#ffe9a8', 'center');
+    }
+    drawText(t.page === 'del' ? '' : 'Chuột / ↑↓ / cuộn chọn · bấm / Enter / 1-5 vào chơi · Delete xoá · Esc quay lại', cx, VIEW_H - 12, '#c9b48a', 'center');
     if (t.msg) drawText(t.msg, cx, 8, '#ffb0b0', 'center');
     if (t.page === 'del') {          // v0.78: bảng pixel + 2 nút bấm được bằng chuột
         muiPalSet(th); TEXT.q.length = 0; const pw = 236, ph = 76, px = Math.round(cx - pw / 2), py = 78; ctx.globalAlpha = 0.6; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1;
@@ -11709,7 +11813,7 @@ function clsHelpText(k) {
     const atk = { sword: 'Chém (giữ = chém nạp) · ↑ + ' + k('attack') + ' chém lên · trên không ↓ + ' + k('attack') + ' chém xuống · đang cầm đồ = ném',
         alch: 'Bắn gậy phép (↑ + ' + k('attack') + ' bắn lên · giữ rồi thả = đạn hệ 3 tia) · đang cầm đồ = ném',
         hunt: 'Ném boomerang (gần, 1 mục tiêu · giữ rồi thả = boomerang hệ xa, xuyên ≤ 3 quái) · đang cầm đồ = ném' }[c];
-    const dash = { sword: 'Chưa dùng (Kiếm Sĩ không có lướt)', alch: 'GIỮ đứng yên 2 s = đổi loại bình (hạ Vệ binh đá: 1 s) · chạm nhanh = Dịch chuyển 3 ô (mở sau khi hạ Thợ săn tuyết)',
+    const dash = { sword: 'Chưa dùng (Kiếm Sĩ không có lướt)', alch: 'GIỮ = hiện vòng chọn bình (↑ nước · lửa · sét · băng · độc theo chiều kim đồng hồ), bấm mũi tên chọn rồi NHẢ nút · chạm nhanh = Dịch chuyển 3 ô (mở sau khi hạ Thợ săn tuyết)',
         hunt: 'Lướt (bất tử ngắn; hạ Thợ săn tuyết → Lướt Bóng)' }[c];
     const rope = c === 'hunt' ? 'Móc KHÔNG giới hạn: tự móc mép gờ / trần rồi kéo lên (hạ Vệ binh đá → móc chéo xa, giữ ← → chọn hướng)' : 'Móc ngay (tốn 1 móc): tự móc mép gờ / trần rồi kéo lên';
     const swap = 'Dùng đồ phụ đang chọn (súng, bình) · ' + k('swap') + ' đổi đồ phụ';
@@ -11741,20 +11845,24 @@ function muiDrawMenu(t, themeName) {
     const pw = t.page === 'main' || t.page === 'diff' || t.page === 'class' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
         t.page === 'help' ? 304 : 292, KW = 64, dw = pw - 20 - KW - 6;
     const rows = t.page === 'help' ? muiHelpRows(dw) : null, LH = 9.5;
-    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'seed' ? 36 : t.page === 'class' ? 46 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
+    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'seed' ? 36 : t.page === 'class' ? 86 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
     if (rows) { const lines = rows.reduce((a, r) => a + r.lines.length, 0); info = lines * LH + rows.length * gap + 4; if (info + rh + 34 > VIEW_H - 18) { gap = 1; info = lines * LH + rows.length * gap + 4; } }
-    const ph = Math.min(VIEW_H - 18, info + items.length * rh + 32), px = Math.round(cx - pw / 2), py = Math.max(6, Math.round((VIEW_H - 12 - ph) / 2));
-    muiPanel(px, py, pw, ph); muiTitle(name, cx, py + 7);
+    const nRows = t.page === 'class' ? items.length - CLASS_LIST.length : items.length, ph = Math.min(VIEW_H - 18, info + nRows * rh + 32), px = Math.round(cx - pw / 2), py = Math.max(6, Math.round((VIEW_H - 12 - ph) / 2));
+    muiPanel(px, py, pw, ph); muiTitle(name, cx, py + 7); t.hit = [];
     const line = (txt, y, col) => drawText(txt, cx, y, col || MUI.txt, 'center');
     let y = py + 24;
     if (t.page === 'class') {
         const k = CLASS_LIST[Math.min(t.sel, CLASS_LIST.length - 1)];
         if (k) {
             line(CLASSES[k].desc, y - 2, CLASSES[k].col); line(CLASS_INFO[k], y + 10, MUI.dim);
-            CLASS_LIST.forEach((c, i) => {          // v0.96: ba nhân vật xếp hàng, lớp đang chọn sáng + nhún nhẹ
+            CLASS_LIST.forEach((c, i) => {          // v1.04 (Dan): chọn NGANG (←→ hoặc chuột); ảnh to gấp đôi (32×34); lớp đang chọn sáng + to ×1,2 + tên trắng trên đầu
                 const im = assets.img[c === 'sword' ? 'hero_a_idle' : 'hero_' + c + '_idle']; if (!im) return;
-                const fx = Math.floor(t.t * 3) % 4, sel = c === k, dx = px + pw / 2 - 8 + (i - 1) * 54, dy = y + 22 + (sel ? Math.round(Math.sin(t.t * 6)) : 0);
-                ctx.globalAlpha = sel ? 1 : 0.45; ctx.drawImage(im, fx * 32, 0, 32, 34, dx, dy, 16, 17); ctx.globalAlpha = 1;
+                const fx = Math.floor(t.t * 3) % 4, sel = c === k, sc = sel ? 1.2 : 1, w = Math.round(32 * sc), h = Math.round(34 * sc), mx = Math.round(px + pw / 2 + (i - 1) * 62), by = y + 80, dx = Math.round(mx - w / 2), dy = by - h;
+                ctx.globalAlpha = sel ? 1 : 0.45; ctx.drawImage(im, fx * 32, 0, 32, 34, dx, dy, w, h);
+                if (sel) { ctx.globalAlpha = 0.28; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(im, fx * 32, 0, 32, 34, dx, dy, w, h); ctx.globalCompositeOperation = 'source-over'; }
+                ctx.globalAlpha = 1;
+                drawText(CLASSES[c].name, mx, dy - 10, sel ? '#ffffff' : MUI.dim2, 'center');
+                t.hit.push({ x: mx - 31, y: dy - 12, w: 62, h: h + 14, i });
             });
         }
     } else if (t.page === 'diff') {          // v0.80: mô tả độ khó đang chọn
@@ -11782,9 +11890,10 @@ function muiDrawMenu(t, themeName) {
         });
     }
     y += info + (t.page === 'help' ? -4 : 0); if (t.page === 'seed') y += 0;
-    const hit = []; t.hit = hit;
+    const hit = t.hit;          // (trang lớp: các ảnh nhân vật đã đẩy ô bấm vào hit ở trên)
     items.forEach((it, i) => {
-        const sel = i === t.sel, ry = y + i * rh, kind = it.kind || 'btn';
+        if (t.page === 'class' && i < CLASS_LIST.length) return;          // lớp chọn bằng ảnh, không có nút dọc
+        const sel = i === t.sel, ry = y + (t.page === 'class' ? i - CLASS_LIST.length : i) * rh, kind = it.kind || 'btn';
         if (kind === 'btn') {
             const bw = t.page === 'diff' || t.page === 'class' ? Math.round(Math.min(pw - 40, 170) * 0.75) : Math.min(pw - 40, 170), bx = Math.round(cx - bw / 2), bh = Math.min(16, rh - 2);
             muiButton(bx, ry, bw, bh, it.text, sel);
@@ -11811,7 +11920,7 @@ function muiDrawMenu(t, themeName) {
         hit.push({ x: rx, y: ry, w: rw, h, i });
     });
     if (t.msg) drawText(t.msg, cx, VIEW_H - 22, '#ff9a9a', 'center');
-    drawText('Chuột / ↑↓ chọn · bấm / Enter · ←→ chỉnh · Esc ' + (t.page === 'main' ? (menuCanResume() ? 'tiếp tục' : '') : 'quay lại'), cx, VIEW_H - 10, MUI.dim2, 'center');
+    drawText(t.page === 'class' ? '←→ chọn lớp · Enter / bấm xác nhận · ↓ quay lại · Esc quay lại' : 'Chuột / ↑↓ chọn · bấm / Enter · ←→ chỉnh · Esc ' + (t.page === 'main' ? (menuCanResume() ? 'tiếp tục' : '') : 'quay lại'), cx, VIEW_H - 10, MUI.dim2, 'center');
 }
 // ---- chuột ----
 function muiPos(e) {
@@ -11819,7 +11928,7 @@ function muiPos(e) {
     return { x: (e.clientX - r.left) * VIEW_W / r.width, y: (e.clientY - r.top) * VIEW_H / r.height };
 }
 function muiFind(t, p) { const h = t.hit || []; for (let k = h.length - 1; k >= 0; k--) { const b = h[k]; if (p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.h) return b; } return null; }
-function muiSlotAt(p) { for (let i = 0; i < SLOT.n; i++) { const top = SLOT_ROW.y0 + i * SLOT_ROW.pitch; if (p.x >= 16 && p.x < VIEW_W - 16 && p.y >= top && p.y < top + SLOT_ROW.h) return i; } return -1; }
+function muiSlotAt(p) { const t = game.title, first = t ? slotFirst(t) : 0; for (let i = first; i < Math.min(SLOT.n, first + SLOT_ROW.vis); i++) { const top = SLOT_ROW.y0 + (i - first) * SLOT_ROW.pitch; if (p.x >= 16 && p.x < VIEW_W - 16 && p.y >= top && p.y < top + SLOT_ROW.h) return i; } return -1; }
 function muiMove(e) {
     const t = game.title, p = muiPos(e); if (!p) return; MUI.mouse.x = p.x; MUI.mouse.y = p.y;
     if (!t || t.cap) return;
@@ -11844,6 +11953,7 @@ function muiClick(e) {
 function muiInit() {
     if (typeof window === 'undefined' || !window.addEventListener || MUI.inited) return; MUI.inited = true;
     window.addEventListener('pointermove', muiMove);
+    window.addEventListener('wheel', e => { const t = game.title; if (t && t.page === 'slots') { t.sel = clamp(t.sel + (e.deltaY > 0 ? 1 : -1), 0, SLOT.n - 1); t.msg = ''; e.preventDefault(); } }, { passive: false });          // v1.04: lăn chuột cuộn danh sách slot
     window.addEventListener('pointerdown', e => { if (e.target && (e.target === canvas || e.target === hudCv || e.target.tagName === 'CANVAS' || e.target === document.body)) muiClick(e); });
 }
 muiInit();
@@ -12117,7 +12227,7 @@ function drawHud() {
     if (subHas(p)) slots.push(['sub', '' + p.sub.n, true, p.sub.id]);          // v0.74: col = id bình (hudIcon vẽ biểu tượng riêng)
     const sel = p.selItem(); let sx = 6;
     for (const s of slots) { hudIcon(s[0], sx, y, s[3]); drawText(s[1], sx + 10, y - 1, s[2] ? '#ffffff' : '#7a7f90'); if (s[0] === sel) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(sx - 1, y + 9, 10 + 5 * s[1].length + 2, 1); } sx += 26; }
-    { const el = p.cls === 'sword' ? p.blade : elemOf(p); if (el) { hudIcon('blade', sx + 1, y, el); sx += 14; } }          // v0.96: Giả Kim / Thợ Săn luôn có hệ (mặc định Lửa)
+    { const el = p.cls === 'sword' ? p.blade : elemOf(p); if (el) { hudIcon(p.cls === 'hunt' ? 'eboom' : p.cls === 'alch' ? 'estaff' : 'blade', sx + 1, y, el); sx += 14; } }          // v1.04 (Dan): biểu tượng hệ theo lớp — Boomerang / Gậy / Kiếm          // v0.96: Giả Kim / Thợ Săn luôn có hệ (mặc định Lửa)
     hudIcon('gold', sx + 2, y); drawText('' + p.gold, sx + 12, y - 1, '#ffd24a');
     if (p.whistleCd > 0.05 && game.level.id !== 'test') { ctx.fillStyle = '#3a3f50'; ctx.fillRect(6, y + 12, 24, 1); ctx.fillStyle = '#9fd8ff'; ctx.fillRect(6, y + 12, Math.round(24 * (1 - p.whistleCd / WHISTLE.cd)), 1); }          // hồi chiêu huýt sáo (thanh mảnh)
     if (game.level.id !== 'test') {            // đồng hồ level (góc phải); đỏ khi ma sắp / đã xuất hiện
@@ -12153,6 +12263,8 @@ function drawHud() {
 function hudIcon(kind, x, y, col) {
     if (kind === 'shotgun') { ctx.fillStyle = '#6a4a2a'; ctx.fillRect(x, y + 4, 3, 3); ctx.fillStyle = '#c8c8d8'; ctx.fillRect(x + 2, y + 3, 6, 2); ctx.fillStyle = '#8a8a9a'; ctx.fillRect(x + 2, y + 5, 5, 1); return; }
     if (kind === 'boomerang') { ctx.fillStyle = '#e0a84a'; ctx.fillRect(x + 1, y + 1, 2, 6); ctx.fillRect(x + 1, y + 5, 6, 2); ctx.fillStyle = '#8a5a1a'; ctx.fillRect(x + 1, y + 1, 1, 6); return; }
+    if (kind === 'eboom') { const c = elemCol(col); ctx.fillStyle = '#000'; ctx.fillRect(x, y, 9, 3); ctx.fillRect(x, y, 3, 9); ctx.fillStyle = c; ctx.fillRect(x + 1, y + 1, 7, 1); ctx.fillRect(x + 1, y + 1, 1, 7); ctx.fillStyle = '#fff'; ctx.fillRect(x + 1, y + 1, 2, 1); return; }          // Boomerang hệ (màu theo hệ)
+    if (kind === 'estaff') { const c = elemCol(col); ctx.fillStyle = '#000'; ctx.fillRect(x + 3, y + 3, 3, 7); ctx.fillRect(x + 1, y, 6, 5); ctx.fillStyle = '#8a5a2a'; ctx.fillRect(x + 4, y + 4, 1, 5); ctx.fillStyle = c; ctx.fillRect(x + 2, y + 1, 4, 3); ctx.fillStyle = '#fff'; ctx.fillRect(x + 3, y + 1, 1, 1); return; }          // Gậy hệ (viên ngọc màu theo hệ)
     if (kind === 'blade') { bladeDraw((cx, cy, c) => { ctx.fillStyle = c; ctx.fillRect(x + cx * 0.5, y + cy * 0.5 - 1, 0.5, 0.5); }, col, 20); return; }          // col = id hệ (lửa / băng / sét / độc)
     if (kind === 'sub') {          // v0.74: bình mini có biểu tượng (col = id)
         const L = FLASK_LOOK[col] || FLASK_LOOK.water; ctx.fillStyle = '#8a5a2a'; ctx.fillRect(x + 3, y, 2, 1); ctx.fillStyle = '#9aa0b0'; ctx.fillRect(x + 3, y + 1, 2, 1);
