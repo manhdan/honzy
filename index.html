@@ -2207,7 +2207,7 @@ const MT_C = { bpm: 78, steps: 8, name: 'C',
 //   Âm lượng đi theo thanh «Nhạc nền» (SND.music) và công tắc tắt tiếng; AMB.vol chỉnh chung. Phòng boss: nhỏ đi, không có sự kiện. Math.random chỉ dùng cho âm thanh, không đụng rng chơi.
 const AMB = { waves: false, lake: false, lava: false, vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
 const AMB_PROF = {
-    mines:    { wind: 0.85, gust: 0.9, drip: 1.3 },          // v1.17 (Dan): Hầm mỏ nghe lại gió hang, gió hú hẹp, giọt nước nhỏ (trước quá nhỏ nên như không có)
+    mines:    { wind: 0.85, gust: 0.9, drip: 1.3, windK: 0.1 },          // v1.18m (Dan): gió / hú của Hầm mỏ to hơn nhạc nền → còn 10% (windK nhân vào âm lượng gió + hú)          // v1.17 (Dan): Hầm mỏ nghe lại gió hang, gió hú hẹp, giọt nước nhỏ (trước quá nhỏ nên như không có)
     forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
     cave:     { wind: 0.35, drip: 1 },
     crystal:  { wind: 0.20, drip: 0.8, waves: 0.4 },
@@ -2295,8 +2295,9 @@ function ambTick(S, now, E) {
     S.rain.g.gain.setTargetAtTime(0.07 * Math.pow(r, 1.5), now, 0.8); S.rainH.g.gain.setTargetAtTime(0.025 * _asm(0.5, 1, r), now, 0.8); S.rain.f.frequency.setTargetAtTime(900 + 700 * r, now, 1.0);
     if (now >= S.gustT) { S.gustT = now + 2 + _ar() * 3.5; S.gustV = 0.55 + _ar() * 0.75; }
     const w = Math.min(1.35, (p.wind || 0) + 0.35 * r), wk = _asm(0.1, 1.3, w);
-    S.wind.g.gain.setTargetAtTime(0.20 * wk * S.gustV, now, 1.2); S.wind.f.frequency.setTargetAtTime(300 + 500 * wk * S.gustV, now, 1.0);
-    S.whistle.g.gain.setTargetAtTime(0.035 * _asm(0.4, 1.35, (p.gust || 0) + 0.4 * w) * S.gustV * S.gustV, now, 1.0); S.whistle.f.frequency.setTargetAtTime(700 + 600 * S.gustV * wk, now, 0.8);
+    const wkK = p.windK === undefined ? 1 : p.windK;
+    S.wind.g.gain.setTargetAtTime(0.20 * wk * S.gustV * wkK, now, 1.2); S.wind.f.frequency.setTargetAtTime(300 + 500 * wk * S.gustV, now, 1.0);
+    S.whistle.g.gain.setTargetAtTime(0.035 * _asm(0.4, 1.35, (p.gust || 0) + 0.4 * w) * S.gustV * S.gustV * wkK, now, 1.0); S.whistle.f.frequency.setTargetAtTime(700 + 600 * S.gustV * wk, now, 0.8);
     const swell = 0.5 + 0.25 * Math.sin(now * 0.72) + 0.25 * Math.sin(now * 0.43 + 1.3), wv = AMB.waves ? (p.waves || 0) * E.wk : 0;          // v0.94c: sóng biển tạm tắt (AMB.waves = true để bật lại); chỉ còn nước lăn tăn
     S.wave.g.gain.setTargetAtTime(0.13 * wv * (0.2 + 0.8 * swell * swell), now, 0.5); S.wave.f.frequency.setTargetAtTime(450 + 1100 * swell, now, 0.4);
     const lakeSw = 0.65 + 0.35 * Math.sin(now * 0.9) * Math.sin(now * 0.37 + 1);
@@ -12246,8 +12247,8 @@ function titleKey(e) {
         if (e.repeat || e.code === 'Escape') return true; t.page = 'slots'; t.sel = slotLast() - 1; t.msg = ''; return true; }
     if (t.page === 'slots') {
         if (e.code === 'Escape') { t.msg = ''; if (SLOT.cur > 0 && menuCanResume()) { t.page = 'main'; t.sel = 0; } else t.page = 'welcome'; return true; }
-        if (e.code === 'ArrowUp') { t.sel = (t.sel + SLOT.n - 1) % SLOT.n; t.msg = ''; return true; }
-        if (e.code === 'ArrowDown') { t.sel = (t.sel + 1) % SLOT.n; t.msg = ''; return true; }
+        if (e.code === 'ArrowUp') { t.sel = Math.max(0, t.sel - 1); t.msg = ''; return true; }          // v1.18m (Dan): không cuộn vòng — ở slot 1 bấm ↑ đứng yên
+        if (e.code === 'ArrowDown') { t.sel = Math.min(SLOT.n - 1, t.sel + 1); t.msg = ''; return true; }
         const dm = /^(?:Digit|Numpad)([1-9])$/.exec(e.code); if (dm && +dm[1] <= SLOT.n) { t.sel = +dm[1] - 1; slotChoose(t.sel + 1); return true; }
         if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') { slotChoose(t.sel + 1); return true; }
         if (e.code === 'Delete' || e.code === 'Backspace') { if (slotInfo(t.sel + 1).st !== 'none') { t.page = 'del'; t.del = t.sel + 1; t.msg = ''; } else t.msg = 'Slot này đang trống'; return true; }
@@ -12750,7 +12751,8 @@ function muiClick(e) {
 function muiInit() {
     if (typeof window === 'undefined' || !window.addEventListener || MUI.inited) return; MUI.inited = true;
     window.addEventListener('pointermove', muiMove);
-    window.addEventListener('wheel', e => { const t = game.title; if (t && t.page === 'slots') { t.sel = (t.sel + (e.deltaY > 0 ? 1 : SLOT.n - 1)) % SLOT.n; t.msg = ''; e.preventDefault(); } }, { passive: false });          // v1.04: lăn chuột cuộn danh sách slot
+    window.addEventListener('wheel', e => { const t = game.title; if (t && t.page === 'slots') { t.sel = Math.max(0, Math.min(SLOT.n - 1, t.sel + (e.deltaY > 0 ? 1 : -1)));          // v1.18m: không cuộn vòng
+         t.msg = ''; e.preventDefault(); } }, { passive: false });          // v1.04: lăn chuột cuộn danh sách slot
     window.addEventListener('pointerdown', e => { if (e.target && (e.target === canvas || e.target === hudCv || e.target.tagName === 'CANVAS' || e.target === document.body)) muiClick(e); });
 }
 muiInit();
