@@ -1629,7 +1629,8 @@ function sndSpatial(x) {
 // o: { x, vol, p (cao độ), delay }. Trả về true nếu đã dựng tiếng.
 const SND_NOJIT = { keyPickup3: 1, betWin3: 1, betLose: 1, princessCall: 1, menuOpen: 1, menuClose: 1, menuMove: 1, menuSelect: 1, alert: 1, win: 1, dead: 1 };          // âm giai điệu / báo hiệu: giữ nguyên cao độ
 function sndEnvSet(wet, under) {          // v1.18: độ vang hang (0..~0.25) + nghẹt khi lặn nước
-    if (!sndCtx) return; const t = sndCtx.currentTime;
+    if (!sndCtx) return; const key = (under ? 'u' : 'a') + Math.round(wet * 1000); if (key === sndEnvSet._k) return; sndEnvSet._k = key;          // v1.18l: chỉ đặt khi giá trị đổi (trước gọi mỗi khung hình → dồn hàng nghìn lệnh tự động hoá)
+    const t = sndCtx.currentTime;
     if (sndWet) sndWet.gain.setTargetAtTime(under ? 0.02 : wet, t, 0.4);
     if (sndLp) sndLp.frequency.setTargetAtTime(under ? 900 : 20000, t, under ? 0.05 : 0.15);
 }
@@ -1717,7 +1718,7 @@ function sndInit() {
             sndLp = sndCtx.createBiquadFilter(); sndLp.type = 'lowpass'; sndLp.frequency.value = 20000; sndMaster.disconnect(); sndMaster.connect(sndLp); sndLp.connect(cmp);
             sndSfx = sndCtx.createGain(); sndSfx.connect(sndMaster);
             sndWet = sndCtx.createGain(); sndWet.gain.value = 0; const dl = sndCtx.createDelay(0.5), fb = sndCtx.createGain(), lp2 = sndCtx.createBiquadFilter(), dl2 = sndCtx.createDelay(0.5);
-            dl.delayTime.value = 0.083; dl2.delayTime.value = 0.131; fb.gain.value = 0.42; lp2.type = 'lowpass'; lp2.frequency.value = 1700;
+            dl.delayTime.value = 0.083; dl2.delayTime.value = 0.131; fb.gain.value = 0.26; lp2.type = 'lowpass'; lp2.frequency.value = 1700;
             sndSfx.connect(sndWet); sndWet.connect(dl); sndWet.connect(dl2); dl.connect(lp2); dl2.connect(lp2); lp2.connect(fb); fb.connect(dl); fb.connect(dl2); lp2.connect(sndMaster);
         } catch (e) { sndSfx = null; sndLp = null; sndWet = null; }
         if (sndCtx.state === 'suspended') sndCtx.resume();
