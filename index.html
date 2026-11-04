@@ -2533,7 +2533,7 @@ function paintTiles(g, level, c0, r0, c1, r1, ox, oy) {
         const t = level.tiles[r * level.w + c];
         if (t === T_EMPTY) continue;
         const x = c * TILE - ox, y = r * TILE - oy;
-        if (HIQ && (t === T_SPIKE || t === T_LADDER || t === T_WEB)) { HIQ.push([t, c, r, x, y]); continue; }          // v1.11: vật nhỏ vẽ nửa-pixel SAU khi phóng 2× (hiPaint)
+        if (HIQ && (t === T_SPIKE || t === T_WEB)) { HIQ.push([t, c, r, x, y]); continue; }          // v1.11: vật nhỏ vẽ nửa-pixel SAU khi phóng 2× (hiPaint)
         if (th.style === 'mines') { paintMinesTile(g, level, th, t, c, r, x, y); continue; }
         if (t === T_STONE) { paintMinesBlock(g, c, r, x, y); continue; }   // khối đá xám ở mọi vùng
         if (t === T_SOLID || t === T_GOLD || t === T_GOLDBIG || t === T_STONE || t === T_ARROW || t === T_PUSH || t === T_CRUSH) {   // (T_LAVA vẽ động ở 13i_lava)
@@ -2724,14 +2724,15 @@ function earthPal(th) {
     const base = th.solid[0];
     return { dark: th.edge, body: _hexMix(base, '#ffffff', 0.22), mid: base, light: _hexMix(base, '#ffffff', 0.4), rim: th.top };
 }
+const LADDER_PAL = { dark: '#7a7a7a', body: '#f2f2f2', mid: '#bdbdbd', light: '#ffffff', rim: '#ffffff' };          // v1.17 (Dan): mọi thang màu TRẮNG, vạch tối dùng xám
 function oldLadderHi(q, c, r, top, th) {          // (tên giữ cho gọi cũ) thang thẳng: hai thanh đứng + 4 nấc / ô
-    const P = earthPal(th);
+    const P = LADDER_PAL;
     for (const rx of [3, 23]) { q(rx, 0, 6, 32, P.dark); q(rx + 1, 0, 4, 32, P.body); q(rx + 1, 0, 1, 32, P.light); q(rx + 4, 0, 1, 32, P.mid); }
     for (const k of [2, 10, 18, 26]) { q(9, k, 14, 4, P.dark); q(9, k, 14, 3, P.body); q(9, k, 14, 1, P.light); q(9, k + 3, 14, 1, P.mid); }
     if (top) { q(0, 0, 32, 7, P.dark); q(0, 0, 32, 6, P.mid); q(0, 0, 32, 2, P.rim); q(0, 5, 32, 1, P.dark); }
 }
 function oldLadderPx(g, c, r, x, y, top, th) {          // dự phòng lưới 1 px
-    const P = earthPal(th);
+    const P = LADDER_PAL;
     g.fillStyle = P.dark; g.fillRect(x + 2, y, 3, TILE); g.fillRect(x + 11, y, 3, TILE);
     g.fillStyle = P.body; g.fillRect(x + 2, y, 2, TILE); g.fillRect(x + 11, y, 2, TILE); g.fillStyle = P.light; g.fillRect(x + 2, y, 1, TILE); g.fillRect(x + 11, y, 1, TILE);
     for (let k = 1; k < TILE; k += 5) { g.fillStyle = P.dark; g.fillRect(x + 4, y + k, 7, 2); g.fillStyle = P.body; g.fillRect(x + 4, y + k, 7, 1); }
@@ -2743,10 +2744,7 @@ function earthPlat(g, th, x, y) {          // bục một chiều cùng màu m�
     g.fillStyle = P.body; g.fillRect(x, y + 1, TILE, 1);
     g.fillStyle = P.dark; g.fillRect(x + 3, y + 5, 2, 3); g.fillRect(x + 11, y + 5, 2, 3);
 }
-function paintMinesLadder(g, level, c, r, x, y) {
-    return oldLadderPx(g, c, r, x, y, level.isLadderTop(c, r), level.theme);
-}
-function _unusedMinesLadder(g, level, c, r, x, y) {
+function paintMinesLadder(g, level, c, r, x, y) {          // v1.17 (Dan): quay về thang pixel thô cũ (1 px)
     const top = level.isLadderTop(c, r);
     g.fillStyle = '#3a3c42'; g.fillRect(x + 2, y, 3, TILE); g.fillRect(x + 11, y, 3, TILE);
     g.fillStyle = '#a4a8b0'; g.fillRect(x + 2, y, 2, TILE); g.fillRect(x + 11, y, 2, TILE);
@@ -2843,9 +2841,6 @@ function paintArrowTrap(g, level, x, y, c, r, dirOv) {          // dirOv (v0.18,
     g.fillStyle = '#121218'; g.fillRect(dir > 0 ? x + TILE - 3 : x + 1, y + 7, 2, 2);   // lỗ bắn
 }
 function paintLadder(g, level, x, y, c, r) {
-    return oldLadderPx(g, c, r, x, y, level.isLadderTop(c, r), level.theme);
-}
-function _unusedLadder(g, level, x, y, c, r) {
     g.fillStyle = '#6a4826'; g.fillRect(x + 2, y, 2, TILE); g.fillRect(x + 12, y, 2, TILE);
     g.fillStyle = '#9a6e3c'; g.fillRect(x + 2, y, 1, TILE); g.fillRect(x + 12, y, 1, TILE);
     for (let k = 2; k < TILE; k += 5) { g.fillStyle = '#8a5e30'; g.fillRect(x + 4, y + k, 8, 2); g.fillStyle = '#b08250'; g.fillRect(x + 4, y + k, 8, 1); }
@@ -7074,6 +7069,7 @@ class Bat extends Enemy {
     update(level, dt) {
         this.timers(dt);
         if (this.holder) { this.followHolder(); return; }
+        if (this.stunT > 0 && !this.wetSink) { this.stunT -= dt; this.vx *= 0.8; this.vy = Math.min(this.vy + 300 * dt, 200); this.ignorePlat = true; physMoveSlow(level, this, dt); this.hitDown = this.onGround; this.crushedIn(level); return; }          // v1.17: dơi bị choáng / gậy làm đứng im thì rơi, không bay tiếp
         const p = game.player, d = this.def;
         const dist = p ? Math.hypot(p.cx - this.cx, p.cy - this.cy) : 1e9;
         const ceil = level.solidAt(this.cx, this.y - 1);
@@ -11423,7 +11419,7 @@ function dmgPopDraw(camX, camY) {
 //   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
-    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.339, size: 6, spread: 0.14 },
+    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.339, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
     boomN: { v: 174, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 40 px (v1.07: −½ ô, Dan; trước 48)
     boomF: { v: 226, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 64 px (v1.07: −½ ô; trước 72) (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
@@ -11487,14 +11483,17 @@ class StaffShot extends Thing {
         const p = this.owner;
         for (const e of game.entities) {
             if (!e.alive || e === p || e.holder || !(e.creature || e.breakOnImpact) || !overlapBox(this, e)) continue;
-            const hp0 = e.hp, dmg = CW.staff.dmg * this.mul + (this.power ? 1 : 0);
-            if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: this.power ? this.el : undefined })) {
-                if (this.power) elemApply(level, p, e, this.el);
-                sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, col, 70);
-            }
-            if (this.power && this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
-            this.alive = false; return;
+            this.strike(level, e); this.alive = false; return;
         }
+    }
+    strike(level, e) {          // v1.17: tách ra để quét cận chiến khi bắn dùng chung
+        const p = this.owner, col = this.power ? elemCol(this.el) : '#bfe9ff', hp0 = e.hp, dmg = CW.staff.dmg * this.mul + (this.power ? 1 : 0);
+        if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: this.power ? this.el : undefined })) {
+            if (this.power) elemApply(level, p, e, this.el);
+            if (e.alive && e.creature && !(e.boss || e.isBoss) && e.kind !== 'shopkeeper' && !e.frozenT) { e.stunT = Math.max(e.stunT || 0, CW.staff.stun); e.vx = 0; }          // v1.17 (Dan): đạn gậy làm quái đứng im 1 s
+            sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, col, 70);
+        }
+        if (this.power && this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawStaffShotHp(this, ctx, alpha); return; }
@@ -11508,8 +11507,14 @@ function staffFire(p, up, power) {
         const dx = up ? 0 : f, dy = up ? -1 : 0, ca = Math.cos(ang), sa = Math.sin(ang), vx = (dx * ca - dy * sa) * v, vy = (dx * sa + dy * ca) * v;
         const s = new StaffShot(p.cx + (up ? 0 : f * 2), p.cy - (up ? 8 : 4), vx, vy, p, power); s.iceB = iceB; s.mul = mul * (up ? C.upMul : 1); entAdd(s);
     };
+    const before = game.entities.length;
     if (power) { mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1); }          // đạn hệ có lan: 3 tia nhỏ
     else mk(0, 1);
+    // v1.17 (Dan): quái đứng SÁT người (nhất là dơi lao từ trên xuống) vẫn trúng — quét một hộp cận chiến trước mặt (cao hơn đầu 14 px) / phía trên đầu; trúng thì viên đạn tiêu luôn
+    { const sh = game.entities.slice(before), lv = game.level, box = up ? { x: p.x - 4, y: p.y - C.closeUp, w: p.w + 8, h: C.closeUp } : { x: f > 0 ? p.cx - 2 : p.cx - C.close, y: p.y - 14, w: C.close + 2, h: p.h + 14 };
+      if (lv && sh.length) { const s0 = sh[Math.min(1, sh.length - 1)]; let hit = false;
+        for (const e of game.entities) { if (!e.alive || e === p || e.holder || sh.indexOf(e) >= 0 || !(e.creature || e.breakOnImpact) || !overlapBox(box, e)) continue; s0.strike(lv, e); hit = true; if (!power) break; }
+        if (hit) for (const s of sh) s.alive = false; } }
     p.atkCd = (power ? C.cdP : C.cd) * (p.gliding ? ALCH.glideShotMul : 1); p.poseK = 'throw'; p.poseT = 0.2;
     sndPlay(power ? 'swing' : 'swingUp', { x: p.cx, p: power ? 0.7 : 1.6, vol: 0.5 });
 }
