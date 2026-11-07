@@ -13159,7 +13159,7 @@ function drawLights(L, cx, cy) {
 
 const PROF_STORE = 'honzy_profile_v1', PROF_VER = 1;
 const PROF = {};
-function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [] }; }
+function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [], tutDone: false }; }
 function profMigrate(o) {
     if (!o || typeof o !== 'object') return profBlank();
     const b = profBlank();
@@ -13354,7 +13354,7 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
         if (menuCanResume()) it.push({ text: 'Tiếp tục', act: titleClose });
         it.push({ text: 'Ván mới', act: go('class') });          // v0.80: chọn độ khó trước
         it.push({ text: 'Đổi người chơi (Slot ' + SLOT.cur + ')', act: slotsOpen });
-        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Hướng dẫn', act: go('help') });
+        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Hướng dẫn', act: () => { tutSeen(); go('help')(); } });
         return it;
     }
     if (t.page === 'opts') return [sliderS, sliderM, mute, tog('assist', 'Hỗ trợ nhảy (Celeste)'), tog('shake', 'Rung màn hình'), tog('fit', 'Phóng vừa khung'), tog('pad', 'Tay cầm'), tog('dda', 'Độ khó thích ứng (DDA)'), tog('debug', 'Chế độ Debug (phím J I P N G K 0)'), back];
@@ -13934,6 +13934,46 @@ muiInit();
     </script>
 
     <script>
+// v1.18zk (Dan): HƯỚNG DẪN CƠ BẢN cho người chơi lần đầu — hiện ngay trong màn 1-1, KHÔNG chặn chơi (chỉ là bảng nhắc ở trên).
+//   Điều kiện hiện: hồ sơ (slot) chưa chơi ván nào (PROF.runs = 0), chưa từng mở mục «Hướng dẫn» ở menu và chưa hoàn tất (PROF.tutDone).
+//   Mỗi bước tự qua khi người chơi làm đúng việc (đi · nhảy · đánh · bom · móc), hoặc sau TUT.stepT giây để không bị kẹt. Bước cuối: mục tiêu qua cửa
+//   (hạ ≥ KILL_GATE.frac quái rồi ↑ ở cửa ra) — qua màn là xong, ghi PROF.tutDone. Mở menu → Hướng dẫn cũng coi là đã xem (tutSeen).
+//   Phím hiển thị theo phím đang gán / nút PS (inp.label); chữ đánh theo lớp (clsOf). game.tut = trạng thái bước (reset mỗi lần nạp màn).
+const TUT = { stepT: 22, doneShowT: 3.5, lineMax: 54 };
+function tutSeen() { if (!PROF.tutDone) { PROF.tutDone = true; profSave(); } }
+function tutOn() {
+    const p = game.player, L = game.level;
+    return !PROF.tutDone && !(PROF.runs > 0) && game.levelIdx === 0 && !!L && L.id !== 'test' && !L.def.boss && !!p && !p.dead && !game.trans && !game.won;
+}
+function tutSteps() {
+    const k = a => inp.label(a, 1), c = clsOf(game.cls);
+    const atk = { sword: 'Chém', alch: 'Bắn gậy phép', hunt: 'Ném boomerang' }[c] || 'Tấn công';
+    const need = game.killNeed || 0, done = typeof killsDone === 'function' ? killsDone() : 0;
+    return [
+        { id: 'move', l: ['Đi trái / phải: ← →', 'Giữ ' + k('run') + ' để chạy nhanh'], ok: (p, g) => Math.abs(p.x - g.x0) > 28 },
+        { id: 'jump', l: ['Nhảy: ' + k('jump'), c === 'sword' ? 'Bấm lần 2 trên không = nhảy đôi' : c === 'alch' ? 'Giữ ' + k('jump') + ' khi rơi = lượn' : 'Nhảy lên gờ cao, tránh bẫy và quái'], ok: () => inp.pressed('jump') },
+        { id: 'attack', l: [atk + ': ' + k('attack') + '  (↑ + ' + k('attack') + ' = đánh lên)', 'Hạ quái để mở cửa ra · ↓ + ' + k('attack') + ' = nhặt / đặt đồ'], ok: () => inp.pressed('attack') },
+        { id: 'bomb', l: ['Bom: ' + k('bomb') + '  (↓ + ' + k('bomb') + ' = đặt dưới chân)', 'Phá đất, đào vàng, mở đường — bom có hạn, đừng phí'], ok: (p) => inp.pressed('bomb') || p.bombs < 8 },
+        { id: 'rope', l: ['Móc: ' + k('rope') + ' — tự móc gờ / trần rồi kéo lên', 'Có thang thì giữ ↑ / ↓ để leo'], ok: () => inp.pressed('rope') },
+        { id: 'goal', l: [need > 0 && done < need ? 'Mục tiêu: hạ ' + need + ' quái (' + done + '/' + need + ') mở cửa ra' : 'Cửa ra đã mở: tới cửa, bấm ↑ để sang màn kế', 'Nhặt vàng → mua đồ ở cửa hàng · tim = máu · cứu công chúa +1 tim'], ok: () => false }
+    ];
+}
+function tutStep(dt) {
+    if (!tutOn()) { if (game.tut && game.trans && !PROF.tutDone && game.levelIdx === 0) tutSeen(); return; }
+    const p = game.player, g = game.tut || (game.tut = { i: 0, t: 0, x0: p.x, flashT: 0 });
+    g.t += dt; const S = tutSteps();
+    if (g.flashT > 0) g.flashT -= dt;
+    if (g.i < S.length - 1 && (S[g.i].ok(p, g) || g.t > TUT.stepT)) { g.i++; g.t = 0; g.flashT = 0.5; sndPlay('ui', { p: 1.4, vol: 0.4 }); }
+}
+function tutDraw() {
+    if (!tutOn() || !game.tut) return;
+    const g = game.tut, S = tutSteps(), s = S[Math.min(g.i, S.length - 1)], x = VIEW_W / 2, y0 = 60;
+    ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = '#10141c'; ctx.fillRect(x - 148, y0 - 3, 296, 33); ctx.restore();
+    drawText('HƯỚNG DẪN ' + (g.i + 1) + '/' + S.length, x, y0, g.flashT > 0 ? '#ffffff' : '#ffd24a', 'center');
+    drawText(s.l[0].slice(0, TUT.lineMax), x, y0 + 9, '#ffe9a8', 'center');
+    drawText(s.l[1].slice(0, TUT.lineMax), x, y0 + 18, '#cfe0ff', 'center');
+}
+
 // 16_gameloop — vòng lặp chính: bước cố định 60Hz (accumulator) + vẽ có nội suy; ván chơi / level.
 //   GĐ2: newRun(seed) sinh level 1 bằng bộ sinh (07b_levelgen); đứng ở cửa ra bấm ↑ => level kế tiếp (giữ máu/bom/dây/vàng).
 //   Chết => chữ "chết vì …" rồi bấm phím bất kỳ để chơi lại NGAY từ level 1 với seed mới (mục tiêu ≤ 2 giây, roadmap 0.1). Phím 0 = phòng thử nghiệm.
@@ -14060,7 +14100,7 @@ function loadLevel(def, fresh) {
     if (game.genMeta && !def.boss && L.id !== 'test' && hasBench(game.levelIdx)) benchPlace(L);          // H1: ghế nghỉ ở màn thứ 3 của vùng
     if (L.dark && !def.boss) { const t = entAdd(new Torch(L.spawn.x + 22, L.spawn.y - 14)); }
     const nCarry = carryoverPlace(L);                    // quái sót từ level trước, rải xa điểm vào
-    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.trans = null; game.killNeed = killNeedOf(L, def);
+    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.trans = null; game.killNeed = killNeedOf(L, def); game.tut = null;
     game.boss = null; game.bossDone = false; game.flash = null; game.banner = null;
     game.popQ = []; game.popT = undefined; game.levelT = 0; game.fade = 1; game.ghostWarned = game.ghostOut = false; game.ghostBonus = 0; game.hint = '';
     if (!fresh && game.wanted && L.exit && !def.boss) wantedAmbush(L); else levelFeeling(def);
@@ -14110,7 +14150,7 @@ function stepGame() {
     game.entities = game.entities.filter(e => e.alive);
     L.updateFx(STEP);
     camUpdate(L, p, STEP);
-    game.atExit = false; lockStep(L, p); exitStep(L, p); fireTipStep(L, p);
+    game.atExit = false; lockStep(L, p); exitStep(L, p); fireTipStep(L, p); tutStep(STEP);
     inp.endStep();
     game.time += STEP; stillTick(); game.levelT += STEP; if (!p.dead) game.runT += STEP;
     if (game.fade > 0 && !p.dead) game.fade = Math.max(0, game.fade - STEP * 4);
@@ -14273,6 +14313,7 @@ function drawHud() {
     if (inp.imeAt && performance.now() - inp.imeAt < 7000 && !p.dead) drawText('Vui lòng tắt bộ gõ tiếng Việt!', VIEW_W / 2, 40, '#ffffff', 'center');          // v0.78b
     if (game.wanted && !p.dead) { drawText('TRUY NÃ', VIEW_W - 6, 44, '#ff5a3a', 'right'); }
     if (game.hint && !p.dead) { drawText(game.hint, VIEW_W / 2, 42, '#ffb0a0', 'center'); }
+    tutDraw();          // v1.18zk: bảng hướng dẫn người chơi lần đầu (16a_tutorial)
     if (game.atExit && !p.dead) drawText('↑ để đi tiếp', VIEW_W / 2, 48, '#ffe9a8', 'center');
     if (game.pickupMsg) drawText(game.pickupMsg.text, p.cx - Math.round(cam.x), p.y - Math.round(cam.y) - 14 - game.pickupMsg.t * 8, '#ffe9a8', 'center');
     if (p.dead && game.deadShown && !game.title) drawDeathPanel();
