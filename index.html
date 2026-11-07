@@ -382,6 +382,10 @@ const GEN = { motif: true, motifNow: true, strictTries: 45, strictNow: true, roo
     x5Mul: 1.3,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
     trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0, crumbleDropP: 0.074, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống · v1.18x (Dan): sàn vỡ còn ~30% (GEN_HZ_MUL.F 1→0,3 · crumbleExitP 0,4→0,12 · crumbleDropP 0,22→0,066; đo 7,8 → 2,4 ô/màn) · mục 2: crumbleExitP = 0 (hết sàn vỡ kề cửa ra; đặt lại > 0 nếu muốn bật), crumbleDropP 0,074 bù để tổng vẫn ~30%: 2,34 ô/màn
     areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.25, altarRowW: [1, 3, 3, 3, 1], aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
+// v1.18zj (Dan, tester): phải hạ ít nhất frac số quái có lúc vào màn (làm tròn lên, tối thiểu 1 nếu màn có quái) mới qua cửa ra được. Màn boss không áp dụng.
+// v1.18zj: giá trị vàng trong đất (giữ 50 / 150 như cũ; chỉnh kinh tế bằng giá cửa hàng SHOP.priceMul, vì người chơi thường chỉ đào được vài lần vì bom đắt).
+const GOLD_TILE = { small: 50, big: 150 };
+const KILL_GATE = { frac: 1 / 3 };
 const LOCK_SPARE = 1;          // đấu trường: cửa ra mở khi còn ≤ chừng này quái trong phòng (quái rơi khỏi phòng tính là đã hạ)
 // QUÁI SÓT MANG SANG LEVEL KẾ (cơ chế luôn bật, không có tuỳ chọn tắt). Qua cửa ra: lấy frac (làm tròn lên) số quái còn sống (kể cả quái đã mang sang mà chưa giết), chọn NGẪU NHIÊN (game.rngPlay), rải ở level kế. Hết vùng (zoneIdx đổi) thì xoá. Phòng boss/màn cuối không nhận.
 //   minLeft: sót ít hơn số này thì không mang (1 = sót 1 con cũng mang) · max: trần số quái mang · minDist: cách điểm vào tối thiểu (ô, Manhattan) · avoidR/avoid: tránh quanh cửa hàng/bàn thờ/rương/công chúa/ghế nghỉ · pick: số ô ứng viên thử cho mỗi con (chọn ô xa quái khác nhất => rải đều)
@@ -5508,9 +5512,9 @@ class Level {
         this.setTile(c, r, T_EMPTY);
         const x = (c + 0.5) * TILE, y = (r + 0.5) * TILE;
         if (this.amt && typeof sndPlay === 'function') for (const d of [1, -1, this.w, -this.w]) { const n = r * this.w + c + d; if (n >= 0 && n < this.amt.length && this.amtT[n] === 1 && this.amt[n] >= 0.6) { sndPlay('waterRush2', { x, vol: 0.9 }); break; } }          // v1.14: tường chắn bể nước vỡ => nước ào ra
-        if (t === T_GOLD && typeof spawnGold === 'function') spawnGold(x, y, 1, 50);
+        if (t === T_GOLD && typeof spawnGold === 'function') spawnGold(x, y, 1, GOLD_TILE.small);          // v1.18zj: trước 50
         if (t === T_ARROW) this.traps = this.traps.filter(tr => tr.c !== c || tr.r !== r);
-        if (t === T_GOLDBIG && typeof spawnGold === 'function') spawnGold(x, y, 1, 150);
+        if (t === T_GOLDBIG && typeof spawnGold === 'function') spawnGold(x, y, 1, GOLD_TILE.big);          // v1.18zj: trước 150
         if (t === T_STONE && typeof sndPlay === 'function') sndPlay('wallBreak', { x, vol: 0.6 });          // v0.68: khối đá vỡ có tiếng riêng (tiếng đã có sẵn nhưng chưa nối)
         this.spawnBurst(x, y, 3, t === T_GOLD || t === T_GOLDBIG ? '#ffd24a' : t === T_STONE ? '#8a8a8e' : this.theme.solid[0], 90);
         return true;
@@ -8538,10 +8542,10 @@ function spawnObjects(level) {
         else if (o.kind === 'princess') e = new Princess(x + 3, y + TILE - PRINCESS.h);
         else if (o.kind === 'shopkeeper') e = new Shopkeeper(x + 2, y + TILE - ENEMY_DEFS.shopkeeper.h);
         else if (o.kind.indexOf('goods') === 0) e = new ShopGoods(x + 2, y + TILE - 12, o.kind.slice(5).toLowerCase());
-        else if (o.kind === 'relic_shard') { e = new Relic(x + 2, y + TILE - 14, 'shard'); relicGuards(level, o); }
+        else if (o.kind === 'relic_shard') { e = new Relic(x + 2, y + TILE - 14, game.rngPlay.chance(shardChanceMul(game.player)) ? 'shard' : 'item'); relicGuards(level, o); }          // v1.18zj: hiếm dần / trần — không ra mảnh thì đổi thành di vật thường
         else if (o.kind === 'relic_item') { e = new Relic(x + 2, y + TILE - 14, 'item'); relicGuards(level, o); }
-        else if (o.kind === 'goldsmall') e = new Gold(x + 5, y + TILE - 4, 50);
-        else if (o.kind === 'goldbig') e = new Gold(x + 4, y + TILE - 6, 150);
+        else if (o.kind === 'goldsmall') e = new Gold(x + 5, y + TILE - 4, GOLD_TILE.small);
+        else if (o.kind === 'goldbig') e = new Gold(x + 4, y + TILE - 6, GOLD_TILE.big);
         if (e) { if (FOES[o.kind]) affixRoll(e); entAdd(e); }
     }
     arrowBoxesSpawn(level);          // v0.18: bẫy mũi tên trong tường → hộp bắn tên nhặt được (13b_traps)
@@ -10811,8 +10815,10 @@ function princessRescue(L, p, up) {
 //   Chủ cửa hàng giận: đuổi theo, cắn (1 máu) và bắn súng hoa cải (3 viên, 1 máu mỗi viên, có điềm báo). Giết được → rơi vàng.
 //   Tương tác chéo (đúng tinh thần Spelunky): ném đá/bom vào chủ cửa hàng, quăng hàng ra ngoài cửa rồi nhặt, bẫy mũi tên bắn trúng ông ta…
 
+function shopPrice(base) { return Math.max(SHOP.priceStep, Math.round(base * SHOP.priceMul / SHOP.priceStep) * SHOP.priceStep); }
 const SHOP = {
-    price: { bomb: 300, rope: 200, heart: 600, kit: 300, shotgun: 900, machete: 600, boomerang: 500 },
+    priceMul: 1, priceStep: 50,          // v1.18zj (tester): giá cửa hàng đã tăng thẳng trong bảng giá (SHOP.price, SUB, BLADE, GEAR_DEFS); priceMul là hệ số chung nếu cần chỉnh nhanh
+    price: { bomb: 500, rope: 300, heart: 900, kit: 450, shotgun: 1350, machete: 900, boomerang: 750 },          // v1.18zj: tăng giá (trước 300 / 200 / 600 / 300 / 900 / 600 / 500)
     name: { bomb: '+5 bom', rope: '+5 móc', heart: '+2 tim', kit: '+2 bom +2 móc', shotgun: 'Súng hoa cải', machete: 'Kiếm hệ', boomerang: 'Boomerang' },
     wind: 0.4, cd: 1.6, range: 140, pelletV: 300, pelletLife: 0.9, spread: 0.16, chaseSpeed: 70, dropGold: 150
 };
@@ -10846,7 +10852,7 @@ class ShopGoods extends Thing {
             else if (id.indexOf('flask:') === 0) { this.type = 'kit'; this.sub = id.slice(6); }
             else this.type = id;
         }
-        this.price = this.gear ? GEAR_DEFS[this.gear].price : this.blade ? BLADE.price : this.sub ? SUB[this.sub].price : SHOP.price[this.type]; this.paid = false;
+        this.price = shopPrice(this.gear ? GEAR_DEFS[this.gear].price : this.blade ? BLADE.price : this.sub ? SUB[this.sub].price : SHOP.price[this.type]); this.paid = false;
         const B = LVL.border, rx = Math.floor((Math.floor(x / TILE) - B) / LVL.roomW), ry = Math.floor((Math.floor(y / TILE) - B) / LVL.roomH);
         this.shopBox = { x: (B + rx * LVL.roomW) * TILE, y: (B + ry * LVL.roomH) * TILE, w: LVL.roomW * TILE, h: LVL.roomH * TILE };
     }
@@ -10859,7 +10865,7 @@ class ShopGoods extends Thing {
         if (this.blade) { bladeGive(p, this.blade); if (this.blade === 'fire') fireTipStart(); return; }
         if (this.type === 'shotgun' || this.type === 'machete' || this.type === 'boomerang') { weaponGive(p, this.type); return; }
         if (this.type === 'bomb') p.bombs += this.amt || 5; else if (this.type === 'rope') p.ropes += this.amt || 5;          // amt: quà quái tinh nhuệ (v0.87)
-        else if (this.type === 'heart') p.hp += 2 * HP_UNIT; else { p.bombs += 2; p.ropes += 2; }
+        else if (this.type === 'heart') p.hp = Math.min(maxHpOf(p), p.hp + 2 * HP_UNIT); else { p.bombs += 2; p.ropes += 2; }
     }
     consume(p, msg) {
         this.apply(p); this.release(); this.alive = false;
@@ -10867,6 +10873,7 @@ class ShopGoods extends Thing {
     }
     onPicked(p) {
         if (this.paid) { this.consume(p, this.label()); return; }                  // đã trả / đồ trộm rơi ngoài: nhận luôn
+        if (this.type === 'heart' && !this.gear && !this.blade && !this.sub && p.hp >= maxHpOf(p)) { game.pickupMsg = { t: 0, text: 'Máu đã đầy — chưa cần mua tim' }; return; }          // v1.18zj: không trừ vàng khi đầy máu
         if (p.gold >= this.price) { p.gold -= this.price; this.paid = true; game.stats.bought = (game.stats.bought || 0) + 1; for (const o of game.entities) if (o.alive && o instanceof Shopkeeper && !o.angry) { o.smileT = 2.6; if (typeof emotePop === 'function') emotePop(o, '♥'); } this.consume(p, this.label() + '  (−$' + this.price + ')'); }
         else game.pickupMsg = { t: 0, text: 'Thiếu vàng ($' + this.price + ') — mang ra ngoài = trộm!' };
     }
@@ -11464,7 +11471,7 @@ class Altar extends Thing {
             let g; if (R.int(1, 100) <= ALTAR.bladeP) { g = entAdd(new Relic(x0, this.y - 10, 'item')); const o = BLADE_LIST.filter(b => b !== p.blade); g.pick = { blade: o[R.int(0, o.length - 1)] }; }
             else { g = entAdd(new Relic(x0, this.y - 10, 'item')); g.pick = { sub: SUB_LIST[R.int(0, SUB_LIST.length - 1)] }; }
             g.age = 0; let txt = g.label();
-            if (R.int(1, 100) <= ALTAR.shardP) { const sh = entAdd(new Relic(x0 + 12, this.y - 10, 'shard')); sh.age = 0; txt += ' + Mảnh tim'; }
+            if (R.int(1, 10000) <= Math.floor(ALTAR.shardP * 100 * shardChanceMul(p))) { const sh = entAdd(new Relic(x0 + 12, this.y - 10, 'shard')); sh.age = 0; txt += ' + Mảnh tim'; }
             return txt;
         };
         const heal = n => { if (n > 0) { p.hp = Math.min(maxHpOf(p), p.hp + n); level.spawnBurst(p.cx, p.cy - 2, 8, '#ff7aa8', 80); } };
@@ -11530,7 +11537,7 @@ class BigChest extends Thing {
             this.open = true; carryDrop(p); key.alive = false;
             level.spawnBurst(this.cx, this.y, 18, '#ffd24a', 140); sndPlay('unlock', { x: this.cx, vol: 2 }); sndPlay('ui', { x: this.cx, p: 1.6, vol: 1.6 }); fxShake(1, 0.15);
             CHEST.loot.forEach((v, i) => { const g = new Gold(this.cx - 3, this.y - 4, v); g.vx = (i - 2.5) * 34; g.vy = -150 - (i % 2) * 40; entAdd(g); });
-            if (p.hp > 0) p.hp += CHEST.heart;
+            if (p.hp > 0) p.hp = Math.min(Math.max(maxHpOf(p), p.hp), p.hp + CHEST.heart);          // v1.18zj: chặn trần máu
             let ankh = false;
             if (gearUsable('ankh', game.diff) && !gearHas(p, 'ankh') && game.rngPlay.int(1, 100) <= CHEST.ankhChance) { const a = entAdd(new ShopGoods(this.cx - 6, this.y - 8, 'bomb')); a.type = 'item'; a.gear = 'ankh'; a.price = 0; a.paid = true; a.vy = -170; ankh = true; }
             game.pickupMsg = { t: 0, text: 'Rương lớn! +' + CHEST.loot.reduce((a, b) => a + b, 0) + ' vàng, +' + CHEST.heart / HP_UNIT + ' tim' + (ankh ? ' + ANKH!' : '') };
@@ -11552,11 +11559,11 @@ class BigChest extends Thing {
 const GEAR = { ankhInv: 3 };
 const GEAR_LIST = ['ankh', 'ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'];
 const GEAR_DEFS = {
-    ankh: { name: 'Ankh (hồi sinh)', price: 1800, col: '#ffe9a8', ch: 'H', secret: true },
-    ward_fire: { name: 'Bùa kháng Lửa', price: 700, col: '#ff9a3a', ch: 'L', ward: 'fire', secret: true },
-    ward_ice: { name: 'Bùa kháng Băng', price: 700, col: '#7fd8ff', ch: 'B', ward: 'ice', secret: true },
-    ward_shock: { name: 'Bùa kháng Sét', price: 700, col: '#ffe45a', ch: 'T', ward: 'shock', secret: true },
-    ward_poison: { name: 'Bùa kháng Độc', price: 700, col: '#7be06a', ch: 'D', ward: 'poison', secret: true }
+    ankh: { name: 'Ankh (hồi sinh)', price: 3000, col: '#ffe9a8', ch: 'H', secret: true },
+    ward_fire: { name: 'Bùa kháng Lửa', price: 1050, col: '#ff9a3a', ch: 'L', ward: 'fire', secret: true },
+    ward_ice: { name: 'Bùa kháng Băng', price: 1050, col: '#7fd8ff', ch: 'B', ward: 'ice', secret: true },
+    ward_shock: { name: 'Bùa kháng Sét', price: 1050, col: '#ffe45a', ch: 'T', ward: 'shock', secret: true },
+    ward_poison: { name: 'Bùa kháng Độc', price: 1050, col: '#7be06a', ch: 'D', ward: 'poison', secret: true }
 };
 // KHÁNG HỆ CỦA HERO (v0.51): bùa kháng X (bán ở cửa hàng như đồ nghề, giữ tới hết ván) => miễn trạng thái hệ X (cháy / chậm-băng / giật / độc, xem statusApply) và đòn hệ X chỉ còn ×RESIST.dmgMul (làm tròn lên, tối thiểu 1 đơn vị máu = nửa tim).
 //   Dung nham (src.lava) bỏ qua kháng như với quái. Trong cửa hàng ra bùa: trọng số 1 (đồ khác), bùa thường RESIST.wardW, bùa của hệ quái vùng này (ZONES[].resist) RESIST.zoneW.
@@ -12364,12 +12371,12 @@ function ddaLoad(d) {              // nạp từ bản lưu: lọc kiểu dữ l
 //   Đã có: bình nước (vỡ thì dập lửa, rửa dầu, làm ướt — như thùng nước nhưng ném được), bình dầu (vỡ ra vũng dầu, gặp lửa thì cháy).
 //   CHƯA làm (chờ Dan chốt cách chơi): chuông dụ quái, cỏ mèo. Bán ở cửa hàng (ô `k`, trước là "bộ đồ nghề"). Bình nguyên tố (độc / băng / sét) thuộc H6f, không chiếm ô này.
 const SUB = {
-    water: { name: 'Bình nước', n: 10, price: 300, col: '#7fb8ff' },
-    oil: { name: 'Bình xăng', n: 10, price: 300, col: '#c8a050' },
+    water: { name: 'Bình nước', n: 10, price: 450, col: '#7fb8ff' },
+    oil: { name: 'Bình xăng', n: 10, price: 450, col: '#c8a050' },
     // v0.79 (Dan): bình NGUYÊN TỐ bán ở cửa hàng — v0.85: 10 món ngang nhau (shopPick, 13d_shop)
-    shock: { name: 'Bình sét', n: 10, price: 300, col: '#ffd24a' },
-    frost: { name: 'Bình băng', n: 10, price: 300, col: '#8fd0f8' },
-    poison: { name: 'Bình độc', n: 10, price: 300, col: '#7be06a' }
+    shock: { name: 'Bình sét', n: 10, price: 450, col: '#ffd24a' },
+    frost: { name: 'Bình băng', n: 10, price: 450, col: '#8fd0f8' },
+    poison: { name: 'Bình độc', n: 10, price: 450, col: '#7be06a' }
 };
 const SUB_FLASK_OF = { fire: 'oil', ice: 'frost', shock: 'shock', poison: 'poison' };          // hệ → id bình
 const SUB_LIST = ['water', 'oil'];
@@ -12433,7 +12440,7 @@ const BLADE = {
     ice:    { name: 'Kiếm Băng', col: '#7fd8ff', col2: '#e8faff', dmgKind: 'ice' },
     shock:  { name: 'Kiếm Sét', col: '#ffe45a', col2: '#fffbd0', dmgKind: 'shock' },
     poison: { name: 'Kiếm Độc', col: '#7be06a', col2: '#d8ffc8', dmgKind: 'poison' },
-    price: 500, chainGap: 2 * TILE, chainGap1: TILE, chainMax: 40, wetDmg: 1, iceTiles: 9, iceDmg: 4,
+    price: 750, chainGap: 2 * TILE, chainGap1: TILE, chainMax: 40, wetDmg: 1, iceTiles: 9, iceDmg: 4,
     // v0.76 (Dan): 4 kiếm tương đương nhau — đòn chính ≈ 4 máu mỗi quái; quái bị LAN chỉ nhận một nửa. Sét lan ≤ 2 ô, lửa / băng / độc lan ≤ 1 ô, đều không giới hạn số quái.
     fireBurn: 2, fireChainBurn: 1,                 // lửa: cháy 2 s × 2 máu / nhịp = 4 máu · lan: 1 máu / nhịp = 2 máu
     freezeT: 4, iceHit: 2, chainFreezeT: 2, chainIceHit: 1,          // băng: đóng băng 4 s + 2 máu (trong ô nước đóng băng: 4 máu) · lan: 2 s + 1 máu
@@ -12553,7 +12560,12 @@ function bladeHit(level, p, e) {
 //     mảnh tim = +RELIC.shard máu tối đa (1 = nửa tim; 2 mảnh = 1 tim) và hồi luôn bấy nhiêu · đồ thưởng = bình đồ phụ ngẫu nhiên HOẶC kiếm hệ ngẫu nhiên khác kiếm đang cầm.
 //   v0.57 (Dan): «đồ thưởng» nay là một trong: bom (+RELIC.bombs) · vàng (RELIC.gold) · súng hoa cải · ĐỒ BÍ MẬT (Ankh hoặc 1 trong 4 bùa kháng hệ; chỉ có ở đây) · HỒI ĐẦY máu (lên trần máu tối đa, dù đang còn bao nhiêu) · bình đồ phụ · kiếm hệ khác. Trọng số RELIC.pool; trùng thì đổi sang bom.
 //   Phòng ẩn còn có 1–2 quái canh (relicGuards, 11_enemies lúc tạo quái; theo bảng quái của vùng, KHÔNG đổi bộ sinh).
-const RELIC = { shard: 1, maxUp: 20, flaskChance: 0.5, bombs: 6, gold: 400, pool: { bomb: 18, gold: 16, gun: 12, heal: 14, flask: 10, blade: 12, gear: 18 }, guards: { aerie: 2, chasm: 2, push: 1 } };
+// v1.18zj (tester): mảnh tim cộng VĨNH VIỄN làm game mất cân bằng → (1) trần: máu tối đa không quá capMul × máu khởi đầu của hero (relicMaxUp); (2) hiếm dần: mỗi mảnh đã ăn nhân tỷ lệ gặp lần sau với decay
+//   (0,5 = lần sau còn một nửa so với lần trước; tỷ lệ = decay ^ số mảnh đã ăn, áp ở phòng di vật và bàn thờ); đủ trần thì không còn mảnh nào.
+const RELIC_CAP = { capMul: 1.5, decay: 0.5, gold: 1000 };          // gold: đủ trần mà nhặt mảnh tim thì nhận chừng này vàng
+function relicMaxUp(p) { const s0 = startHpOf(p && p.cls); return Math.floor(s0 * RELIC_CAP.capMul / HP_UNIT) * HP_UNIT - s0; }          // trần = số chẵn (tròn tim), làm tròn xuống
+function shardChanceMul(p) { if (!p) return 1; const up = p.hpUp | 0; if (up >= relicMaxUp(p)) return 0; return Math.pow(RELIC_CAP.decay, up / RELIC.shard); }
+const RELIC = { shard: 1, flaskChance: 0.5, bombs: 6, gold: 400, pool: { bomb: 18, gold: 16, gun: 12, heal: 14, flask: 10, blade: 12, gear: 18 }, guards: { aerie: 2, chasm: 2, push: 1 } };
 function maxHpOf(p, cls) { return startHpOf(cls !== undefined ? cls : p && p.cls) + (p && p.hpUp ? p.hpUp | 0 : 0); }
 class Relic extends Thing {
     constructor(x, y, type) {
@@ -12577,7 +12589,7 @@ class Relic extends Thing {
         if (this.age > 0.3 && p && !p.dead && overlapBox(this, p)) {
             let msg;
             if (this.type === 'shard') {
-                if ((p.hpUp | 0) >= RELIC.maxUp) { p.gold += 100; msg = '+100 vàng (đã đủ tim tối đa)'; }
+                if ((p.hpUp | 0) >= relicMaxUp(p)) { p.gold += RELIC_CAP.gold; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + RELIC_CAP.gold; msg = '+' + RELIC_CAP.gold + ' vàng (đã đủ tim tối đa)'; }
                 else { p.hpUp = (p.hpUp | 0) + RELIC.shard; p.hp += RELIC.shard; msg = 'Mảnh tim: +' + (RELIC.shard / HP_UNIT) + ' tim tối đa'; }
             } else if (this.pick.sub) { subGive(p, this.pick.sub); msg = '+' + SUB[this.pick.sub].name; }
             else if (this.pick.gear) { gearGive(p, this.pick.gear); msg = 'Nhận ' + GEAR_DEFS[this.pick.gear].name; }
@@ -14048,7 +14060,7 @@ function loadLevel(def, fresh) {
     if (game.genMeta && !def.boss && L.id !== 'test' && hasBench(game.levelIdx)) benchPlace(L);          // H1: ghế nghỉ ở màn thứ 3 của vùng
     if (L.dark && !def.boss) { const t = entAdd(new Torch(L.spawn.x + 22, L.spawn.y - 14)); }
     const nCarry = carryoverPlace(L);                    // quái sót từ level trước, rải xa điểm vào
-    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.trans = null;
+    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.trans = null; game.killNeed = killNeedOf(L, def);
     game.boss = null; game.bossDone = false; game.flash = null; game.banner = null;
     game.popQ = []; game.popT = undefined; game.levelT = 0; game.fade = 1; game.ghostWarned = game.ghostOut = false; game.ghostBonus = 0; game.hint = '';
     if (!fresh && game.wanted && L.exit && !def.boss) wantedAmbush(L); else levelFeeling(def);
@@ -14122,6 +14134,13 @@ function arenaFoes(L) {
     for (const e of game.entities) if (e.alive && e instanceof Enemy && !e.boss && e.creature && e.kind !== 'ghost' && e.cx >= x0 && e.cx < x1 && e.cy >= y0 && e.cy < y1) n++;
     return n;
 }
+// v1.18zj: cổng giết quái — số quái cần hạ để qua cửa = KILL_GATE.frac × số quái lúc vào màn (không tính boss / chủ tiệm / ma / quái vô hại)
+function killNeedOf(L, def) {
+    if (def.boss || L.id === 'test') return 0;
+    let n = 0; for (const e of game.entities) if (e.alive && e instanceof Enemy && !e.boss && !e.isBoss && e.creature && !e.harmless && !e.holder && e.kind !== 'ghost' && e.kind !== 'shopkeeper') n++;
+    return n > 0 ? Math.max(1, Math.ceil(n * KILL_GATE.frac)) : 0;
+}
+function killsDone() { let s = 0; for (const k in (game.killsLv || {})) s += game.killsLv[k]; return s; }
 function lockStep(L, p) {
     if (!L.arena || L.arenaOpen || p.dead) { L.arenaLeft = 0; return; }
     const n = arenaFoes(L); L.arenaLeft = n > LOCK_SPARE ? n : 0;
@@ -14141,6 +14160,7 @@ function exitStep(L, p) {
     game.atExit = true;
     if (game.level.def.boss && !game.bossDone) { if (inp.pressed('up')) { game.lockMsgT = 2; game.lockArena = false; sndPlay('clang', { x: p.cx, p: 0.7 }); } return; }
     if (L.arena && !L.arenaOpen) { if (inp.pressed('up')) { game.lockMsgT = 2; game.lockArena = true; sndPlay('gate', { x: p.cx, p: 0.8 }); } return; }
+    if ((game.killNeed || 0) > killsDone()) { if (inp.pressed('up')) { game.lockMsgT = 2; game.lockArena = 'kill'; sndPlay('gate', { x: p.cx, p: 0.8 }); } return; }          // v1.18zj
     if (inp.pressed('up') && p.state !== 'climb') {
         sndPlay('door', { x: p.cx }); sndPlay('ui', { x: p.cx, p: 1.3 });          // v0.68: cửa ra có tiếng cửa
         if (L.id === 'test') { game.exitMsgT = 2.5; return; }
@@ -14241,7 +14261,7 @@ function drawHud() {
         const rx = Math.floor((p.cx / TILE - LVL.border) / LVL.roomW), ry = Math.floor((p.cy / TILE - LVL.border) / LVL.roomH);
         if (rx === a.x && ry === a.y) drawText('Đấu trường: hạ quái để mở cửa ra (còn ' + L.arenaLeft + ')', VIEW_W / 2, 40, '#ffb86a', 'center');
     } }
-    if (game.lockMsgT > 0) { game.lockMsgT -= 1 / 60; drawText(game.lockArena ? 'Cửa bị khoá — hạ quái trong phòng để mở (còn ' + (game.level.arenaLeft || 0) + ')' : 'Cửa bị phong ấn — hạ boss để mở', VIEW_W / 2, 40, '#ff8a6a', 'center'); if (game.lockMsgT <= 0) game.lockArena = false; }
+    if (game.lockMsgT > 0) { game.lockMsgT -= 1 / 60; drawText(game.lockArena === 'kill' ? 'Cửa bị khoá — hạ thêm ' + Math.max(0, (game.killNeed || 0) - killsDone()) + ' quái để mở (' + killsDone() + '/' + (game.killNeed || 0) + ')' : game.lockArena ? 'Cửa bị khoá — hạ quái trong phòng để mở (còn ' + (game.level.arenaLeft || 0) + ')' : 'Cửa bị phong ấn — hạ boss để mở', VIEW_W / 2, 40, '#ff8a6a', 'center'); if (game.lockMsgT <= 0) game.lockArena = false; }
     if (game.levelT < 9 && !p.dead) {
         ctx.globalAlpha = clamp(9 - game.levelT, 0, 1);
         drawText('←→ đi · ' + inp.label('run', 1) + ' giữ chạy · ' + inp.label('jump', 1) + ' nhảy · ' + inp.label('attack', 1) + ' ' + ({ sword: 'kiếm', alch: 'gậy', hunt: 'boomerang' }[p.cls] || 'kiếm') + ' · ' + inp.label('item', 1) + ' dùng đồ phụ (' + inp.label('swap', 1) + ' đổi) · ↓+' + inp.label('attack', 1) + ' nhặt/mở thùng', VIEW_W / 2, VIEW_H - 22, '#ffe9a8', 'center');
