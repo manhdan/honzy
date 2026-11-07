@@ -7567,8 +7567,8 @@ function whipIgnite(level, p, b) {
     sndPlay('st_burn', { x: cx, p: 1.1, vol: 0.6 });
 }
 // v0.70 (Dan: «kiếm băng đánh vào nước nhưng nước không đóng băng»): kiếm băng đóng băng NƯỚC trong vùng lưỡi chém — CHỈ nhát chém TỤ LỰC (chém thường không); nhát nạp còn hoá đá dung nham: ô nước → T_ICE, tan sau FROST.iceT giây (iceMeltStep). Không đóng băng ô đang chồng với người chơi.
-function whipFreeze(level, p, b) {
-    const f = p.facing >= 0 ? 1 : -1, R = p.whipPower ? WHIP.chargeFireReach + 30 : WHIP.fx1 + 4;          // v0.75: tầm mở rộng hơn
+function whipFreeze(level, p, b, ex) {          // ex: tầm thêm (px) — gậy Wizard dùng (v1.18zq)
+    const f = p.facing >= 0 ? 1 : -1, R = (p.whipPower ? WHIP.chargeFireReach + 30 : WHIP.fx1 + 4) + (ex || 0);          // v0.75: tầm mở rộng hơn
     let fb;
     if (b.up) { const top = b.y - (p.whipPower ? 22 : 6); fb = { x: b.x - 14, y: top, w: b.w + 28, h: b.y + b.h - top }; }
     else { const x0 = f > 0 ? p.cx - 2 : p.cx - R, x1 = f > 0 ? p.cx + R : p.cx + 2; fb = { x: x0, y: b.y - 10, w: x1 - x0, h: b.h + 46 }; }
@@ -10285,7 +10285,7 @@ class Pot extends Thing {
     onDie(src) {
         const L = game.level, R = game.rngPlay, x = this.cx, y = this.cy;
         L.spawnBurst(x, y, 8, '#b8743a', 100); sndPlay('crumble', { x });
-        if (this.oil) { oilSpill(x, this.y + this.h); L.spawnBurst(x, y, 5, '#2a2418', 60); return; }          // bình dầu: chỉ đổ dầu
+        if (this.oil) { const sp = oilSpill(x, this.y + this.h);  L.spawnBurst(x, y, 5, '#2a2418', 60); return; }          // bình dầu: chỉ đổ dầu
         // SC oJar Destroy: 1/3 cục vàng · 1/6 hạt vàng · 1/12 × 3 ngọc lớn · 1/6 nhện (chưa có: dùng rắn) · 1/12 rắn
         if (R.int(1, 3) === 1) spawnGold(x, y, 1, 50);
         else if (R.int(1, 6) === 1) spawnGold(x, y, 1, 10);
@@ -12871,7 +12871,7 @@ function dmgPopDraw(camX, camY) {
 //   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
-    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 250, lifeP: 0.312, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
+    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 250, lifeP: 0.312, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18, iceExtra: 16 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
     boomN: { v: 174, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 40 px (v1.07: −½ ô, Dan; trước 48)
     boomF: { v: 226, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 64 px (v1.07: −½ ô; trước 72) (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
@@ -12931,25 +12931,27 @@ class StaffShot extends Thing {
     update(level, dt) {
         this.timers(dt); this.x += this.vx * dt; this.y += this.vy * dt;
         const col = elemCol(this.el);
-        if (this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0) && !level.solidAt(this.cx, this.cy)) fireTrailIgnite(level, this.owner, this.cx, this.cy);
-        if (this.el === 'ice' && !level.solidAt(this.cx, this.cy)) iceFreezeNear(level, this.owner, this.cx, this.cy, this.iceB);          // v1.10
+        if (this.power && this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0) && !level.solidAt(this.cx, this.cy)) fireTrailIgnite(level, this.owner, this.cx, this.cy);
+        if (this.power && this.el === 'ice' && !level.solidAt(this.cx, this.cy)) iceFreezeNear(level, this.owner, this.cx, this.cy, this.iceB);          // v1.10
         const inSolid = level.solidAt(this.cx, this.cy), outside = !level.inside(Math.floor(this.cx / TILE), Math.floor(this.cy / TILE));          // v1.18n (Dan): đạn TỤ LỰC xuyên tường (chỉ dừng khi ra ngoài bản đồ)
         if (this.power && inSolid && !outside && (this._ps = (this._ps || 0) + 1) % 3 === 0) level.spawnBurst(this.cx, this.cy, 1, col, 30);
-        if ((this.life -= dt) <= 0 || outside || (!this.power && inSolid)) { if (this.el === 'fire') fireTrailIgnite(level, this.owner, this.cx, this.cy, true); level.spawnBurst(this.cx, this.cy, 3, col, 50); this.alive = false; return; }
+        if ((this.life -= dt) <= 0 || outside || (!this.power && inSolid)) { if (this.power && this.el === 'fire') fireTrailIgnite(level, this.owner, this.cx, this.cy, true); level.spawnBurst(this.cx, this.cy, 3, col, 50); this.alive = false; return; }
         const p = this.owner;
         for (const e of game.entities) {
-            if (!e.alive || e === p || e.holder || !(e.creature || e.breakOnImpact) || !overlapBox(this, e)) continue;
+            if (!e.alive || e === p || e.holder || !(e.creature || e.breakOnImpact)) continue;
+            if (!overlapBox(e.creature || !this.power ? this : this.lowBox(), e)) continue;          // v1.18zq (Dan): đồ đặt dưới sàn (bình / thùng dầu…) thấp hơn tầm ngực của đạn → hộp trúng đồ kéo dài xuống 12 px
             this.strike(level, e); this.alive = false; return;
         }
     }
+    lowBox() { return { x: this.x - 1, y: this.y - 1, w: this.w + 2, h: this.h + 14 }; }
     strike(level, e) {          // v1.17: tách ra để quét cận chiến khi bắn dùng chung
         const p = this.owner, col = elemCol(this.el), hp0 = e.hp, dmg = CW.staff.dmg * this.mul;
-        if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: this.el })) {
-            elemApply(level, p, e, this.el);
+        if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: (e.creature || this.power) ? this.el : null })) {
+            if (e.creature || this.power) elemApply(level, p, e, this.el);          // v1.18zr (Dan): đòn THƯỜNG chỉ gây hệ lên quái; đồ (thùng dầu, nước…) chỉ chịu hệ từ đòn GIỮ
             if (e.alive && e.creature && !(e.boss || e.isBoss) && e.kind !== 'shopkeeper' && !e.frozenT) { e.stunT = Math.max(e.stunT || 0, CW.staff.stun); e.vx = 0; }          // v1.17 (Dan): đạn gậy làm quái đứng im 1 s
             sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, col, 70);
         }
-        if (this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
+        if (this.power && this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawStaffShotHp(this, ctx, alpha); return; }
@@ -12966,7 +12968,12 @@ function staffFire(p, aim, power) {
         const s = new StaffShot(p.cx + (up ? 0 : f * 2), p.cy - (up ? 8 : aim === 2 ? 6 : aim === 3 ? 0 : 4), vx, vy, p, power); s.iceB = iceB; s.mul = mul * (aim === 1 || aim === 2 ? C.upMul : 1); entAdd(s);
     };
     const before = game.entities.length;
-    mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1);          // v1.18zg: cả đòn thường lẫn đòn giữ đều lan 3 tia nhỏ
+    mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1);
+    if (power && elemOf(p) === 'ice' && game.level) {          // v1.18zq (Dan): đòn GIỮ băng của Wizard đóng băng nước / hoá đá dung nham như nhát nạp kiếm băng của Knight (BLADE.iceTiles ô gần nhất), tầm xa hơn CW.staff.iceExtra px
+        const keep = p.whipPower; p.whipPower = true;
+        try { whipFreeze(game.level, p, { x: p.cx - 6, y: p.cy - 6, w: 12, h: 12, up: aim === 1 }, CW.staff.iceExtra); } finally { p.whipPower = keep; }
+        for (const s of game.entities.slice(before)) s.iceB = null;          // chùm đạn không đóng băng thêm dọc đường bay (tránh cộng dồn với nhát trên)
+    }          // v1.18zg: cả đòn thường lẫn đòn giữ đều lan 3 tia nhỏ
     // v1.17 (Dan): quái đứng SÁT người (nhất là dơi lao từ trên xuống) vẫn trúng — quét một hộp cận chiến trước mặt (cao hơn đầu 14 px) / phía trên đầu; trúng thì viên đạn tiêu luôn
     { const sh = game.entities.slice(before), lv = game.level, fx0 = f > 0 ? p.cx - 2 : p.cx - C.close, box = up ? { x: p.x - 4, y: p.y - C.closeUp, w: p.w + 8, h: C.closeUp } : aim === 2 ? { x: fx0, y: p.y - C.closeUp, w: C.close + 2, h: C.closeUp + p.h * 0.5 } : aim === 3 ? { x: fx0, y: p.cy, w: C.close + 2, h: p.h * 0.5 + 14 } : { x: fx0, y: p.y - 14, w: C.close + 2, h: p.h + 14 };
       if (lv && sh.length) { const s0 = sh[Math.min(1, sh.length - 1)]; let hit = false;
@@ -13181,22 +13188,32 @@ function drawLights(L, cx, cy) {
 
 const PROF_STORE = 'honzy_profile_v1', PROF_VER = 1;
 const PROF = {};
-function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0 }; }
+const TUT_VER = 2;
+const DEV_STORE = 'honzy_device_v1', DEV_KEYS = ['tutDone', 'tutIds', 'hintItem', 'hintPrin', 'hintThrow', 'tutV'];          // v1.18zq (Dan): hướng dẫn + số lần nhắc lưu theo MÁY (không theo slot): chơi slot mới không phải làm lại          // v1.18zm: phiên bản hướng dẫn lần đầu — hồ sơ có tutV nhỏ hơn thì coi như CHƯA làm hướng dẫn (các lần trước chưa hoàn chỉnh)
+function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER }; }
 function profMigrate(o) {
     if (!o || typeof o !== 'object') return profBlank();
     const b = profBlank();
     for (const k in b) if (typeof b[k] === typeof o[k]) b[k] = o[k];       // chỉ nhận trường đúng kiểu; trường mới giữ giá trị mặc định
+    if ((b.tutV | 0) < TUT_VER) { b.tutDone = false; b.tutIds = ''; b.hintItem = 0; b.hintPrin = 0; b.hintThrow = 0; b.tutV = TUT_VER; }          // v1.18zm: hướng dẫn cũ chưa hoàn chỉnh → làm lại
     b.v = PROF_VER; b.deaths = (o.deaths && typeof o.deaths === 'object') ? o.deaths : {};
     b.top = Array.isArray(o.top) ? o.top.filter(x => x && typeof x.score === 'number').slice(0, 5) : [];
     return b;
 }
+function devRead() {
+    let o = null; try { o = JSON.parse(localStorage.getItem(DEV_STORE)); } catch (e) { o = null; }
+    const b = { tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER };
+    if (o && typeof o === 'object' && (o.tutV | 0) >= TUT_VER) for (const k of DEV_KEYS) if (typeof b[k] === typeof o[k]) b[k] = o[k];
+    return b;
+}
+function devSave() { try { const o = {}; for (const k of DEV_KEYS) o[k] = PROF[k]; localStorage.setItem(DEV_STORE, JSON.stringify(o)); } catch (e) { /* bị chặn: bỏ qua */ } }
 function profLoad() {
     let o = null;
     try { const k = slotKey(PROF_STORE); o = k ? JSON.parse(localStorage.getItem(k)) : null; } catch (e) { o = null; }
-    const m = profMigrate(o); for (const k in PROF) delete PROF[k]; Object.assign(PROF, m);
+    const m = profMigrate(o); for (const k in PROF) delete PROF[k]; Object.assign(PROF, m, devRead());          // v1.18zq: trường hướng dẫn lấy từ kho theo máy
     return PROF;
 }
-function profSave() { try { const k = slotKey(PROF_STORE); if (k) localStorage.setItem(k, JSON.stringify(PROF)); } catch (e) { /* bị chặn: bỏ qua */ } }          // hồ sơ theo slot (v0.60)
+function profSave() { devSave(); try { const k = slotKey(PROF_STORE); if (k) localStorage.setItem(k, JSON.stringify(PROF)); } catch (e) { /* bị chặn: bỏ qua */ } }          // hồ sơ theo slot (v0.60)
 function profReset() { for (const k in PROF) delete PROF[k]; Object.assign(PROF, profBlank()); profSave(); }
 // HỒ SƠ THEO LỚP (v0.98): chung mọi slot, KHÔNG bị xoá khi xoá slot — { sword|alch|hunt: { runs, wins, bestDepth, bestGold } }. Hardcore mở khi có lớp nào từng thắng.
 const CLSPROF_STORE = 'honzy_clsprof_v1';
@@ -13337,7 +13354,7 @@ function slotChoose(s) {
     if (r.state === 'newer') { if (t) t.msg = 'Slot ' + s + ' thuộc phiên bản game mới hơn — không mở được'; return false; }
     SLOT.cur = s; try { localStorage.setItem(SLOT.lastKey, String(s)); } catch (e) { }
     profLoad();
-    if (r.state === 'ok') { titleClose(); resumeRun(r.data); game.banner = { text: 'Người chơi ' + s + ' — tiếp tục ' + game.level.name + (r.data.regen ? ' (màn dựng lại theo bản mới)' : ''), t: 0 }; }
+    if (r.state === 'ok') { titleClose(); resumeRun(r.data); game.banner = r.data.regen ? { text: 'Màn dựng lại theo bản mới', t: 0 } : null; }          // v1.18zq: bỏ dòng «Người chơi N — tiếp tục …» (thừa; tên màn đã hiện)
     else { if (!game.title) titleOpen('class'); const tt = game.title; tt.page = 'class'; tt.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); tt.msg = ''; tt.fromSlots = true; }          // v0.80: slot trống → chọn độ khó
     return true;
 }
@@ -13388,13 +13405,13 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
     }
     if (t.page === 'seed') return [{ text: 'Bắt đầu', act: titleStart }, back];
     if (t.page === 'class') {          // v0.95: chọn lớp nhân vật trước độ khó
-        const it = CLASS_LIST.map(k => ({ text: CLASSES[k].name, cls: k, act: () => { game.cls = k; t.page = 'diff'; t.sel = 1; t.msg = ''; } }));
+        const it = CLASS_LIST.map(k => ({ text: CLASSES[k].name, cls: k, act: () => { game.cls = k; t.page = 'diff'; t.sel = (PROF && PROF.wins > 0) ? 1 : 0; t.msg = ''; } }));
         it.push({ text: '← Quay lại', act: () => { if (menuCanResume() && !t.fromSlots) go('main')(); else { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; } } });
         return it;
     }
-    if (t.page === 'diff') {          // v0.80 (Dan): chọn độ khó cho ván mới; Hardcore chỉ hiện khi slot đã phá đảo
+    if (t.page === 'diff') {          // v1.18zm: con trỏ mặc định «Dễ», đã phá đảo (hiện Hardcore) mới mặc định «Thường» · v0.80 (Dan): chọn độ khó cho ván mới; Hardcore chỉ hiện khi slot đã phá đảo
         const l = DIFF_LIST.filter(k => k !== 'hardcore' || anyWins());
-        const it = l.map(k => ({ text: DIFF[k].name, diff: k, act: () => { game.diff = k; titleClose(); newRun(); game.banner = { text: 'Ván mới — ' + DIFF[k].name, t: 0 }; } }));
+        const it = l.map(k => ({ text: DIFF[k].name, diff: k, act: () => { game.diff = k; titleClose(); newRun(); } }));
         it.push({ text: '← Quay lại', act: () => { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; } });
         return it;
     }
@@ -13926,6 +13943,7 @@ function muiSlotAt(p) { const t = game.title, first = t ? slotFirst(t) : 0; for 
 function muiMove(e) {
     const t = game.title, p = muiPos(e); if (!p) return; MUI.mouse.x = p.x; MUI.mouse.y = p.y;
     if (!t || t.cap) return;
+    if (t.mx0 !== undefined) { if (t.page === t.page0 && Math.hypot(p.x - t.mx0, p.y - t.my0) < 10) return; t.mx0 = undefined; }          // v1.18zo: vừa bấm chuyển trang → chuột rung nhẹ không được đổi con trỏ mặc định (vd. «Dễ» bị nhảy sang «Thường»)
     if (t.page === 'slots') { const i = muiSlotAt(p); if (i >= 0 && i !== t.sel) { t.sel = i; t.msg = ''; } return; }
     const b = muiFind(t, p); if (b && t.sel !== b.i) t.sel = b.i;
 }
@@ -13942,6 +13960,7 @@ function muiClick(e) {
     t.sel = b.i;
     if (it.kind === 'slider') { if (b.sub === 'bar') it.set(clamp(Math.ceil((p.x - b.bx) / 6), 0, 10) / 10); else if (b.sub === -1 || b.sub === 1) it.act(b.sub); else return; }
     else it.act(1);
+    if (game.title === t) { t.mx0 = p.x; t.my0 = p.y; t.page0 = t.page; }
     if (typeof sndPlay === 'function') try { sndPlay('step', { p: 1.5, vol: 0.4 }); } catch (err) { }
 }
 function muiInit() {
@@ -13957,16 +13976,19 @@ muiInit();
 
     <script>
 // v1.18zk (Dan): HƯỚNG DẪN CƠ BẢN cho người chơi lần đầu — bảng nhắc ở trên màn hình, KHÔNG chặn chơi; hiện từng mục MỘT, lần lượt.
-//   Hiện khi: hồ sơ (slot) chưa chơi ván nào (PROF.runs = 0), chưa từng mở menu → «Hướng dẫn» và chưa xong (PROF.tutDone). Khi bảng đang hiện thì 2 dòng nhắc phím cuối màn (16_gameloop) bị ẩn.
+//   Hiện khi: chưa xong hướng dẫn (PROF.tutDone, theo phiên bản TUT_VER ở 15_profile — nâng TUT_VER là mọi hồ sơ làm lại) và chưa mở menu → «Hướng dẫn». Khi bảng đang hiện thì 2 dòng nhắc phím cuối màn (16_gameloop) bị ẩn.
+//   Chạy NGẦM ngay từ đầu màn: việc nào người chơi đã làm trước khi mục đó hiện (đi ← →, nhảy, đánh, bom, móc…) thì mục đó tự bỏ qua (tutBg).
 //   Nhịp mỗi mục (TUT): hiện dần (inT) → chờ người chơi làm đúng → XONG: chữ đổi màu xanh + ✓, mờ dần (outT) → trống (gapT) → mục kế hiện dần. Cách nhau tổng (outT + gapT) = 2 giây.
 //   Dãy CHÍNH theo lớp: đi → nhảy → (Knight: nhảy đôi · Wizard: LƯU Ý lượn (chỉ nhắc, không bắt làm vì khó tìm chỗ đủ cao) · Stryker: lướt) → đánh → giữ nút đánh 1,2 giây (đòn nạp / phép) → bom → móc → «Hoàn thành hướng dẫn! Chúc bạn chơi game vui vẻ!».
-//   Mục THEO TÌNH HUỐNG (hiện 1 lần khi lần đầu gặp, xếp hàng sau mục đang hiện): thang · hàng cửa hàng (nhặt đồ / công chúa đã chuyển sang dòng nhắc gần vật, xem carryHintDraw). Tiến độ lưu PROF.tutIds (chuỗi id đã xong) nên nạp lại ván không phải làm lại.
-//   Xong dãy chính + (mọi mục tình huống đã hiện hoặc đã sang màn 3) → PROF.tutDone. Phím hiển thị theo phím đang gán / nút PS (inp.label).
-const TUT = { inT: 0.8, outT: 1, gapT: 1, startGap: 1.2, giveUpT: 45, holdT: 1.2, infoT: 4.5, endT: 4, lineMax: 54, ctxDoneLv: 2 };
-function tutSeen() { if (!PROF.tutDone) { PROF.tutDone = true; profSave(); } }
+//   Bước bom / móc: NGAY SAU KHI người chơi vừa dùng, biểu tượng + số bom (móc) trên HUD phình to, nháy sáng rồi thu nhỏ (tutGlow, vẽ ở drawHud) để biết dùng là mất bom.
+//   Mục THEO TÌNH HUỐNG (hiện 1 lần khi lần đầu gặp): hàng cửa hàng. Tiến độ lưu PROF.tutIds (chuỗi id đã xong).
+//   Trình bày: dòng tiêu đề (HƯỚNG DẪN n/N) cao nhất, cách dòng chính; dòng phụ cách dòng chính, chữ mảnh nghiêng.
+//   Ngoài bảng: carryHintDraw (nhắc gần vật nhặt / đang cầm đồ) và exitHintDraw (nhắc ↑ ở cửa ra). Phím hiển thị theo phím đang gán / nút PS (inp.label).
+const TUT = { inT: 0.8, outT: 1, gapT: 1, startGap: 3, giveUpT: 45, holdT: 1.2, infoT: 4.5, endT: 4, fxT: 1.6, fxScale: 0.7, fxBlink: 3, lineMax: 54, ctxDoneLv: 2, y0: 28 };
+function tutSeen() { if (!PROF.tutDone || PROF.tutV !== TUT_VER) { PROF.tutDone = true; PROF.tutV = TUT_VER; profSave(); } }
 function tutOn() {
     const p = game.player, L = game.level;
-    return !PROF.tutDone && !(PROF.runs > 0) && !!L && L.id !== 'test' && !L.def.boss && !!p && !p.dead && !game.trans && !game.won;
+    return !PROF.tutDone && !!L && L.id !== 'test' && !L.def.boss && !!p && !p.dead && !game.trans && !game.won;
 }
 function tutIdsHas(id) { return (',' + (PROF.tutIds || '') + ',').indexOf(',' + id + ',') >= 0; }
 function tutIdAdd(id) { if (!tutIdsHas(id)) { PROF.tutIds = (PROF.tutIds ? PROF.tutIds + ',' : '') + id; profSave(); } }
@@ -13975,84 +13997,108 @@ function tutCoreSteps() {
     const atk = { sword: 'Chém', alch: 'Bắn gậy phép', hunt: 'Ném boomerang' }[c] || 'Tấn công';
     const chargeL = { sword: 'Giữ ' + k('attack') + ' rồi thả = chém nạp (mạnh hơn)', alch: 'Giữ ' + k('attack') + ' rồi thả = đạn phép 3 tia', hunt: 'Giữ ' + k('attack') + ' rồi thả = boomerang xa, xuyên quái' }[c];
     const S = [
-        { id: 'move', l: ['Đi trái / phải: ← →', 'Giữ ' + k('run') + ' để chạy nhanh'], ok: (p, g) => Math.abs(p.x - g.x0) > 28 },
+        { id: 'move', l: ['Đi trái / phải: ← →', 'Giữ ' + k('run') + ' để chạy nhanh'], ok: (p, st) => Math.abs(p.x - st.x0) > 28 },
         { id: 'jump', l: ['Nhảy: bấm ' + k('jump'), 'Giữ lâu = nhảy cao hơn'], ok: () => inp.pressed('jump') }
     ];
-    if (c === 'sword') S.push({ id: 'dbl', l: ['Nhảy đôi: bấm ' + k('jump') + ' 2 lần', 'Lần 2 bấm khi đang ở trên không'], ok: (p, g) => { if (inp.pressed('jump')) g.n = (g.n || 0) + 1; return g.n >= 2; } });
+    if (c === 'sword') S.push({ id: 'dbl', l: ['Nhảy đôi: bấm ' + k('jump') + ' 2 lần', 'Lần 2 bấm khi đang ở trên không'], ok: (p) => inp.pressed('jump') && !p.onGround });
     else if (c === 'alch') S.push({ id: 'glide', info: true, l: ['Lưu ý: khi đang rơi, GIỮ ' + k('jump') + ' để lượn', 'Rơi chậm lại, qua được chỗ hiểm'] });
     else S.push({ id: 'dash', l: ['Lướt: bấm ' + k('dash'), 'Bất tử trong chốc lát khi lướt'], ok: () => inp.pressed('dash') });
     S.push({ id: 'attack', l: [atk + ': bấm ' + k('attack'), '↑ + ' + k('attack') + ' = đánh lên'], ok: () => inp.pressed('attack') });
-    S.push({ id: 'charge', l: ['Đòn giữ: GIỮ ' + k('attack') + ' trong 1,2 giây', chargeL.slice(0, TUT.lineMax)], ok: (p, g, dt) => { if (inp.held('attack')) g.n = (g.n || 0) + dt; else g.n = 0; return g.n >= TUT.holdT; } });
-    S.push({ id: 'bomb', l: ['Bom: bấm ' + k('bomb') + '  (↓ + ' + k('bomb') + ' = đặt dưới chân)', 'Phá đất, đào vàng, mở đường — bom có hạn'], ok: (p) => inp.pressed('bomb') });
-    S.push({ id: 'rope', l: ['Móc: bấm ' + k('rope'), 'Tự móc mép gờ / trần rồi kéo lên'], ok: () => inp.pressed('rope') });
+    S.push({ id: 'charge', l: ['Đòn giữ: GIỮ ' + k('attack') + ' trong 1,2 giây', chargeL.slice(0, TUT.lineMax)], ok: (p, st, dt) => { if (inp.held('attack')) st.n = (st.n || 0) + dt; else st.n = 0; return st.n >= TUT.holdT; } });
+    S.push({ id: 'bomb', glow: 'bomb', l: ['Bom: bấm ' + k('bomb') + '  (↓ + ' + k('bomb') + ' = đặt dưới chân)', 'Mỗi lần ném / đặt mất 1 bom (xem số bom ở góc trái)'], ok: () => inp.pressed('bomb') });
+    S.push({ id: 'rope', glow: 'rope', l: ['Móc: bấm ' + k('rope'), 'Tự móc mép gờ / trần rồi kéo lên (mất 1 móc)'], ok: () => inp.pressed('rope') });
     S.push({ id: 'end', info: true, end: true, l: ['Hoàn thành hướng dẫn!', 'Chúc bạn chơi game vui vẻ!'] });
     return S;
 }
 function tutCtxSteps() {
-    const k = a => inp.label(a, 1);
     return [
-        { id: 'ladder', l: ['Thang: giữ ↑ / ↓ để leo', 'Bấm ← → ngay giữa thang để bước ra'], seen: p => game.level.tile(Math.floor(p.cx / TILE), Math.floor(p.cy / TILE)) === T_LADDER, ok: p => p.state === 'climb' },
-        { id: 'shop', l: ['Cửa hàng: chạm hàng để mua nếu đủ vàng', 'Lấy mà không trả = bị truy nã, chủ tiệm bắn'], seen: p => game.entities.some(e => e.alive && e instanceof ShopGoods && !e.paid && Math.abs(e.cx - p.cx) < 52 && Math.abs(e.cy - p.cy) < 36), ok: () => (game.stats && (game.stats.bought | 0) > 0) },
+        { id: 'shop', l: ['Cửa hàng: chạm hàng để mua nếu đủ vàng', 'Lấy mà không trả = bị truy nã, chủ tiệm bắn'], seen: p => game.entities.some(e => e.alive && e instanceof ShopGoods && !e.paid && Math.abs(e.cx - p.cx) < 52 && Math.abs(e.cy - p.cy) < 36), ok: () => (game.stats && (game.stats.bought | 0) > 0) }
     ];
 }
+function tutStateOf(g, id, p) { return g.st[id] || (g.st[id] = { n: 0, x0: p.x }); }
 function tutStep(dt) {
-    const g = game.tut || (game.tut = { cur: null, ph: 'gap', t: 0, g0: TUT.startGap, q: [], seenCtx: {}, x0: 0, n: 0 });
+    const g = game.tut || (game.tut = { cur: null, ph: 'gap', t: 0, g0: TUT.startGap, q: [], seenCtx: {}, st: {} });
     const p = game.player;
     if (!tutOn()) return;
-    if (!g.x0) g.x0 = p.x;
     g.t += dt;
-    const ctxS = tutCtxSteps();
+    const core = tutCoreSteps(), ctxS = tutCtxSteps(), curId = g.cur ? g.cur.step.id : '';
+    for (const s of core) if (!s.info && !tutIdsHas(s.id) && s.id !== curId) { const st = tutStateOf(g, s.id, p); if (s.ok(p, st, dt)) tutIdAdd(s.id); }          // chạy ngầm: việc đã làm trước khi mục hiện thì bỏ qua
     for (const s of ctxS) if (!g.seenCtx[s.id] && !tutIdsHas(s.id) && s.seen(p)) { g.seenCtx[s.id] = 1; g.q.push(s); }
     if (g.ph === 'gap') {
         if (g.t >= g.g0) {
-            const core = tutCoreSteps().filter(s => !tutIdsHas(s.id)), next = g.q.shift() || core[0];
+            const next = g.q.shift() || core.filter(s => !tutIdsHas(s.id))[0];
             if (!next) { tutCheckDone(); return; }
-            g.cur = { step: next }; g.ph = 'in'; g.t = 0; g.n = 0; g.x0 = p.x;
+            g.cur = { step: next }; g.ph = 'in'; g.t = 0; g.st[next.id] = { n: 0, x0: next.id === 'move' && g.st.move ? g.st.move.x0 : p.x };
         }
     } else if (g.ph === 'in') { if (g.t >= TUT.inT) { g.ph = 'wait'; g.t = 0; } }
     else if (g.ph === 'wait') {
         const s = g.cur.step; g.cur.l = s.l;
-        if (s.info ? g.t >= (s.end ? TUT.endT : TUT.infoT) : (s.ok(p, g, dt) || g.t > TUT.giveUpT)) tutFinish(g);
+        if (s.info ? g.t >= (s.end ? TUT.endT : TUT.infoT) : (s.ok(p, tutStateOf(g, s.id, p), dt) || g.t > TUT.giveUpT)) tutFinish(g);
     } else if (g.ph === 'out') { if (g.t >= TUT.outT) { g.ph = 'gap'; g.t = 0; g.g0 = TUT.gapT; g.cur = null; tutCheckDone(); } }
 }
-function tutFinish(g) { tutIdAdd(g.cur.step.id); g.ph = 'out'; g.t = 0; sndPlay('unlock', { p: 1.6, vol: 0.35 }); }
+function tutFinish(g) { if (g.cur.step.glow) g.fx = { id: g.cur.step.glow, t0: game.time }; tutIdAdd(g.cur.step.id); g.ph = 'out'; g.t = 0; sndPlay('unlock', { p: 1.6, vol: 0.35 }); }
 function tutCheckDone() {
     if (PROF.tutDone) return;
     const coreAll = tutCoreSteps().every(s => tutIdsHas(s.id)), ctxAll = tutCtxSteps().every(s => tutIdsHas(s.id));
     if (coreAll && (ctxAll || game.levelIdx >= TUT.ctxDoneLv)) tutSeen();
 }
+// Hiệu ứng HUD SAU KHI vừa dùng bom / móc trong bước hướng dẫn (v1.18zo): biểu tượng + số phình to, nháy sáng, rồi thu nhỏ lại (TUT.fxT giây). Trả { sc, a } hoặc null.
+function tutGlow(id) {
+    const g = game.tut; if (!g || !g.fx || g.fx.id !== id) return null;
+    const e = (game.time - g.fx.t0) / TUT.fxT; if (e < 0 || e >= 1) { if (e >= 1) g.fx = null; return null; }
+    return { sc: 1 + TUT.fxScale * Math.sin(Math.PI * e), a: 0.5 + 0.5 * Math.sin(e * Math.PI * 2 * TUT.fxBlink) };
+}
+function tutLine(str, x, y, col, a, font) {
+    hudDraw(h => { h.font = font; h.textAlign = 'center'; h.textBaseline = 'top'; h.lineJoin = 'round'; h.lineWidth = 1.8; h.strokeStyle = 'rgba(0,0,0,.85)'; h.strokeText(str, x, y); h.fillStyle = col; h.fillText(str, x, y); }, a);
+}
 function tutDraw() {
     const g = game.tut; if (!g || !g.cur || g.ph === 'gap' || !tutOn()) return;
-    const s = g.cur.step, x = VIEW_W / 2, y0 = 60, core = tutCoreSteps(), done = g.ph === 'out';
+    const s = g.cur.step, x = VIEW_W / 2, y0 = TUT.y0, core = tutCoreSteps(), done = g.ph === 'out';
     const a = g.ph === 'in' ? clamp(g.t / TUT.inT, 0, 1) : done ? clamp(1 - g.t / TUT.outT, 0, 1) : 1;
     if (a <= 0) return;
     const L = g.cur.l || s.l, head = s.end ? 'HOÀN THÀNH' : done ? '✓ XONG!' : (s.info && !s.end ? 'LƯU Ý' : core.some(c => c.id === s.id) ? 'HƯỚNG DẪN ' + (core.findIndex(c => c.id === s.id) + 1) + '/' + core.filter(c => !c.end).length : 'MẸO');
     const ga = ctx.globalAlpha;
-    ctx.globalAlpha = 0.55 * a; ctx.fillStyle = done ? '#10281a' : '#10141c'; ctx.fillRect(x - 148, y0 - 3, 296, 33);
-    ctx.globalAlpha = a;
-    drawText(head, x, y0, done ? '#7dff9a' : '#ffd24a', 'center');
-    drawText(L[0].slice(0, TUT.lineMax), x, y0 + 9, done ? '#9dffb4' : '#ffe9a8', 'center');
-    drawText(L[1].slice(0, TUT.lineMax), x, y0 + 18, done ? '#9dffb4' : '#cfe0ff', 'center');
+    ctx.globalAlpha = 0.55 * a; ctx.fillStyle = done ? '#10281a' : '#10141c'; ctx.fillRect(x - 142, y0 - 5, 284, 46);
     ctx.globalAlpha = ga;
+    const bold = 'bold ' + TEXT.size + 'px ' + TEXT.font, thin = 'italic ' + (TEXT.size - 1) + 'px ' + TEXT.font;
+    tutLine(head, x, y0, done ? '#7dff9a' : '#ffd24a', a, bold);
+    tutLine(L[0].slice(0, TUT.lineMax), x, y0 + 14, done ? '#9dffb4' : '#ffe9a8', a, bold);
+    tutLine(L[1].slice(0, TUT.lineMax), x, y0 + 28, done ? '#9dffb4' : '#b9cdf0', a, thin);
 }
-
-// v1.18zl (Dan): dòng nhắc NGAY khi đứng cạnh vật nhặt được (thay cho mục hướng dẫn nhặt đồ / công chúa vì hay bị mắc): hiện ở dưới màn hình, ngay trên 2 dòng nhắc phím.
-//   «Bấm ↓ + W để đưa công chúa theo» / «Bấm ↓ + W để nhặt đồ» (đá, thùng, bình…; rương thì «mở»). Mỗi loại hiện cho tới khi người chơi đã nhấc đủ HINT_CARRY.n lần (đếm vào hồ sơ: PROF.hintItem / hintPrin) để người quen không bị rối.
-const HINT_CARRY = { n: 3, y: 36 };
+// v1.18zl (Dan): dòng nhắc NGAY khi đứng cạnh vật nhặt được (thay cho mục hướng dẫn nhặt đồ / công chúa vì hay bị mắc), ở dưới màn hình, ngay trên 2 dòng nhắc phím.
+//   «Bấm ↓ + W để đưa công chúa theo» / «Bấm ↓ + W để nhặt đồ» (đá, thùng, bình…; rương thì «mở»). Mỗi loại hiện cho tới khi người chơi đã nhấc đủ HINT_CARRY.n lần (PROF.hintItem / hintPrin).
+//   Đang cầm đồ: «W để ném · ↓ + W để đặt xuống» chỉ hiện 1 lần (PROF.hintThrow), tối đa HINT_CARRY.holdShowT giây.
+const HINT_CARRY = { n: 2, y: 36, holdShowT: 5 };
 function carryHintDraw(p) {
-    if (!p || p.dead || p.hold) { game.hintHold = !!(p && p.hold); return; }
-    const L = game.level; if (!L || L.id === 'test') return;
+    if (!p || p.dead) return;
+    const L = game.level; if (!L) return;          // chạy cả ở phòng thử nghiệm
+    const k = inp.label('attack', 1);
+    if (p.hold) {
+        if (!PROF.hintThrow) drawText(k + ' để ném  ·  ↓ + ' + k + ' để đặt xuống', VIEW_W / 2, VIEW_H - HINT_CARRY.y, '#fff2a8', 'center');
+        return;
+    }
     const e = carryFind(p);
     if (!e || e instanceof ShopGoods || e instanceof Enemy || e.kind === 'mimic') return;
     const prin = e.kind === 'princess', key = prin ? 'hintPrin' : 'hintItem';
     if ((PROF[key] | 0) >= HINT_CARRY.n) return;
-    const k = inp.label('attack', 1), act = prin ? 'đưa công chúa theo' : (e.openable && !e.carryable ? 'mở' : 'nhặt đồ');
-    drawText('Bấm ↓ + ' + k + ' để ' + act, VIEW_W / 2, VIEW_H - HINT_CARRY.y, '#fff2a8', 'center');
+    drawText('Bấm ↓ + ' + k + ' để ' + (prin ? 'đưa công chúa theo' : (e.openable && !e.carryable ? 'mở' : 'nhặt đồ')), VIEW_W / 2, VIEW_H - HINT_CARRY.y, '#fff2a8', 'center');
 }
-function carryHintCount(p) {          // gọi mỗi bước: phát hiện vừa nhấc được vật → tăng đếm theo loại
+function carryHintCount(p, dt) {          // gọi mỗi bước: vừa nhấc được vật → tăng đếm theo loại; đang cầm → tính giờ nhắc ném / đặt (hiện xong 1 lần)
     const h = p && !p.dead ? p.hold : null;
-    if (h && !game.hintHold) { const key = h.kind === 'princess' ? 'hintPrin' : 'hintItem'; PROF[key] = (PROF[key] | 0) + 1; profSave(); }
+    if (h && !game.hintHold) { const key = h.kind === 'princess' ? 'hintPrin' : 'hintItem'; PROF[key] = (PROF[key] | 0) + 1; game.holdShowT = 0; profSave(); }
+    if (h && !PROF.hintThrow) { game.holdShowT = (game.holdShowT || 0) + dt; if (game.holdShowT >= HINT_CARRY.holdShowT) { PROF.hintThrow = 1; profSave(); } }
+    if (!h && game.hintHold && game.holdShowT > 0.3 && !PROF.hintThrow) { PROF.hintThrow = 1; profSave(); }
     game.hintHold = !!h;
+}
+// v1.18zm (Dan): đứng ở cửa ra → nhắc bấm ↑; cửa còn khoá thì nói rõ còn phải làm gì
+function exitHintDraw(p) {
+    if (!game.atExit || !p || p.dead) return;
+    const L = game.level, y = VIEW_H - HINT_CARRY.y;
+    let t = 'Bấm ↑ để qua màn', col = '#ffe9a8';
+    if (L.def.boss && !game.bossDone) { t = 'Cửa bị phong ấn — hạ boss để mở'; col = '#ff8a6a'; }
+    else if (L.arena && !L.arenaOpen) { t = 'Cửa bị khoá — hạ quái trong phòng (còn ' + (L.arenaLeft || 0) + ')'; col = '#ff8a6a'; }
+    else if ((game.killNeed || 0) > killsDone()) { t = 'Cửa ra: hạ thêm ' + (game.killNeed - killsDone()) + ' quái để mở (' + killsDone() + '/' + game.killNeed + ')'; col = '#ff8a6a'; }
+    drawText(t, VIEW_W / 2, y, col, 'center');
 }
 
 // 16_gameloop — vòng lặp chính: bước cố định 60Hz (accumulator) + vẽ có nội suy; ván chơi / level.
@@ -14134,7 +14180,7 @@ function resumeRun(d) {
     game.player = Object.assign(new Player(0, 0), d.p);           // người "cũ": loadLevel sao chép máu/bom/dây/vàng/đồ từ đây
     loadLevel(g.def, false);
     { const k = 'z' + zoneIdx(game.levelIdx); if (!Number.isFinite(game.hpSnap[k])) game.hpSnap[k] = game.player.hpUp | 0; }          // v0.74: bản lưu cũ chưa có mức đầu vùng → lấy mức hiện tại
-    game.banner = { text: 'Tiếp tục ván đang chơi — ' + game.level.name, t: 0 };
+    game.banner = null;          // v1.18zq: bỏ dòng «Tiếp tục ván đang chơi — …» (thừa; tên màn đã hiện)
 }
 // Chế độ dễ: chết ở màn nào thì hồi sinh ở màn đó (v1.11: BẢN ĐỒ MỚI, cùng chỉ số màn), đầy máu, giữ vàng/đồ.
 function triesBump(z0, z1) { for (let z = z0; z <= z1; z++) game.tries[z] = (game.tries[z] || 0) + 1; }          // v1.11 (Dan): mỗi lần chết / chơi lại → bản đồ MỚI (mọi độ khó, đúng tinh thần roguelite): đổi hạt giống của các vùng bị sinh lại
@@ -14231,7 +14277,7 @@ function stepGame() {
     game.entities = game.entities.filter(e => e.alive);
     L.updateFx(STEP);
     camUpdate(L, p, STEP);
-    game.atExit = false; lockStep(L, p); exitStep(L, p); fireTipStep(L, p); tutStep(STEP); carryHintCount(p);
+    game.atExit = false; lockStep(L, p); exitStep(L, p); fireTipStep(L, p); tutStep(STEP); carryHintCount(p, STEP);
     inp.endStep();
     game.time += STEP; stillTick(); game.levelT += STEP; if (!p.dead) game.runT += STEP;
     if (game.fade > 0 && !p.dead) game.fade = Math.max(0, game.fade - STEP * 4);
@@ -14365,7 +14411,17 @@ function drawHud() {
     if (p.weapon === 'shotgun' && p.ammo > 0) slots.push(['shotgun', '' + p.ammo, true]);
     else if (subHas(p)) slots.push(['sub', '' + p.sub.n, true, p.sub.id]);          // v0.74: col = id bình (hudIcon vẽ biểu tượng riêng)
     const sel = p.selItem(); let sx = 6;
-    for (const s of slots) { hudIcon(s[0], sx, y - 1, s[3]); drawText(s[1], sx + 10, y - 1, s[2] ? '#ffffff' : '#7a7f90'); if (s[0] === sel) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(sx - 1, y + 8, 10 + 5 * s[1].length + 2, 1); } sx += 26; }
+    for (const s of slots) {
+        const gl = tutGlow(s[0]);          // v1.18zo: sau khi vừa dùng bom / móc ở bước hướng dẫn: biểu tượng + số phình to, nháy sáng rồi thu nhỏ
+        if (gl) {
+            const w = 12 + 5 * s[1].length + 4, cx0 = sx + w / 2 - 2, cy0 = y + 3;
+            ctx.save(); ctx.translate(cx0, cy0); ctx.scale(gl.sc, gl.sc); ctx.translate(-cx0, -cy0);
+            ctx.globalAlpha = 0.2 + 0.5 * gl.a; ctx.fillStyle = '#ffe27a'; ctx.fillRect(sx - 2, y - 3, w, 12);
+            ctx.globalAlpha = 0.5 + 0.5 * gl.a; ctx.strokeStyle = '#fff2a8'; ctx.lineWidth = 1; ctx.strokeRect(sx - 2.5, y - 3.5, w + 1, 13);
+            ctx.globalAlpha = 1; hudIcon(s[0], sx, y - 1, s[3]); ctx.restore();
+            const txt = s[1], fs = TEXT.size * gl.sc, tx = sx + 10 + (gl.sc - 1) * 4, ty = y - 1 - (gl.sc - 1) * 3, col = gl.a > 0.5 ? '#fff6c0' : '#ffd24a';
+            hudDraw(h => { h.font = 'bold ' + fs + 'px ' + TEXT.font; h.textAlign = 'left'; h.textBaseline = 'top'; h.lineJoin = 'round'; h.lineWidth = 2; h.strokeStyle = 'rgba(0,0,0,.85)'; h.strokeText(txt, tx, ty); h.fillStyle = col; h.fillText(txt, tx, ty); }, 1);
+        } else { hudIcon(s[0], sx, y - 1, s[3]); drawText(s[1], sx + 10, y - 1, s[2] ? '#ffffff' : '#7a7f90'); } if (s[0] === sel) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(sx - 1, y + 8, 10 + 5 * s[1].length + 2, 1); } sx += 26; }
     { const el = p.cls === 'sword' ? p.blade : elemOf(p); if (el) { hudIcon(p.cls === 'hunt' ? 'eboom' : p.cls === 'alch' ? 'estaff' : 'blade', sx + 1, y - 1, el); sx += 14; } }          // v1.04 (Dan): biểu tượng hệ theo lớp — Boomerang / Gậy / Kiếm          // v0.96: Giả Kim / Thợ Săn luôn có hệ (mặc định Lửa)
     hudIcon('gold', sx + 2, y - 1); drawText('' + p.gold, sx + 12, y - 1, '#ffd24a');
     if (p.whistleCd > 0.05 && game.level.id !== 'test') { ctx.fillStyle = '#3a3f50'; ctx.fillRect(6, y + 12, 24, 1); ctx.fillStyle = '#9fd8ff'; ctx.fillRect(6, y + 12, Math.round(24 * (1 - p.whistleCd / WHISTLE.cd)), 1); }          // hồi chiêu huýt sáo (thanh mảnh)
@@ -14390,13 +14446,13 @@ function drawHud() {
         ctx.globalAlpha = 1;
     }
     if (game.exitMsgT > 0) drawText('Cửa ra (phòng thử nghiệm) — bấm N để chơi level sinh ngẫu nhiên', VIEW_W / 2, 40, '#ffe9a8', 'center');
-    if (game.levelT < 2.5 && !p.dead) { ctx.globalAlpha = clamp(2.5 - game.levelT, 0, 1); drawText(game.level.name, VIEW_W / 2, 50, '#ffe9a8', 'center'); ctx.globalAlpha = 1; }
+    if (game.levelT < 2.5 && !p.dead) { ctx.globalAlpha = clamp(2.5 - game.levelT, 0, 1); drawText(game.level.name, VIEW_W / 2, game.banner ? 50 : 36, '#ffe9a8', 'center'); ctx.globalAlpha = 1; }          // v1.18zq: không có banner thì tên màn lên vị trí banner (y 36)
     if (inp.imeAt && performance.now() - inp.imeAt < 7000 && !p.dead) drawText('Vui lòng tắt bộ gõ tiếng Việt!', VIEW_W / 2, 40, '#ffffff', 'center');          // v0.78b
     if (game.wanted && !p.dead) { drawText('TRUY NÃ', VIEW_W - 6, 44, '#ff5a3a', 'right'); }
     if (game.hint && !p.dead) { drawText(game.hint, VIEW_W / 2, 42, '#ffb0a0', 'center'); }
     carryHintDraw(p);          // v1.18zl: «Bấm ↓ + W để nhặt đồ / đưa công chúa theo» khi đứng cạnh vật nhặt được
     tutDraw();          // v1.18zk: bảng hướng dẫn người chơi lần đầu (16a_tutorial)
-    if (game.atExit && !p.dead) drawText('↑ để đi tiếp', VIEW_W / 2, 48, '#ffe9a8', 'center');
+    exitHintDraw(p);          // v1.18zm: nhắc ↑ ở cửa ra (hoặc còn phải làm gì để mở)
     if (game.pickupMsg) drawText(game.pickupMsg.text, p.cx - Math.round(cam.x), p.y - Math.round(cam.y) - 14 - game.pickupMsg.t * 8, '#ffe9a8', 'center');
     if (p.dead && game.deadShown && !game.title) drawDeathPanel();
     if (game.learn && game.learn.trial) abilityTrialDraw();          // v0.91: màn mở khoá vẽ SAU CÙNG, che mọi chữ HUD khác
