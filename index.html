@@ -8429,7 +8429,7 @@ const CORPSE_TIERS = {
     L: { w: 14, h: 13, mass: 2, impactDmg: 2, throwMul: 0.6, harmless: false }
 };
 // v0.70 (Dan: «nhiều con lúc sống bé mà xác ra cỡ trung bình»): hệ số THU / PHÓNG xác theo từng loài, đo bằng cách ĐẾM PIXEL hình lúc sống (diện tích vùng vẽ) so với hình xác của cấp; chọn f sao cho diện tích xác ≈ 0,75 × diện tích lúc sống (chỉ ghi loài lệch: tỉ lệ xác / sống ngoài 0,5–1,25). Hitbox xác nhân theo f.
-const CORPSE_SCALE = { gnat: 0.45, icebat: 0.6, venomling: 0.65, eel: 0.65, mushroom: 0.65, spark: 0.7, frostling: 0.75 };          // chỉ 7 quái MỚI chưa chỉnh xác (Dan: quái cũ đã tinh chỉnh kỹ, không đụng); vẫn giữ nguyên 3 cấp xác S / M / L và đặc tính từng cấp
+const CORPSE_SCALE = { frog: 1.15, gnat: 0.45, icebat: 0.6, venomling: 0.65, eel: 1.3, mushroom: 0.65, spark: 0.7, frostling: 0.75 };          // chỉ 7 quái MỚI chưa chỉnh xác (Dan: quái cũ đã tinh chỉnh kỹ, không đụng); vẫn giữ nguyên 3 cấp xác S / M / L và đặc tính từng cấp
 function corpseTierOf(kind) { return CORPSE_TIER[kind] || 'M'; }
 // 11_enemies — quái (GĐ1: 2 loại đầu để thử tương tác; đủ bộ vùng 1 ở GĐ4/GĐ6). Mọi quái là Thing (creature) => chịu chung nguồn sát thương.
 //   Chiến đấu kiểu Spelunky (D3): quái thường 1 máu, chết sau 1 đòn roi / 1 lần đạp / 1 vật ném; KHÔNG có điềm báo dài, hitstop hay đẩy lùi kiểu Hollow Knight.
@@ -8533,7 +8533,7 @@ function zoneMinorCheck(z, defs) {
 // v1.2 (Dan, ý từ góp ý khuyến khích giết): COMBO GIẾT — giết liên tiếp trong COMBO.win giây thì cộng dồn, bị QUÁI / chủ tiệm đánh trúng thì mất (gai, rơi, lửa… không làm mất). Mốc ×3 +50 vàng · ×5 đồ (+3 bom / +3 móc / 1 bình) · ×10 +150 vàng và ½ tim. Chủ tiệm / boss không tính.
 const BLOOD = { venomling: '#7acb5a', mushroom: '#c8a0e0', spider: '#6a8a3a', frog: '#6fb04a', gnat: '#8a9a3a', bat: '#8a2a3a', icebat: '#9fd8f0', frostling: '#9fd8f0', eel: '#4ab0e0', magmite: '#ff8a2a', spark: '#ffe27a', wisp: '#9ad0ff', snake: '#9a2a2a' };          // v1.2: máu / dịch theo loài
 function bloodOf(e) { return (e && e.creature && BLOOD[e.kind]) || (e && e.creature ? '#d23a3a' : e && e.col); }
-const COMBO = { win: 3, gold3: 50, gold10: 150 };
+const COMBO = { win: 4, gold3: 50, gold10: 150 };
 function comboKill(e) {
     const G = game, p = G.player; if (!p || p.dead || e.kind === 'shopkeeper' || e.boss || e.isBoss) return;
     const c = G.combo = G.combo || { n: 0, t: 0, best: 0 }; c.n++; c.t = COMBO.win; c.best = Math.max(c.best, c.n);
@@ -8554,8 +8554,9 @@ function comboHurt(src) { if (game.combo && game.combo.n && src && ((src.by && s
 function comboStep() { const c = game.combo; if (c && c.n > 0 && (c.t -= STEP) <= 0) c.n = 0; }
 function comboDraw() {
     const c = game.combo; if (!c || c.n < 2) return;
-    const col = c.n >= 10 ? '#ffe45a' : c.n >= 5 ? '#ffb347' : '#9be0a5', cx = VIEW_W / 2, f = Math.max(0, Math.min(1, c.t / COMBO.win));
-    drawText('×' + c.n, cx, 14, col, 'center'); ctx.fillStyle = '#000'; ctx.fillRect(cx - 16, 24, 32, 2); ctx.fillStyle = col; ctx.fillRect(cx - 16, 24, Math.round(32 * f), 2);
+    const col = c.n >= 10 ? '#ffe45a' : c.n >= 5 ? '#ffb347' : '#9be0a5', cx = VIEW_W / 2, f = Math.max(0, Math.min(1, c.t / COMBO.win)), nx = c.n < 3 ? 3 : c.n < 5 ? 5 : c.n < 10 ? 10 : 0;
+    drawText('COMBO ×' + c.n, cx, 12, col, 'center'); ctx.fillStyle = '#000'; ctx.fillRect(cx - 20, 23, 40, 3); ctx.fillStyle = col; ctx.fillRect(cx - 19, 24, Math.round(38 * f), 1);
+    if (nx) drawText('×' + nx + ': ' + (nx === 3 ? '+50 vàng' : nx === 5 ? 'đồ phụ' : '+150 vàng, +½ tim'), cx, 30, '#c8d0e0', 'center');          // v1.2: gợi ý mốc tiếp theo
 }
 const LOOT = { chance: 0.2, thrownMul: 1.5, value: { snake: 50, bat: 50, spider: 50, mimic: 80, def: 50 } };          // v1.2 (Dan): không rơi tiền lẻ — thấp nhất 50, giảm tỉ lệ tương ứng (0,4 × ~20 ≈ 0,2 × 50)     // thrownMul: chết vì vật ném / mũi tên => tỉ lệ ×1.5 (lần 30)
 class Snake extends Enemy {
@@ -9694,6 +9695,7 @@ function bossDefeated(level, boss) {
     game.banner = { text: 'ĐÃ HẠ ' + boss.def.name, t: 0 };
     if (game.stats) game.stats.kills++;
     if (game.killsLv) game.killsLv[boss.kind || 'boss'] = (game.killsLv[boss.kind || 'boss'] || 0) + 1;
+    wizardBossReward();                                // 13m_gear: Giả Kim boss đầu → +1 tim vĩnh viễn + chọn ngọc kháng hệ
     abilityReward(game.levelIdx);                      // 09a_abilities: boss vùng 2 / 6 tặng nhảy đôi / lướt
 }
 
@@ -11893,10 +11895,10 @@ const GEAR = { ankhInv: 3 };
 const GEAR_LIST = ['ankh', 'ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'];
 const GEAR_DEFS = {
     ankh: { name: 'Ankh (hồi sinh)', price: 3000, col: '#ffe9a8', ch: 'H', secret: true },
-    ward_fire: { name: 'Bùa kháng Lửa', price: 1050, col: '#ff9a3a', ch: 'L', ward: 'fire', secret: true },
-    ward_ice: { name: 'Bùa kháng Băng', price: 1050, col: '#7fd8ff', ch: 'B', ward: 'ice', secret: true },
-    ward_shock: { name: 'Bùa kháng Sét', price: 1050, col: '#ffe45a', ch: 'T', ward: 'shock', secret: true },
-    ward_poison: { name: 'Bùa kháng Độc', price: 1050, col: '#7be06a', ch: 'D', ward: 'poison', secret: true }
+    ward_fire: { name: 'Ngọc kháng Lửa', price: 1050, col: '#ff9a3a', ch: 'L', ward: 'fire', secret: true },
+    ward_ice: { name: 'Ngọc kháng Băng', price: 1050, col: '#7fd8ff', ch: 'B', ward: 'ice', secret: true },
+    ward_shock: { name: 'Ngọc kháng Sét', price: 1050, col: '#ffe45a', ch: 'T', ward: 'shock', secret: true },
+    ward_poison: { name: 'Ngọc kháng Độc', price: 1050, col: '#7be06a', ch: 'D', ward: 'poison', secret: true }
 };
 // KHÁNG HỆ CỦA HERO (v0.51): bùa kháng X (bán ở cửa hàng như đồ nghề, giữ tới hết ván) => miễn trạng thái hệ X (cháy / chậm-băng / giật / độc, xem statusApply) và đòn hệ X chỉ còn ×RESIST.dmgMul (làm tròn lên, tối thiểu 1 đơn vị máu = nửa tim).
 //   Dung nham (src.lava) bỏ qua kháng như với quái. Trong cửa hàng ra bùa: trọng số 1 (đồ khác), bùa thường RESIST.wardW, bùa của hệ quái vùng này (ZONES[].resist) RESIST.zoneW.
@@ -12104,6 +12106,34 @@ function pogoDraw(ctx, alpha) {
     const p = game.player; if (!p || !(p.pogoT > 0)) return;
     const x = Math.round(p.drawX(alpha)), y = Math.round(p.drawY(alpha)) + p.h;
     ctx.fillStyle = '#e8e0c8'; ctx.fillRect(x - 1, y, p.w + 2, 2); ctx.fillRect(x + 2, y + 2, p.w - 4, 3); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + p.w / 2 - 1, y + 4, 2, 4);
+}
+
+// ---- v1.2 (Dan): GIẢ KIM hạ boss đầu (Vệ binh đá) → +1 tim tối đa VĨNH VIỄN và chọn 1 trong 4 ngọc kháng hệ (không đổi được) ----
+function wizardBossReward() {
+    const p = game.player; if (!p || p.dead || game.cls !== 'alch' || BOSS_LEVELS[game.levelIdx] !== 'warden') return;
+    p.hpUp = (p.hpUp | 0) + HP_UNIT; p.hp += HP_UNIT; if (game.stats) game.stats.wizHeart = 1;
+    const opts = ['ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'].filter(id => !p.items[id]);
+    if (opts.length) game.pick = { t: 0, sel: 0, opts };
+}
+function pickStep() {
+    const K = game.pick; if (!K) return; K.t += STEP;
+    if (K.t > 0.6) {
+        if (inp.pressed('left')) { K.sel = (K.sel + K.opts.length - 1) % K.opts.length; sndPlay('ui', { p: 1 }); }
+        if (inp.pressed('right')) { K.sel = (K.sel + 1) % K.opts.length; sndPlay('ui', { p: 1 }); }
+        if (inp.pressed('jump') || inp.pressed('attack')) { const id = K.opts[K.sel]; gearGive(game.player, id); game.pickupMsg = { t: 0, text: 'Nhận ' + GEAR_DEFS[id].name }; sndPlay('victory'); fxScreenFlash(GEAR_DEFS[id].col, 0.3, 0.5); game.pick = null; }
+    }
+    inp.endStep();
+}
+function pickDraw() {
+    const K = game.pick; if (!K) return; TEXT.q.length = 0;
+    const a = Math.min(1, K.t * 3), cx = VIEW_W / 2; ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.95 * a; ctx.fillStyle = '#08070c'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = a; ctx.fillStyle = '#16121e'; ctx.fillRect(0, 30, VIEW_W, 150); ctx.fillStyle = '#ffe9a8'; ctx.fillRect(0, 30, VIEW_W, 1); ctx.fillRect(0, 179, VIEW_W, 1);          // nền gần đặc + dải bảng, không lộ màu của màn
+    drawText('+1 Tim tối đa vĩnh viễn và Ngọc kháng hệ', cx, 40, '#ffe9a8', 'center'); drawText('Chọn 1 trong 4 ngọc — không đổi được', cx, 56, '#cfd6e6', 'center');
+    const n = K.opts.length, w = 64, x0 = Math.round(cx - n * w / 2);
+    K.opts.forEach((id, i) => { const d = GEAR_DEFS[id], x = x0 + i * w, sel = i === K.sel;
+        ctx.fillStyle = sel ? d.col : '#000'; ctx.fillRect(x + 4, 80, w - 8, 66); ctx.fillStyle = '#14101a'; ctx.fillRect(x + 6, 82, w - 12, 62);
+        ctx.save(); ctx.translate(x + w / 2 - 12, 90); ctx.scale(2, 2); drawGoodsHp({ gear: id }, ctx, 0, 0); ctx.restore(); ctx.globalAlpha = a;          // biểu tượng ngọc có sẵn (cửa hàng) phóng 2×
+        drawText(d.name.replace('Ngọc kháng ', ''), x + w / 2, 120, sel ? '#ffffff' : '#9aa0b0', 'center'); });
+    drawText('← → chọn · ' + inp.label('jump', 1) + ' xác nhận', cx, 162, '#8a93ad', 'center'); ctx.globalAlpha = 1;
 }
 
 // 13n_fire — DẦU + LỬA LAN (lần 18; ý từ bài phân tích SC: lửa là một phần của dây chuyền hỗn loạn).
@@ -13515,7 +13545,7 @@ function paCrit(c, q, t, L) {
 
 // ---- DẤU «!» (foeAiDraw) ----
 function paAlert(c, x, y) {
-    paDraw(c, paSpr('alert', ['YYyy', 'YYyy', 'YYyy', 'YYyy', 'YYyy', 'YYyy', '.yy.', '....', 'YYyy', 'YYyy'], { Y: '#fff0a0', y: '#ffc830' }), x, y, 2, 0, false);
+    paDraw(c, paSpr('alert', ['Yy', 'Yy', 'Yy', 'Yy', '..', 'Yy'], { Y: '#fff0a0', y: '#ffc830' }), x, y, 1, 0, false);          // v1.2 (Dan): nhỏ còn 1/2
 }
 
 // ---- v1.2: TIM HỒI MÁU, ĐÀI LỬA (ghế nghỉ), MŨI TÊN CHỈ — vẽ nửa điểm ----
@@ -14248,6 +14278,7 @@ function drawDeathPanel() {          // lần 47: bảng gọn — chết vì sa
 function drawWinPanel() {
     const lines = runSummaryLines();
     lines.unshift(['Bạn đã vượt qua cả ' + ZONES.length + ' vùng!', '#ffe9a8']);
+    { const d = (game.stats && game.stats.deaths) || 0; lines.splice(3, 0, [d ? 'Số lần chết: ' + d : 'Chưa chết lần nào!', d ? '#ff9a8a' : '#9be0a5']); }          // v1.2 (Dan): thống kê số lần chết
     if (game.newRecord) lines.push(['KỶ LỤC ĐIỂM MỚI: $' + PROF.top[0].score, '#ffe9a8']);
     if (PROF.wins === 1) lines.push(['Đã mở khoá độ khó HARDCORE!', '#ff8a6a']);
     lines.push(['Độ khó: ' + diffOf().name + ' · Phím bất kỳ: ván mới · Esc: tiêu đề', '#ffe9a8']);
@@ -14864,7 +14895,7 @@ function newRun(seed) {
     game.wanted = false; game.runT = 0; game.deathCause = ''; game.deadShown = false; game.levelIdx = 0;
     game.trans = null; game.screen = 'play'; game.recorded = false; game.won = false; game.wonT = 0; game.retrySame = game.toTitle = false;
     game.stats = { kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }; game.tut = null;
-    game.abilities = abilitiesNone(); game.learn = null; game.abBackup = null;
+    game.abilities = abilitiesNone(); game.learn = null; game.pick = null; game.abBackup = null;
     game.dda = null; ddaInit();
     game.hpSnap = {};        // v0.74: máu tối đa (hpUp) lúc vào đầu vùng ('z'+vùng) / lúc ngồi ghế nghỉ ('b'+vùng) — chết thì về đúng mức đó (chống cày mảnh tim)
     game.tries = {}; game.bench = {}; game.carryIn = [];    // H1: số lần chết trong từng vùng (đổi bản đồ) · vùng nào đã chạm ghế nghỉ · quái sót mang sang (trống khi ván mới)
@@ -14902,7 +14933,7 @@ function resumeRun(d) {
     game.wanted = !!d.wanted; game.runT = d.runT || 0; game.deathCause = ''; game.deadShown = false; game.levelIdx = d.lvl;
     game.trans = null; game.screen = 'play'; game.recorded = false; game.won = false; game.wonT = 0; game.retrySame = game.toTitle = false;
     game.stats = Object.assign({ kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }, d.stats || {}); game.tut = null;
-    game.abilities = abilitySanitize(d.ab, game.cls); game.learn = null; game.abBackup = null;
+    game.abilities = abilitySanitize(d.ab, game.cls); game.learn = null; game.pick = null; game.abBackup = null;
     game.dda = null; game.dda = ddaLoad(d.dda);
     game.tries = {}; game.bench = {}; game.hpSnap = {};
     if (d.hs && typeof d.hs === 'object') for (const k of Object.keys(d.hs)) if (/^[zb]\d{1,2}$/.test(k) && Number.isFinite(d.hs[k])) game.hpSnap[k] = clamp(Math.round(d.hs[k]), 0, RELIC.maxUp);
@@ -14994,6 +15025,7 @@ function stepGame() {
         }
         game.anyKey = false; return;
     }
+    if (game.pick) { pickStep(); return; }          // v1.2: bảng chọn ngọc kháng hệ (Giả Kim) — đứng hình
     if (game.learn && game.learn.trial) { abilityTrialStep(); return; }          // v0.91: vừa học năng lực → đứng hình, chờ người chơi bấm thử thành công
     if (game.shakeT > 0) game.shakeT -= STEP;
     for (const b of game.blasts) b.t += STEP;
@@ -15165,6 +15197,7 @@ function hudBmp(name, x, y, dyn) {
         ctx.fillStyle = c; ctx.fillRect(x + i * 0.5, y + j * 0.5, 0.5, 0.5);
     } }
 }
+function hcUnlocked() { if (game._hcAt !== game.levelIdx) { game._hcAt = game.levelIdx; game._hcUn = anyWins(); } return game._hcUn; }
 // HUD: tim · bom · dây · vàng (góc trên-trái), chữ hướng dẫn mấy giây đầu, màn chết
 function drawHud() {
     const p = game.player; comboDraw();
@@ -15216,7 +15249,7 @@ function drawHud() {
         if (rx === a.x && ry === a.y) drawText('Đấu trường: hạ quái để mở cửa ra (còn ' + L.arenaLeft + ')', VIEW_W / 2, 40, '#ffb86a', 'center');
     } }
     if (game.lockMsgT > 0) { game.lockMsgT -= 1 / 60; drawText(game.lockArena === 'kill' ? 'Cửa bị khoá — hạ thêm ' + Math.max(0, (game.killNeed || 0) - killsDone()) + ' quái để mở (' + killsDone() + '/' + (game.killNeed || 0) + ')' : game.lockArena ? 'Cửa bị khoá — hạ quái trong phòng để mở (còn ' + (game.level.arenaLeft || 0) + ')' : 'Cửa bị phong ấn — hạ boss để mở', VIEW_W / 2, 40, '#ff8a6a', 'center'); if (game.lockMsgT <= 0) game.lockArena = false; }
-    if (game.levelT < 9 && !p.dead && !tutOn()) {          // v1.18zk: đang hiện hướng dẫn lần đầu thì ẩn 2 dòng nhắc phím này cho đỡ rối
+    if (game.levelIdx === 0 && game.levelT < 9 && !p.dead && !tutOn() && !hcUnlocked()) {          // v1.2 (Dan): chỉ ở màn 1, tắt hẳn khi đã mở khoá hardcore          // v1.18zk: đang hiện hướng dẫn lần đầu thì ẩn 2 dòng nhắc phím này cho đỡ rối
         ctx.globalAlpha = clamp(9 - game.levelT, 0, 1);
         drawText('←→ đi · ' + inp.label('run', 1) + ' giữ chạy · ' + inp.label('jump', 1) + ' nhảy · ' + inp.label('attack', 1) + ' ' + ({ sword: 'kiếm', alch: 'gậy', hunt: 'boomerang' }[p.cls] || 'kiếm') + ' · ' + inp.label('item', 1) + ' dùng đồ phụ (' + inp.label('swap', 1) + ' đổi) · ↓+' + inp.label('attack', 1) + ' nhặt/mở thùng', VIEW_W / 2, VIEW_H - 22, '#ffe9a8', 'center');
         drawText(inp.label('rope', 1) + ' móc · ' + inp.label('bomb', 1) + ' bom · ' + ({ sword: 'nhảy lần 2 = nhảy đôi', alch: 'giữ ' + inp.label('jump', 1) + ' khi rơi = lượn', hunt: inp.label('dash', 1) + ' lướt' }[p.cls] || '') + ' · ↑ leo thang · ép vào mép khi nhảy = bám mép', VIEW_W / 2, VIEW_H - 12, '#cfe3ff', 'center');
@@ -15232,6 +15265,7 @@ function drawHud() {
     exitHintDraw(p);          // v1.18zm: nhắc ↑ ở cửa ra (hoặc còn phải làm gì để mở)
     if (game.pickupMsg) drawText(game.pickupMsg.text, p.cx - Math.round(cam.x), p.y - Math.round(cam.y) - 14 - game.pickupMsg.t * 8, '#ffe9a8', 'center');
     if (p.dead && game.deadShown && !game.title) drawDeathPanel();
+    if (game.pick) pickDraw();
     if (game.learn && game.learn.trial) abilityTrialDraw();          // v0.91: màn mở khoá vẽ SAU CÙNG, che mọi chữ HUD khác
 }
 function hudIcon(kind, x, y, col) {
