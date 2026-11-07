@@ -283,8 +283,8 @@ const DIFF = {
 // LỚP NHÂN VẬT (v0.95, DESIGN_CLASSES_v3.md): chọn khi tạo ván mới, khoá theo slot. hp = chênh số tim so với mức chuẩn.
 const CLASSES = {
     sword: { name: 'Knight', desc: 'Cận chiến · nhảy đôi · +1 tim', hp: 1, col: '#ff8a4a' },
-    alch: { name: 'Sorceress', desc: 'Gậy phép · bình ném · −1 tim', hp: -1, col: '#7fd4ff' },
-    hunt: { name: 'Assassin', desc: 'Boomerang · móc không giới hạn', hp: 0, col: '#9be37a' }
+    alch: { name: 'Wizard', desc: 'Gậy phép · bình ném · −1 tim', hp: -1, col: '#7fd4ff' },
+    hunt: { name: 'Stryker', desc: 'Boomerang · móc không giới hạn', hp: 0, col: '#9be37a' }
 };
 const CLASS_INFO = { sword: 'Kiếm + nhảy đôi, chịu đòn tốt', alch: 'Bình ném mạnh nhất, mong manh', hunt: 'Boomerang + móc dây vô hạn' };
 const CLASS_LIST = ['sword', 'alch', 'hunt'];
@@ -381,7 +381,7 @@ const GEN = { motif: true, motifNow: true, strictTries: 45, strictNow: true, roo
     roomFly: 2, roomRanged: 2,          // v0.89 (Dan: 1-1 ít quái quá): earlyMul[levelIdx] = hệ số mật độ quái cho các màn đầu
     x5Mul: 1.3,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
     trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0, crumbleDropP: 0.074, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống · v1.18x (Dan): sàn vỡ còn ~30% (GEN_HZ_MUL.F 1→0,3 · crumbleExitP 0,4→0,12 · crumbleDropP 0,22→0,066; đo 7,8 → 2,4 ô/màn) · mục 2: crumbleExitP = 0 (hết sàn vỡ kề cửa ra; đặt lại > 0 nếu muốn bật), crumbleDropP 0,074 bù để tổng vẫn ~30%: 2,34 ô/màn
-    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.22, aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
+    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.25, altarRowW: [1, 3, 3, 3, 1], aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
 const LOCK_SPARE = 1;          // đấu trường: cửa ra mở khi còn ≤ chừng này quái trong phòng (quái rơi khỏi phòng tính là đã hạ)
 // QUÁI SÓT MANG SANG LEVEL KẾ (cơ chế luôn bật, không có tuỳ chọn tắt). Qua cửa ra: lấy frac (làm tròn lên) số quái còn sống (kể cả quái đã mang sang mà chưa giết), chọn NGẪU NHIÊN (game.rngPlay), rải ở level kế. Hết vùng (zoneIdx đổi) thì xoá. Phòng boss/màn cuối không nhận.
 //   minLeft: sót ít hơn số này thì không mang (1 = sót 1 con cũng mang) · max: trần số quái mang · minDist: cách điểm vào tối thiểu (ô, Manhattan) · avoidR/avoid: tránh quanh cửa hàng/bàn thờ/rương/công chúa/ghế nghỉ · pick: số ô ứng viên thử cho mỗi con (chọn ô xa quái khác nhất => rải đều)
@@ -395,7 +395,7 @@ const CARRYOVER = { frac: 0.5, minLeft: 1, max: 12, minDist: 12, avoidR: 6, pick
 //   Thuật toán: sfc32 (nhanh, chất lượng tốt, 4 số 32-bit trạng thái), khởi tạo từ chuỗi/số bằng băm splitmix32.
 //   Phiên bản bộ sinh level: GEN_VERSION (đổi bộ sinh => tăng số này; hiện cạnh seed, ghi vào báo lỗi).
 
-const GEN_VERSION = 67;     // 67 (v1.18zd): tỉ lệ 3 nguồn phòng GEN.groupW = 30 / 25 / 45 (trước 35 / 35 / 30); kho mẫu tách 02_room1.js + 02_room2.js · 66 (v1.18zd): công thức đường chính MỀM theo màn trong vùng (GEN.pathSoft): x-1 ngắn + 1 phòng '2t', x-2 dài hơn chút + 50 % có '2t', x-3 trở đi như cũ · 65 (v1.18zc): đường chính dài hơn — GEN.pathMin = 3 phòng tối thiểu mỗi tầng, GEN.pathDown = 0,5 xác suất rẽ xuống (genPath viết lại; hết phòng loại 2t) · 64 (v1.18zb): bể đất / đá có thang bên trong vẫn ra nước (genHazards bước 1: thang coi như không tồn tại khi dò bể, nước đổ vào ô trống, thang giữ nguyên) · 63 (v1.18za): ô mạng nhện N không được có đất / bục '=' ở hai bên (GEN.webSide, genWebFix chạy cuối genTry) · 62 (v1.18z): mạng nhện N: giảm còn ~½ toàn map (GEN_HZ_MUL.N 0,5; nhóm [1][2] gỡ nguyên cụm) + mỗi phòng tối đa GEN.webClusters = 2 cụm (genWebCap). 61 (v1.18y): hết sàn vỡ kề cửa ra (GEN.crumbleExitP = 0). 60 (v1.18x): sàn vỡ F giảm còn ~30% (7,8 → 2,4 ô/màn). 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
+const GEN_VERSION = 69;     // 69 (v1.18zh): ô phụ nhóm [3] rải theo CẢ TẦNG sau khi dựng xong mọi phòng (genHazardsFloor) · 68 (v1.18zg): bàn thờ chọn phòng theo tầng 1:3:3:3:1 (GEN.altarRowW), altarChance 0,22 → 0,25 · 67 (v1.18zd): tỉ lệ 3 nguồn phòng GEN.groupW = 30 / 25 / 45 (trước 35 / 35 / 30); kho mẫu tách 02_room1.js + 02_room2.js · 66 (v1.18zd): công thức đường chính MỀM theo màn trong vùng (GEN.pathSoft): x-1 ngắn + 1 phòng '2t', x-2 dài hơn chút + 50 % có '2t', x-3 trở đi như cũ · 65 (v1.18zc): đường chính dài hơn — GEN.pathMin = 3 phòng tối thiểu mỗi tầng, GEN.pathDown = 0,5 xác suất rẽ xuống (genPath viết lại; hết phòng loại 2t) · 64 (v1.18zb): bể đất / đá có thang bên trong vẫn ra nước (genHazards bước 1: thang coi như không tồn tại khi dò bể, nước đổ vào ô trống, thang giữ nguyên) · 63 (v1.18za): ô mạng nhện N không được có đất / bục '=' ở hai bên (GEN.webSide, genWebFix chạy cuối genTry) · 62 (v1.18z): mạng nhện N: giảm còn ~½ toàn map (GEN_HZ_MUL.N 0,5; nhóm [1][2] gỡ nguyên cụm) + mỗi phòng tối đa GEN.webClusters = 2 cụm (genWebCap). 61 (v1.18y): hết sàn vỡ kề cửa ra (GEN.crumbleExitP = 0). 60 (v1.18x): sàn vỡ F giảm còn ~30% (7,8 → 2,4 ô/màn). 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
 
 function rngHash(x) {      // splitmix32: số nguyên 32-bit -> số nguyên 32-bit "trộn đều"
     x = (x + 0x9E3779B9) | 0;
@@ -2990,7 +2990,7 @@ const AMB_PROF = {
     forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
     cave:     { wind: 0.35, drip: 1 },
     crystal:  { wind: 0.20, drip: 0.8, waves: 0.4 },
-    ruins:    { wind: 0.60, gust: 0.5, rain: 0.3, drip: 0.2 },
+    ruins:    { drip: 0.2 },          // v1.18zi (Dan): Tàn tích bỏ gió / hú / mưa (nhiễu trắng nghe nhức đầu) — chỉ còn giọt nước
     snow:     { wind: 1, gust: 1 },
     amethyst: { wind: 0.30, drip: 0.6 },
     deep:     { wind: 0.40, owl: 0.8, frogs: 0.6, crickets: 0.3, drip: 0.4, waves: 1 },
@@ -4344,6 +4344,7 @@ function corpseDecoHp(k, q, P, back) {
         case 'shooter': P(17, -18, 6, 4, '#20525c'); q(18, -17, 4, 1, '#4a9aa8'); q(21, -17, 2, 2, '#7fe0ff'); break;                                       // nòng phóng tia
         case 'mortar': P(-5, -28, 12, 8, '#6a4a2a'); q(-4, -28, 10, 2, '#2a1e14'); q(-4, -24, 3, 3, '#8a6a3a'); q(2, -24, 3, 3, '#4a3218'); break;           // ống cối trên lưng
         case 'spitter': q(-6, -27, 4, 6, '#ff7a1e'); q(2, -29, 4, 8, '#ff7a1e'); q(-5, -24, 2, 3, '#ffd24a'); q(3, -25, 2, 4, '#ffd24a'); P(16, -16, 6, 5, '#5a1e10'); q(19, -15, 2, 2, '#ff9a4a'); break;   // lửa trên đầu + miệng phun
+        case 'shopkeeper': P(3, -19, 15, 2, '#2a1e30'); P(6, -25, 9, 7, '#4a3a6a'); q(6, -20, 9, 2, '#e0c060'); q(7, -25, 7, 1, '#6a5a8a'); break;          // v1.18zh (Dan): xác ông chủ cửa hàng đội mũ rộng vành (tím, dải vàng) để phân biệt với xác quái
         case 'guard': P(16, -23, 6, 19, '#9fb2d8'); q(17, -22, 1, 16, '#cfdcf2'); q(19, -16, 3, 4, '#e0c060'); q(16, -23, 6, 1, '#e0e8f8'); break;           // khiên
     }
 }
@@ -4597,7 +4598,7 @@ function hpDisc(ctx, cx, cy, r, col) {
 }
 // Đạn gậy phép (13x StaffShot): viên thường = quả cầu nhỏ trắng-xanh · viên nạp = quầng hệ + lõi trắng + đuôi 3 chấm mờ dần.
 function drawStaffShotHp(e, ctx, a) {
-    const cx = e.drawX(a) + e.w / 2, cy = e.drawY(a) + e.h / 2, pw = e.power, col = pw ? elemCol(e.el) : '#bfe9ff', sgn = Math.sign(e.vx) || 0, sgy = Math.sign(e.vy) || 0;
+    const cx = e.drawX(a) + e.w / 2, cy = e.drawY(a) + e.h / 2, pw = e.power, col = elemCol(e.el), sgn = Math.sign(e.vx) || 0, sgy = Math.sign(e.vy) || 0;
     if (pw) { for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.12; hpDisc(ctx, cx - sgn * i * 3, cy - sgy * i * 3, 3 - i * 0.5, col); } ctx.globalAlpha = 0.32; hpDisc(ctx, cx, cy, 5.5, col); ctx.globalAlpha = 1; hpDisc(ctx, cx, cy, 3.5, col); hpDisc(ctx, cx, cy, 1.8, '#ffffff'); }
     else { ctx.globalAlpha = 0.3; hpDisc(ctx, cx, cy, 4, col); ctx.globalAlpha = 1; hpDisc(ctx, cx, cy, 2.5, col); hpDisc(ctx, cx, cy, 1.2, '#ffffff'); }
 }
@@ -5789,8 +5790,8 @@ function roomMotifs(R, cells, RW, RH, zone, accept) {          // v1.18n: accept
 //   Z: dưới trần, 2 ô trống bên dưới, có sàn · gai: trên sàn phẳng, không dưới thang, không trên trụ cao 2 ô · M: trên sàn, không trong hầm, bên hông thoáng · '=': bục 1–3 ô cách sàn 1–2 ô · F: ô đất treo / có khoảng trống dưới, không sát thang / trụ cao · N: cụm 2×2 trên sàn phẳng ·
 //   Chung: không ô phụ nào ở cột 0 / 9 (cửa), không ở lỗ rơi / lỗ vào; không gần chất lỏng; vùng bám mép (±2 cột quanh trụ cao 2 ô) không đặt gì. Mật độ = GEN.hz × hệ số vùng ZONES[].w, trần mỗi phòng GEN.hzMax.
 //   Ngẫu nhiên chỉ qua R (cùng seed = cùng màn). Trả về chuỗi ký tự ô phụ đã đặt ('' = không đặt gì); phòng rải xong PHẢI qua genRoomOK (genHazardsTry lo).
-function genHazards(R, cells, t, zone, levelIdx, RW, RH) {
-    const zk = ch => (zone && zone.w && zone.w[ch] !== undefined) ? zone.w[ch] : 1, HZ = GEN.hz, MX = GEN.hzMax, g = cells, cnt = {}, tag = [];
+function genHazards(R, cells, t, zone, levelIdx, RW, RH, opt) {          // v1.18zh: opt = chế độ rải CẢ TẦNG (RW = bề rộng cả tầng): { n: số phòng được rải, ban(r,c), banP(r,c), poolOK(r,s,e) } — xem genHazardsFloor
+    const zk = ch => (zone && zone.w && zone.w[ch] !== undefined) ? zone.w[ch] : 1, HZ = GEN.hz, MX = opt ? (() => { const m = {}; for (const k in GEN.hzMax) m[k] = GEN.hzMax[k] * opt.n; return m; })() : GEN.hzMax, g = cells, cnt = {}, tag = [];
     const MUL = GEN.hzMul, P = (ch, base) => Math.min(0.95, base * zk(ch) * MUL[ch]), can = ch => (cnt[ch] || 0) < (MX[ch] === undefined ? 99 : MX[ch]);
     const inB = (r, c) => r >= 0 && r < RH && c >= 0 && c < RW, at = (r, c) => inB(r, c) ? g[r][c] : '1';          // ngoài phòng coi như đặc
     const isSol = x => x === '1' || x === 'X' || x === 'F';
@@ -5799,7 +5800,7 @@ function genHazards(R, cells, t, zone, levelIdx, RW, RH) {
     const groundOrEdge = (r, c) => !inB(r, c) || solidIn(r, c), tall = (r, c) => solidIn(r + 1, c) && solidIn(r + 2, c);
     const nearLiq = (r, c) => { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && liquid(r + dr, c + dc)) return true; return false; };
     const dropTop = t === 3 || t === '2t', dropBot = t === 2 || t === '2t';
-    const ban = (r, c) => c <= 0 || c >= RW - 1 || (dropTop && r <= 1 && c >= 3 && c <= 6) || (dropBot && r >= RH - 2 && c >= 3 && c <= 6);
+    const ban = opt ? opt.ban : (r, c) => c <= 0 || c >= RW - 1 || (dropTop && r <= 1 && c >= 3 && c <= 6) || (dropBot && r >= RH - 2 && c >= 3 && c <= 6), banP = opt ? opt.banP : ban;
     const jc = []; for (let r = 0; r < RH; r++) jc.push(new Array(RW).fill(false));          // vùng bám mép: quanh ô đứng trên trụ cao 2 ô
     for (let r = 0; r < RH - 2; r++) for (let c0 = 0; c0 < RW; c0++) if (solidIn(r + 1, c0) && solidIn(r + 2, c0)) for (let dc = -2; dc <= 2; dc++) if (inB(r, c0 + dc)) jc[r][c0 + dc] = true;
     const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = R.int(0, i), x = a[i]; a[i] = a[j]; a[j] = x; } return a; };
@@ -5818,6 +5819,7 @@ function genHazards(R, cells, t, zone, levelIdx, RW, RH) {
             if (!open0(r, c) || !holdsC(r, c)) { c++; continue; }
             const s = c; while (c < RW && open0(r, c) && holdsC(r, c)) c++;
             const e = c - 1; if (s <= 0 || e >= RW - 1) continue;
+            if (opt && !opt.poolOK(r, s, e)) continue;
             const lt = g[r][s - 1], rt = g[r][e + 1], wall = x => isSol(x) || x === 'W' || x === 'V';
             if (!wall(lt) || !wall(rt)) continue;
             let hasW = lt === 'W' || rt === 'W', hasV = lt === 'V' || rt === 'V';
@@ -5848,7 +5850,7 @@ function genHazards(R, cells, t, zone, levelIdx, RW, RH) {
         if (!solid(r - 1, c) && (empty(r, c - 1) || empty(r, c + 1))) cand.push([r, c]); }
       for (const [r, c] of shuf(cand)) { if (!can('M')) break; if (g[r][c] !== '0') continue; if (R.chance(P('M', HZ.M))) put(r, c, 'M'); } }
     // 5) bục một chiều '=': cụm 1–3 ô lơ lửng cách sàn 1–2 ô, đầu thoáng
-    { const el = (r, c) => empty(r, c) && !nearLiq(r, c) && !jc[r][c] && !ban(r, c) && empty(r - 1, c) && empty(r + 1, c) && (solid(r + 2, c) || (empty(r + 2, c) && solid(r + 3, c))) && !tall(r, c);
+    { const el = (r, c) => empty(r, c) && !nearLiq(r, c) && !jc[r][c] && !banP(r, c) && empty(r - 1, c) && empty(r + 1, c) && (solid(r + 2, c) || (empty(r + 2, c) && solid(r + 3, c))) && !tall(r, c);
       const diag = (r, c) => [[-1, -1], [-1, 1], [1, -1], [1, 1]].some(d => inB(r + d[0], c + d[1]) && g[r + d[0]][c + d[1]] === '=');
       const cand = []; for (let r = 1; r < RH - 2; r++) for (let c = 1; c < RW - 1; c++) if (el(r, c) && !diag(r, c)) cand.push([r, c]);
       for (const [r, c] of shuf(cand)) { if (!can('=')) break; if (g[r][c] !== '0' || !R.chance(Math.min(0.95, HZ['='] * MUL['=']))) continue;
@@ -5914,6 +5916,36 @@ function genWebFix(g, RW, RH, maxC, side) {
     for (let ry = 0; ry * RH < H; ry++) for (let rx = 0; rx * RW < W; rx++) res.cap += genWebCap(g, RW, RH, maxC, ry * RH, rx * RW, '.');
     return res;
 }
+// Mã phòng (v1.18zf): #x-y-zzz — x = nguồn (1 Honzy-native · 2 Spelunky/chuẩn 200 · 3 thuật toán), y = loại (0,1,2,3; 2t => 4), zzz = số thứ tự trong (nguồn, loại) từ 001. Duy nhất cho từng phòng, không đổi khi chỉ mở 1 file; room_designer.html dùng cùng công thức.
+function roomCodeOf(type, ti) {
+    const n1 = ROOM_N1[type], n2 = ROOM_TPL[type].length, src = ti < n1 ? 1 : ti < n2 ? 2 : 3, z = src === 1 ? ti + 1 : src === 2 ? ti - n1 + 1 : ti - n2 + 1;
+    return '#' + src + '-' + (type === '2t' ? 4 : type) + '-' + String(z).padStart(3, '0');
+}
+// ---- v1.18zh (Dan): RẢI Ô PHỤ THEO CẢ TẦNG — dựng xong mọi phòng rồi mới rải; mỗi tầng (hàng phòng) là một dải rộng LVL.roomsX × roomW ô, nên bể nước / bục '=' / gai… liền mạch qua ranh giới 2 phòng.
+//   Chỉ sửa ô của phòng nhóm [3] (không phải phòng đặc biệt, qua cổng GEN.hzRoom); mọi phòng khác chỉ là bối cảnh. Cột cửa (0 / 9) từ hàng 4 trở xuống cấm mọi thứ (đường đi); bục '=' thì qua được vì đi xuyên ngang.
+//   Sau khi rải, MỖI phòng được sửa phải qua genRoomOK, không thì thử lại (≤ GEN.hzTries), hết lượt thì tầng đó giữ nguyên.
+function genHazardsFloor(R, g, rooms, specialKeys, zone, levelIdx) {
+    const RW = LVL.roomW, RH = LVL.roomH, NX = LVL.roomsX, W = NX * RW, toIn = ch => (ch === '#' || ch === '$' || ch === '%') ? '1' : ch === '.' ? '0' : ch;
+    for (let ry = 0; ry < LVL.roomsY; ry++) {
+        const ed = []; let n = 0, all0 = true;
+        for (let rx = 0; rx < NX; rx++) { const rm = rooms.find(q => q.rx === rx && q.ry === ry); const ok = !!rm && rm.grp === 3 && specialKeys.indexOf(rx + ',' + ry) < 0 && R.chance(GEN.hzRoom); ed.push(ok ? rm : null); if (ok) { n++; if (rm.type !== 0) all0 = false; } }
+        if (!n) continue;
+        const base = []; for (let r = 0; r < RH; r++) { const row = []; for (let c = 0; c < W; c++) row.push(g[ry * RH + r][c]); base.push(row); }
+        const isEd = (r, c) => !!ed[Math.floor(c / RW)], door = c => (c % RW === 0 || c % RW === RW - 1);
+        const holeBan = (r, c) => { const rm = ed[Math.floor(c / RW)]; if (!rm) return false; const lc = c % RW, t = rm.type; return ((t === 3 || t === '2t') && r <= 1 && lc >= 3 && lc <= 6) || ((t === 2 || t === '2t') && r >= RH - 2 && lc >= 3 && lc <= 6); };
+        const opt = { n, ban: (r, c) => c <= 0 || c >= W - 1 || !isEd(r, c) || (door(c) && r >= 4) || holeBan(r, c), banP: (r, c) => c <= 0 || c >= W - 1 || !isEd(r, c) || holeBan(r, c),
+            poolOK: (r, s, e) => { for (let i = s; i <= e; i++) if (!isEd(r, i) || (r >= 4 && door(i))) return false; return true; } };
+        for (let k = 0; k < GEN.hzTries; k++) {
+            const w = base.map(row => row.map(toIn)), tag = genHazards(R, w, all0 ? 0 : 1, zone, levelIdx, W, RH, opt);
+            if (!tag) continue;
+            let good = true;
+            for (let rx = 0; rx < NX && good; rx++) if (ed[rx]) { const cells = w.map(row => row.slice(rx * RW, rx * RW + RW)); if (!genRoomOK(cells, ed[rx].type, RW, RH)) good = false; }
+            if (!good) continue;
+            for (let r = 0; r < RH; r++) for (let c = 0; c < W; c++) { const ch = w[r][c]; if (ch === toIn(base[r][c]) || !isEd(r, c)) continue; g[ry * RH + r][c] = ch === '0' ? '.' : ch === '1' ? '#' : ch; ed[Math.floor(c / RW)].haz = (ed[Math.floor(c / RW)].haz || '') + (ed[Math.floor(c / RW)].haz && ed[Math.floor(c / RW)].haz.indexOf(ch) >= 0 ? '' : ch); }
+            break;
+        }
+    }
+}
 function genTiles(R, path, zone, levelIdx) {
     const RW = LVL.roomW, RH = LVL.roomH, W = LVL.roomsX * RW, H = LVL.roomsY * RH;
     const g = []; for (let r = 0; r < H; r++) g.push(new Array(W).fill('0'));
@@ -5944,12 +5976,12 @@ function genTiles(R, path, zone, levelIdx) {
             // '2' (50 % đất) và '4' (25 % đá) giải NGAY để kiểm phòng đúng hình cuối cùng
             for (let r = 0; r < RH; r++) for (let c = 0; c < RW; c++) { if (cells[r][c] === '2') cells[r][c] = R.int(1, 2) === 1 ? '1' : '0'; else if (cells[r][c] === '4') cells[r][c] = R.int(1, 4) === 1 ? 'X' : '0'; else if (cells[r][c] === '7') cells[r][c] = (r + 1 < RH && cells[r + 1][c] !== '0' && R.int(1, 3) === 1) ? '^' : '0'; }
             haz = ''; if (grpOf(ti) !== 2) { const th = genThin(R, cells, t, RW, RH); if (th) cells = th; }          // hệ số chung < 1: gỡ bớt ô phụ của phòng nhóm [1][2]
-            if (grpOf(ti) === 2 && genRoomOK(cells, t, RW, RH)) { const hz = genHazardsTry(R, cells, t, zone, levelIdx, RW, RH); if (hz) { cells = hz.cells; haz = hz.tag; } }          // nhóm [3]: rải ô phụ bằng thuật toán, phải qua genRoomOK
+            // v1.18zh (Dan): nhóm [3] KHÔNG rải ô phụ ở đây nữa — dựng xong mọi phòng (và phòng đặc biệt) rồi mới rải theo CẢ TẦNG (genHazardsFloor, gọi trong genTry)
             if (genRoomOK(cells, t, RW, RH)) break;
             // v1.18o (Dan: bục cao 2 ô vẫn nhảy + bám mép được, chỉ cần hiếm): phòng chỉ qua được khi leo 2 ô được nhận có hạn mức (GEN.climb2Max mỗi màn, xác suất GEN.climb2Chance); gờ 3 ô thì không bao giờ
             if (climb2Left > 0 && R.chance(GEN.climb2Chance) && genRoomOK(cells, t, RW, RH, true)) { climb2Left--; rooms2.push(key2(rx, ry)); break; }
         }
-        rooms.push({ rx, ry, type: t, tpl: ti, grp: grpOf(ti) + 1, haz, flip });
+        rooms.push({ rx, ry, type: t, tpl: ti, grp: grpOf(ti) + 1, haz, flip, code: roomCodeOf(t, ti) });
         const accept = cs => genRoomOK(cs, t, RW, RH) && genRoomClutter(cs, RW, RH) <= GEN.clutterMax;
         if (GEN.motifNow && !(rx === path.exit.x && ry === path.exit.y) && !(rx === path.start.x && ry === path.start.y)) rooms[rooms.length - 1].mot = roomMotifs(R, cells, RW, RH, zone, accept);
         for (let r = 0; r < RH; r++) for (let c = 0; c < RW; c++) g[ry * RH + r][rx * RW + c] = cells[r][c];
@@ -6092,7 +6124,12 @@ function genAltar(R, path, rooms, g, taken, levelIdx) {
         if (rm.rx < LVL.roomsX - 1 && ok(path.type[rm.rx + 1][rm.ry])) cand.push({ rm, side: 1 });
     }
     if (!cand.length) return null;
-    const { rm, side } = R.pick(cand), RW = LVL.roomW, RH = LVL.roomH;
+    // v1.18zg (Dan): chọn TẦNG (hàng phòng) trước theo trọng số 1:3:3:3:1 (chỉ trong các tầng còn phòng hợp lệ), rồi chọn đều trong tầng đó — nên tầng 2-3-4 có bàn thờ nhiều hơn tầng 1 và 5 dù số phòng hợp lệ mỗi tầng khác nhau
+    const rowsOk = []; for (const x of cand) if (rowsOk.indexOf(x.rm.ry) < 0) rowsOk.push(x.rm.ry);
+    let tot = 0; for (const ry of rowsOk) tot += GEN.altarRowW[ry] || 1;
+    let pk = R.next() * tot, row = rowsOk[rowsOk.length - 1]; for (const ry of rowsOk) { pk -= GEN.altarRowW[ry] || 1; if (pk < 0) { row = ry; break; } }
+    const inRow = cand.filter(x => x.rm.ry === row), pick = R.pick(inRow);
+    const { rm, side } = pick, RW = LVL.roomW, RH = LVL.roomH;
     for (let r = 0; r < RH; r++) for (let c = 0; c < RW; c++) g[rm.ry * RH + r][rm.rx * RW + c] = ALTAR_TPL[r][side === -1 ? c : RW - 1 - c];
     return { rx: rm.rx, ry: rm.ry, side };
 }
@@ -6331,6 +6368,7 @@ function genTry(R, levelIdx, seedForDark, mul) {
     const combo = genCombo(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie], levelIdx);          // v0.53: phòng tổ hợp theo hệ vùng
     const pushRoom = genPushRoom(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie, combo], levelIdx);          // v0.55: hầm khối đẩy đòi chém tụ lực
     const chasm = genChasm(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie, combo, pushRoom], levelIdx);          // v0.54: vực dung nham đòi lướt
+    { const sp = []; for (const s of [shop, pit, altar, chest, treasure, lake, aerie, combo, pushRoom, chasm]) if (s) { sp.push(s.rx + ',' + s.ry); if (s.rx2 !== undefined) sp.push(s.rx2 + ',' + s.ry); } genHazardsFloor(R, g, rooms, sp, zone, levelIdx); }          // v1.18zh: ô phụ rải theo CẢ TẦNG sau khi dựng xong mọi phòng
     genWebFix(g, LVL.roomW, LVL.roomH, GEN.webClusters, GEN.webSide);          // v1.18z / v1.18za: mạng nhện — hai bên không có bục / đất, mỗi phòng ≤ GEN.webClusters cụm
     const RW = LVL.roomW, RH = LVL.roomH, B = LVL.border, W = g[0].length, H = g.length;
     // lưới có viền để kiểm tra
@@ -7128,6 +7166,11 @@ class Player extends Thing {
         this.ignorePlat = true; this.fallT = 0; this.vx = 0;
         if (ax !== 0) this.facing = ax;
         const cx = this.cx, cy = this.cy;
+        // v1.18zh (Dan): đang đứng trên THANG, bấm trái / phải (không kèm ↑ ↓) ~0,1 s ở BẤT KỲ chỗ nào là bước ra khỏi thang (trước: chỉ nhảy mới rời được)
+        if (ax !== 0 && !up && !down && level.tile(Math.floor(cx / TILE), Math.floor(cy / TILE)) === T_LADDER) {
+            this.ladderSideT = (this.ladderSideT || 0) + dt;
+            if (this.ladderSideT >= 0.1) { this.ladderSideT = 0; this.vx = ax * PHYS.walkMax * 0.6; this.vy = 0; this.ladderCd = 0.2; this.setState('air'); this.ignorePlat = false; return; }
+        } else this.ladderSideT = 0;
         if (!level.isClimb(Math.floor(cx / TILE), Math.floor(cy / TILE)) && !level.isClimb(Math.floor(cx / TILE), Math.floor((cy + 8) / TILE))) { this.setState('air'); this.ignorePlat = false; return; }
         if (up) {
             if (level.isClimb(Math.floor(cx / TILE), Math.floor((cy - 8) / TILE))) this.vy = -PHYS.climbSpeed;
@@ -7889,6 +7932,7 @@ function dmgSpikes(level) {
 
 // ---- Quái chạm người chơi (SC: oEnemy Collision_oCharacter): từ trên xuống = bị đạp; ngang = người chơi bị cắn, choáng ngắn, bất tử 1s ----
 // v0.17: quái NHỎ (dơi, rắn) cắn thì choáng và hất người chơi chỉ bằng `mul` so với thường (sát thương không đổi). Chỉ áp dụng cho cú cắn chạm (dmgContacts), không áp dụng cho đạn / xác ném / quái khác.
+const CONTACT_KNOCK = { S: 80, M: 100, L: 120, charge: 180, small: 90, chargers: ['walker', 'rusher'], vyK: 2 / 3 };          // v1.18zi (Dan): lực hất NGANG khi chạm quái theo cỡ; quái húc (bọ đá, rusher) 180; dơi / rắn giữ 90; lực dọc = ngang × 2/3
 const SMALL_BITE = { kinds: ['bat', 'snake'], mul: 0.5 };
 function dmgContacts(level) {
     const p = game.player; if (!p || p.dead) return;
@@ -7909,7 +7953,8 @@ function dmgContacts(level) {
         if (p.hurt({ kind: DMG.BITE, dmg: e.dmg, x: e.cx, y: e.cy, by: e })) {
             p.invulnT = 1; p.blinkT = 1;                                   // SC: invincible = 30 khung
             const sm = SMALL_BITE.kinds.indexOf(e.kind) >= 0 ? SMALL_BITE.mul : 1, km = (e.def && e.def.knockMul) || 1;          // dơi / rắn: choáng + hất giảm một nửa · v0.88: bọ đá hất mạnh hơn
-            p.knock((p.cx < e.cx ? -1 : 1) * 180 * sm * km, -120 * sm * Math.sqrt(km));                    // SC: xVel ±6
+            const kx = SMALL_BITE.kinds.indexOf(e.kind) >= 0 ? CONTACT_KNOCK.small : CONTACT_KNOCK.chargers.indexOf(e.kind) >= 0 ? CONTACT_KNOCK.charge : CONTACT_KNOCK[(e.boss || e.isBoss) ? 'L' : corpseTierOf(e.kind)];
+            p.knock((p.cx < e.cx ? -1 : 1) * kx, -kx * CONTACT_KNOCK.vyK);
             if (!p.dead) p.stun(0.4 * sm);
             sndPlay('hurt', { x: p.cx }); fxShake(2, 0.15);
             const st = statusOf(e); if (st && !p.dead) statusApply(p, st);
@@ -8242,6 +8287,7 @@ class Enemy extends Thing {
         const L = game.level;
         L.spawnBurst(this.cx, this.cy, 10, '#d23a3a', 110); L.spawnBurst(this.cx, this.cy, 5, this.col, 80);
         sndPlay('enemyDie', { x: this.cx }); if (game.stats) game.stats.kills++;
+        if (game.killsLv && this.kind !== 'shopkeeper') game.killsLv[this.kind] = (game.killsLv[this.kind] || 0) + 1;          // v1.18zg: thống kê giết theo loài trong màn (màn kết thúc kiểu Battle City)
         if (!this.isBoss && this.kind !== 'shopkeeper' && game.rngPlay) {        // lần 29/30: giết quái đôi khi rơi vàng, TOÉ ra về một bên
             const thrown = src && (src.kind === DMG.IMPACT || src.kind === DMG.ARROW), R = game.rngPlay;
             if (R.next() < LOOT.chance * (thrown ? LOOT.thrownMul : 1)) {
@@ -9058,7 +9104,7 @@ const AFFIX = {
         volatile: { name: 'Nổ khi chết', col: '#ff5a3a' }, splitter: { name: 'Tách đôi', col: '#c08aff' }
     },
     skip: ['mimic', 'vent', 'shopkeeper'],
-    rewardGold: 150, rewardItemP: 20, rewardN: 2, rewardFlasks: ['water', 'oil', 'shock', 'frost', 'poison']          // v0.87: thưởng (affixReward)
+    rewardGold: 150, heartP: 50, rewardItemP: 20, rewardN: 2, rewardFlasks: ['water', 'oil', 'shock', 'frost', 'poison']          // v0.87: thưởng (affixReward)
 };
 const AFFIX_LIST = Object.keys(AFFIX.defs);
 function affixEligible(e) { return e instanceof Foe && !e.boss && !e.isBoss && !e.noAffix && AFFIX.skip.indexOf(e.kind) < 0; }
@@ -9105,9 +9151,29 @@ function affixOnDie(e, src) {
 }
 // v0.87 (Dan): THƯỞNG quái tinh nhuệ — luôn 1 cục vàng to (AFFIX.rewardGold) + AFFIX.rewardItemP % thêm 1 món (bom ×2 · dây ×2 · 1 bình ngẫu nhiên, ngang nhau).
 //   Con nhỏ sinh ra từ Tách đôi không có tiền tố (noAffix) nên không gọi tới đây: không cày được.
+// v1.18zg (Dan): quái đặc biệt (đang phát sáng) chết, NGOÀI vàng còn 50 % rơi tim hồi máu: ngẫu nhiên ½ tim hoặc 1 tim
+class HeartDrop extends Thing {
+    constructor(x, y, amt) { super(x, y, 9, 8, { kind: 'heartdrop', mass: 0, triggersTraps: false, dmgFrom: [], col: '#e23a4a' }); this.amt = amt; this.age = 0; }
+    update(level, dt) {
+        super.update(level, dt); this.age += dt; const p = game.player;
+        if (this.alive && this.age > 0.3 && p && !p.dead && overlapBox(this, p)) {
+            const was = p.hp; p.hp = Math.min(Math.max(maxHpOf(p), was), was + this.amt); this.alive = false;
+            level.spawnBurst(p.cx, p.cy - 2, 8, '#ff7aa8', 80); sndPlay('unlock', { x: p.cx, p: 1.4 });
+            game.pickupMsg = { t: 0, text: 'Hồi ' + (this.amt >= HP_UNIT ? '1 tim' : '½ tim') };
+        }
+    }
+    draw(ctx, alpha) {
+        const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha) + (this.onGround ? 0 : 0)), big = this.amt >= HP_UNIT, c = '#e23a4a', k = Math.floor(this.age * 5) % 2;
+        ctx.fillStyle = '#5a1220'; ctx.fillRect(x, y + 1, 9, 5); ctx.fillStyle = c; ctx.fillRect(x + 1, y, 3, 2); ctx.fillRect(x + 5, y, 3, 2); ctx.fillRect(x + 1, y + 1, 7, 4); ctx.fillRect(x + 2, y + 5, 5, 1); ctx.fillRect(x + 3, y + 6, 3, 1);
+        ctx.fillStyle = '#ffd0d8'; ctx.fillRect(x + 2, y + 1, 2, 1);
+        if (!big) { ctx.fillStyle = '#2a1018'; ctx.fillRect(x + 4, y, 1, 7); ctx.fillRect(x + 5, y + 1, 4, 5); }          // nửa tim: nửa phải tối
+        if (k) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 7, y - 1, 1, 1); }
+    }
+}
 function affixReward(e) {
     if (!e || e.noAffix || e.kind === 'shopkeeper') return;
     const R = game.rngPlay; spawnGold(e.cx, e.cy - 2, 1, AFFIX.rewardGold);
+    if (R.int(1, 100) <= AFFIX.heartP) { const h = entAdd(new HeartDrop(e.cx - 4, e.cy - 6, R.int(1, 2) === 1 ? HP_UNIT / 2 : HP_UNIT)); h.vy = -110; }
     if (R.int(1, 100) > AFFIX.rewardItemP) return;
     const k = R.int(0, 2), g = entAdd(new ShopGoods(e.cx - 6, e.y + e.h - 12, k === 2 ? 'kit' : k === 0 ? 'bomb' : 'rope'));
     if (k === 2) g.sub = AFFIX.rewardFlasks[R.int(0, AFFIX.rewardFlasks.length - 1)]; else g.amt = AFFIX.rewardN;
@@ -9324,6 +9390,7 @@ function bossDefeated(level, boss) {
     level.spawnBurst(boss.cx, boss.cy, 30, '#ffe9a8', 160);
     game.banner = { text: 'ĐÃ HẠ ' + boss.def.name, t: 0 };
     if (game.stats) game.stats.kills++;
+    if (game.killsLv) game.killsLv[boss.kind || 'boss'] = (game.killsLv[boss.kind || 'boss'] || 0) + 1;
     abilityReward(game.levelIdx);                      // 09a_abilities: boss vùng 2 / 6 tặng nhảy đôi / lướt
 }
 
@@ -10490,9 +10557,20 @@ function ropeThrow(level, p, down) {
 }
 
 // Xác quái (lần 18): nhấc lên ném như vật nặng (trúng quái khác gây 1 sát thương), tan sau 25 giây
+// v1.18zh (Dan): xác màu vàng (tia lửa điện, bọ hổ phách…) dễ nhầm với cục vàng nhặt được → đổi sang vàng chanh (xanh hơn) cho khác hẳn
+function corpseAvoidGold(col) {
+    if (typeof col !== 'string' || col.length !== 7 || col[0] !== '#') return col;
+    const r = parseInt(col.slice(1, 3), 16) / 255, g = parseInt(col.slice(3, 5), 16) / 255, b = parseInt(col.slice(5, 7), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (mx < 0.6 || d / (mx || 1) < 0.45 || mx !== r && mx !== g) return col;
+    let h = d === 0 ? 0 : mx === r ? 60 * (((g - b) / d) % 6) : 60 * ((b - r) / d + 2); if (h < 0) h += 360;
+    if (h < 32 || h > 62) return col;          // chỉ dải vàng – vàng cam (cùng tông cục vàng)
+    const k = 0.78, hex = x => ('0' + Math.round(Math.max(0, Math.min(255, x))).toString(16)).slice(-2);          // → vàng chanh: giảm đỏ, giữ lục, ít xanh dương
+    return '#' + hex(r * 255 * 0.8) + hex(g * 255 * 0.92 + 14) + hex(b * 255 * 0.6 + 10);
+}
 class Corpse extends Thing {
     // tier: 'S' nhỏ / 'M' vừa / 'L' to (CORPSE_TIERS ở 10c_status): quyết định hitbox, mass, sát thương ném, lực ném, hình vẽ. srcKind: loại quái gốc, chỉ để vẽ chi tiết đặc trưng (drawCorpseHp)
     constructor(cx, bottom, col, tier, srcKind) {
+        col = corpseAvoidGold(col);
         const T = CORPSE_TIERS[tier] || CORPSE_TIERS.M, f = CORPSE_SCALE[srcKind] || 1, cw = Math.max(4, Math.round(T.w * f)), ch = Math.max(3, Math.round(T.h * f));
         super(cx - cw / 2, bottom - ch, cw, ch, { kind: 'corpse', carryable: true, hurtsOnImpact: true, impactDmg: T.impactDmg, mass: T.mass, col: col, dmgFrom: [] });
         this.age = 0; this.srcKind = srcKind || ''; this.tier = CORPSE_TIERS[tier] ? tier : 'M'; this.throwMul = T.throwMul; this.noHurtPlayer = !!T.harmless;      // noHurtPlayer: bật lại trúng người chơi không mất máu (10a_damage)
@@ -11071,7 +11149,7 @@ function drawWater(ctx, L, cx, cy) {
 //   Ô tính là T_WATER/T_LAVA (bơi được / chết) khi lượng ≥ FLOW.thr (hạ xuống dưới FLOW.thrOff mới bỏ — tránh nhấp nháy); mỏng hơn chỉ là màng nước vẽ ra, không cản người.
 //   Lượng < FLOW.dry bốc hơi (nên mỗi vũng dừng lan được). Dung nham nhớt hơn: nhịp chậm, lan 1/2 lượng. Nước gặp dung nham: dung nham hoá đá (T_STONE), nước mất 0.5.
 // v0.82 (Dan): DẦU là loại chất lỏng thứ 3 (`amtT` = 3) — NẶNG và NHỚT: nhịp chậm (OIL.dt), dàn ngang chậm + dày hơn nước, KHÔNG bốc hơi dễ, luôn CHÌM dưới nước (dầu lọt vào ô nước thành `L.oilU` — lớp dầu ở đáy ô nước, rơi qua cột nước xuống đáy rồi dàn ngang trên đáy; nước không bị đẩy trào lên; nước cạn thì dầu lộ ra lại), không cản người (ô dầu nổi vẫn T_EMPTY). Cháy / dính dầu / nguồn dầu: 13n_fire (oilSpill, oilIgniteCell, oilFireStep, oilTouch). `L.oilSet` = tập ô có dầu, `L.oilB` = 1 nếu là dầu «lớn» (thùng / bình).
-const OIL = { dt: 0.11, side: 0.4, minDiff: 0.1, minFilm: 0.25, dry: 0.04, pool: 0.26, vis: 0.1 };          // pool: lượng dầu của MỘT «vũng» cũ (22×3 px ≈ 0,26 ô); vis: lượng tối thiểu để tính là «có dầu» (dính dầu, vẽ)
+const OIL = { dt: 0.22, side: 0.4, minDiff: 0.1, minFilm: 0.25, dry: 0.04, pool: 0.26, vis: 0.1 };          // pool: lượng dầu của MỘT «vũng» cũ (22×3 px ≈ 0,26 ô); vis: lượng tối thiểu để tính là «có dầu» (dính dầu, vẽ)          // v1.18zh (Dan): dt 0,11 → 0,22 = dầu chảy chậm gấp 2
 const FLOW = { dt: 0.05, iters: 2, lavaDt: 0.22, thr: 0.6, thrOff: 0.5, dry: 0.06, minDiff: 0.03, side: 0.5, lavaSide: 0.3, minFilm: 0.35 };
 function flowInitLevel(L) {
     L.flowInit = true; L.amt = new Float32Array(L.w * L.h); L.amtT = new Uint8Array(L.w * L.h); L.flowQ = new Set(); L.oilSet = new Set(); L.oilB = new Uint8Array(L.w * L.h); L.oilU = new Float32Array(L.w * L.h); L.oilUSet = new Set();          // oilU: dầu CHÌM nằm đáy ô nước (cùng ô với nước, không chiếm chỗ của nước)
@@ -11365,7 +11443,7 @@ function webFireStep(L) {
 // 13k_altar — BÀN THỜ HIẾN TẾ (GĐ7f; phòng bên đặc biệt, ký tự `n`). Một lựa chọn đánh đổi kiểu Spelunky:
 //   đứng cạnh bàn thờ, bấm ↑ → mất 1 máu (cần ≥ 2 máu) để nhận ALTAR.gold vàng; ma xuất hiện sớm hơn ALTAR.ghostS giây (v0.74: 30) ở level này. Mỗi bàn thờ dùng một lần.
 //   Số liệu là số tạm (vàng 250 ≈ một viên kim cương lớn + chút; ma sớm 30 s (v0.74; trước 60 s)).
-const ALTAR = { gold: 250, hp: 1 * HP_UNIT, ghostS: 30, reach: 14, bladeP: 10, shardP: 5, betMax: 1000 };          // v0.67: hiến tế → đồ phụ / 10 % kiếm hệ / 5 % mảnh tim; cược hết vàng (≤ betMax) ×2 hoặc mất
+const ALTAR = { gold: 250, hp: 1 * HP_UNIT, ghostS: 30, reach: 14, bladeP: 10, shardP: 5, betMax: 1000, healPrincess: 1 * HP_UNIT, healPet: HP_UNIT / 2, healGold: HP_UNIT / 2, donPct: 0.25, donMin: 100, donMax: 500 };          // v0.67: hiến tế → đồ phụ / 10 % kiếm hệ; cược hết vàng (≤ betMax) ×2 hoặc mất · v1.18zg (Dan): hiến công chúa = +1 tim, thú cưng = +½ tim, hiến vàng (25 % vàng đang có, 100–500; nút Chạy R1/Shift) = +½ tim — đều kèm 1 món đồ; MỌI kiểu hiến tế luôn có 5 % ra thêm mảnh tim (+½ tim tối đa)
 class Altar extends Thing {
     constructor(x, y) { super(x, y, 14, 12, { kind: 'altar', gravity: 0, mass: 0, dmgFrom: [], triggersTraps: false, col: '#8a6a8a' }); this.used = false; this.age = Math.random() * 6; }
     near(p) { return p && !p.dead && Math.abs(p.cx - this.cx) <= ALTAR.reach && Math.abs((p.y + p.h) - (this.y + this.h)) <= 6; }
@@ -11379,20 +11457,27 @@ class Altar extends Thing {
         const canHp = p.hp >= ALTAR.hp + 1;
         // v0.67 (Dan): hiến tế 1 tim HOẶC công chúa / thú cưng đang bế (↑) → ngẫu nhiên: đồ phụ · 10 % kiếm hệ · 5 % mảnh tim.
         //   Cược (↓): đặt HẾT vàng đang có (tối đa ALTAR.betMax) — 50 % nhận gấp đôi, 50 % mất sạch.
-        const bet = Math.min(p.gold | 0, ALTAR.betMax);
+        const bet = Math.min(p.gold | 0, ALTAR.betMax), don = Math.min(ALTAR.donMax, Math.max(ALTAR.donMin, Math.round((p.gold | 0) * ALTAR.donPct / 10) * 10)), canDon = (p.gold | 0) >= ALTAR.donMin && !(p.hold && !princess);
         if (!princess && !canHp && bet <= 0) { game.hint = 'Cần ít nhất ' + (ALTAR.hp + 1) + ' máu hoặc có vàng để cược'; return; }
-        game.hint = (princess ? '↑ hiến tế ' + (h.pet ? 'thú cưng' : 'công chúa') : canHp ? '↑ hiến tế ' + ALTAR.hp / HP_UNIT + ' tim' : '') + (bet > 0 ? (princess || canHp ? ' · ' : '') + '↓ cược ' + bet + ' vàng (50 %: ×2)' : '') + (princess || canHp ? ' → đồ ngẫu nhiên (ma đến sớm ' + ALTAR.ghostS + ' s)' : '');
-        if (inp.pressed('up') && (princess || canHp)) {
-            if (princess) { h.release(); h.alive = false; h.hp = 0; level.spawnBurst(h.cx, h.cy, 12, '#b070e0', 110); }
+        game.hint = (princess ? '↑ hiến ' + (h.pet ? 'thú cưng (+½ tim)' : 'công chúa (+1 tim)') : canHp ? '↑ hiến tế ' + ALTAR.hp / HP_UNIT + ' tim' : '') + (canDon ? (princess || canHp ? ' · ' : '') + 'R1/Shift hiến ' + don + ' vàng (+½ tim)' : '') + (bet > 0 ? (princess || canHp || canDon ? ' · ' : '') + '↓ cược ' + bet + ' vàng (50 %: ×2)' : '') + (princess || canHp || canDon ? ' → kèm đồ ngẫu nhiên (ma đến sớm ' + ALTAR.ghostS + ' s)' : '');
+        const giveItem = (R, x0) => {          // 1 món đồ ngẫu nhiên (10 % kiếm hệ, còn lại bình đồ phụ) + 5 % mảnh tim thưởng
+            let g; if (R.int(1, 100) <= ALTAR.bladeP) { g = entAdd(new Relic(x0, this.y - 10, 'item')); const o = BLADE_LIST.filter(b => b !== p.blade); g.pick = { blade: o[R.int(0, o.length - 1)] }; }
+            else { g = entAdd(new Relic(x0, this.y - 10, 'item')); g.pick = { sub: SUB_LIST[R.int(0, SUB_LIST.length - 1)] }; }
+            g.age = 0; let txt = g.label();
+            if (R.int(1, 100) <= ALTAR.shardP) { const sh = entAdd(new Relic(x0 + 12, this.y - 10, 'shard')); sh.age = 0; txt += ' + Mảnh tim'; }
+            return txt;
+        };
+        const heal = n => { if (n > 0) { p.hp = Math.min(maxHpOf(p), p.hp + n); level.spawnBurst(p.cx, p.cy - 2, 8, '#ff7aa8', 80); } };
+        if (inp.pressed('run') && canDon && !princess) {
+            p.gold -= don; this.used = true; game.ghostBonus = (game.ghostBonus || 0) + ALTAR.ghostS; heal(ALTAR.healGold);
+            const txt = giveItem(game.rngPlay, this.cx - 6); this.fxSac(level, p); game.pickupMsg = { t: 0, text: 'Hiến ' + don + ' vàng: +½ tim, ' + txt };
+        } else if (inp.pressed('up') && (princess || canHp)) {
+            if (princess) { h.release(); h.alive = false; h.hp = 0; level.spawnBurst(h.cx, h.cy, 12, '#b070e0', 110); heal(h.pet ? ALTAR.healPet : ALTAR.healPrincess); }
             else { p.hp -= ALTAR.hp; p.blinkT = Math.max(p.blinkT, 0.4); }
             this.used = true; game.ghostBonus = (game.ghostBonus || 0) + ALTAR.ghostS;
-            const R = game.rngPlay, x = R.int(1, 100); let g;
-            if (x <= ALTAR.shardP) g = entAdd(new Relic(this.cx - 6, this.y - 10, 'shard'));
-            else if (x <= ALTAR.shardP + ALTAR.bladeP) { g = entAdd(new Relic(this.cx - 6, this.y - 10, 'item')); const o = BLADE_LIST.filter(b => b !== p.blade); g.pick = { blade: o[R.int(0, o.length - 1)] }; }
-            else { g = entAdd(new Relic(this.cx - 6, this.y - 10, 'item')); g.pick = { sub: SUB_LIST[R.int(0, SUB_LIST.length - 1)] }; }
-            g.age = 0;
+            const txt = giveItem(game.rngPlay, this.cx - 6);
             this.fxSac(level, p);
-            game.pickupMsg = { t: 0, text: 'Hiến tế: ' + g.label() };
+            game.pickupMsg = { t: 0, text: 'Hiến tế: ' + txt + (princess ? (h.pet ? ' (+½ tim)' : ' (+1 tim)') : '') };
         } else if (inp.pressed('down') && bet > 0) {
             this.used = true; const win = game.rngPlay.int(1, 100) <= 50;
             if (win) { p.gold += bet; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + bet; } else p.gold -= bet;
@@ -12146,7 +12231,7 @@ function envStep(L) {
             e.wetT = ENV.wetT;
             if (mon) {
                 e.wingT = ENV.wingT; e.waterT = (e.waterT || 0) + dt;
-                if (e.waterT >= ENV.drownT) {
+                if (e.waterT >= ENV.drownT && e.kind !== 'eel') {          // v1.18zh (Dan): cá điện sống dưới nước — không chết ngạt
                     e.drownCd = (e.drownCd === undefined ? 0 : e.drownCd) - dt;
                     if (e.drownCd <= 0) {
                         e.drownCd = ENV.drownEvery; e.invulnT = 0;
@@ -12752,7 +12837,7 @@ function dmgPopDraw(camX, camY) {
 //   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
-    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 230, lifeP: 0.339, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
+    staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 250, lifeP: 0.312, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
     boomN: { v: 174, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 40 px (v1.07: −½ ô, Dan; trước 48)
     boomF: { v: 226, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 64 px (v1.07: −½ ô; trước 72) (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
@@ -12806,16 +12891,17 @@ function iceFreezeNear(level, p, x, y, B) {
 class StaffShot extends Thing {
     constructor(x, y, vx, vy, owner, power) {
         super(x - 3, y - 3, 6, 6, { kind: 'staffshot', gravity: 0, mass: 0, dmgFrom: [], col: '#bfe9ff', triggersTraps: false });
-        this.vx = vx; this.vy = vy; this.owner = owner; this.power = !!power; this.el = power ? elemOf(owner) : null; this.life = power ? CW.staff.lifeP : CW.staff.life; this.mul = 1;
+        this.vx = vx; this.vy = vy; this.owner = owner; this.power = !!power; this.el = elemOf(owner);          // v1.18zg (Dan): đòn thường CŨNG mang hệ + lan 3 tia; đòn giữ chỉ khác: xa hơn 1 ô (16 px) và xuyên tường
+         this.life = power ? CW.staff.lifeP : CW.staff.life; this.mul = 1;
     }
     update(level, dt) {
         this.timers(dt); this.x += this.vx * dt; this.y += this.vy * dt;
-        const col = this.power ? elemCol(this.el) : '#bfe9ff';
-        if (this.power && this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0) && !level.solidAt(this.cx, this.cy)) fireTrailIgnite(level, this.owner, this.cx, this.cy);
-        if (this.power && this.el === 'ice' && !level.solidAt(this.cx, this.cy)) iceFreezeNear(level, this.owner, this.cx, this.cy, this.iceB);          // v1.10
+        const col = elemCol(this.el);
+        if (this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0) && !level.solidAt(this.cx, this.cy)) fireTrailIgnite(level, this.owner, this.cx, this.cy);
+        if (this.el === 'ice' && !level.solidAt(this.cx, this.cy)) iceFreezeNear(level, this.owner, this.cx, this.cy, this.iceB);          // v1.10
         const inSolid = level.solidAt(this.cx, this.cy), outside = !level.inside(Math.floor(this.cx / TILE), Math.floor(this.cy / TILE));          // v1.18n (Dan): đạn TỤ LỰC xuyên tường (chỉ dừng khi ra ngoài bản đồ)
         if (this.power && inSolid && !outside && (this._ps = (this._ps || 0) + 1) % 3 === 0) level.spawnBurst(this.cx, this.cy, 1, col, 30);
-        if ((this.life -= dt) <= 0 || outside || (!this.power && inSolid)) { if (this.power && this.el === 'fire') fireTrailIgnite(level, this.owner, this.cx, this.cy, true); level.spawnBurst(this.cx, this.cy, 3, col, 50); this.alive = false; return; }
+        if ((this.life -= dt) <= 0 || outside || (!this.power && inSolid)) { if (this.el === 'fire') fireTrailIgnite(level, this.owner, this.cx, this.cy, true); level.spawnBurst(this.cx, this.cy, 3, col, 50); this.alive = false; return; }
         const p = this.owner;
         for (const e of game.entities) {
             if (!e.alive || e === p || e.holder || !(e.creature || e.breakOnImpact) || !overlapBox(this, e)) continue;
@@ -12823,17 +12909,17 @@ class StaffShot extends Thing {
         }
     }
     strike(level, e) {          // v1.17: tách ra để quét cận chiến khi bắn dùng chung
-        const p = this.owner, col = this.power ? elemCol(this.el) : '#bfe9ff', hp0 = e.hp, dmg = CW.staff.dmg * this.mul + (this.power ? 1 : 0);
-        if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: this.power ? this.el : undefined })) {
-            if (this.power) elemApply(level, p, e, this.el);
+        const p = this.owner, col = elemCol(this.el), hp0 = e.hp, dmg = CW.staff.dmg * this.mul;
+        if (e.hurt({ kind: DMG.WHIP, dmg, x: this.cx, y: this.cy, by: p, el: this.el })) {
+            elemApply(level, p, e, this.el);
             if (e.alive && e.creature && !(e.boss || e.isBoss) && e.kind !== 'shopkeeper' && !e.frozenT) { e.stunT = Math.max(e.stunT || 0, CW.staff.stun); e.vx = 0; }          // v1.17 (Dan): đạn gậy làm quái đứng im 1 s
             sndPlay(hitSoundFor(e, hp0), { x: e.cx, vol: 0.8 }); level.spawnBurst(e.cx, e.cy, 4, col, 70);
         }
-        if (this.power && this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
+        if (this.el === 'fire') fireTrailIgnite(level, p, this.cx, this.cy, true);
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawStaffShotHp(this, ctx, alpha); return; }
-        const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)), c = this.power ? elemCol(this.el) : '#bfe9ff', s = this.power ? 8 : 6, o = (6 - s) / 2;
+        const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)), c = elemCol(this.el), s = this.power ? 8 : 6, o = (6 - s) / 2;
         ctx.fillStyle = c; ctx.fillRect(x + o, y + o, s, s); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 2, 2, 2);
     }
 }
@@ -12846,8 +12932,7 @@ function staffFire(p, aim, power) {
         const s = new StaffShot(p.cx + (up ? 0 : f * 2), p.cy - (up ? 8 : aim === 2 ? 6 : aim === 3 ? 0 : 4), vx, vy, p, power); s.iceB = iceB; s.mul = mul * (aim === 1 || aim === 2 ? C.upMul : 1); entAdd(s);
     };
     const before = game.entities.length;
-    if (power) { mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1); }          // đạn hệ có lan: 3 tia nhỏ
-    else mk(0, 1);
+    mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1);          // v1.18zg: cả đòn thường lẫn đòn giữ đều lan 3 tia nhỏ
     // v1.17 (Dan): quái đứng SÁT người (nhất là dơi lao từ trên xuống) vẫn trúng — quét một hộp cận chiến trước mặt (cao hơn đầu 14 px) / phía trên đầu; trúng thì viên đạn tiêu luôn
     { const sh = game.entities.slice(before), lv = game.level, fx0 = f > 0 ? p.cx - 2 : p.cx - C.close, box = up ? { x: p.x - 4, y: p.y - C.closeUp, w: p.w + 8, h: C.closeUp } : aim === 2 ? { x: fx0, y: p.y - C.closeUp, w: C.close + 2, h: C.closeUp + p.h * 0.5 } : aim === 3 ? { x: fx0, y: p.cy, w: C.close + 2, h: p.h * 0.5 + 14 } : { x: fx0, y: p.y - 14, w: C.close + 2, h: p.h + 14 };
       if (lv && sh.length) { const s0 = sh[Math.min(1, sh.length - 1)]; let hit = false;
@@ -12877,10 +12962,12 @@ function classMul(attr, cls) { const t = CLASS_MUL[attr]; const c = cls || (type
 const FLASK_ORDER = ['oil', 'shock', 'frost', 'poison'];          // v1.07 (Dan): vòng chọn 4 hệ — ↑ xăng · → sét · ↓ băng · ← độc (bình nước không còn trong vòng)
 function subCap() { return abilityHas('flaskFast') ? ALCH.capFast : ALCH.cap; }
 // Mua / nhặt bình: Giả Kim cùng loại thì CỘNG DỒN (tới sức chứa), khác loại thì thay như cũ.
+const FLASK_ELEM = { oil: 'fire', frost: 'ice', shock: 'shock', poison: 'poison' };          // v1.18zg (Dan): bình nguyên tố nào thì gậy phép (đòn thường) mang hệ đó
+function alchSyncBlade(p) { if (p && p.cls === 'alch' && p.sub && FLASK_ELEM[p.sub.id] && p.sub.n > 0) p.blade = FLASK_ELEM[p.sub.id]; }
 function alchGiveFlask(p, id) {
     if (!SUB[id]) return false;
-    if (p.cls === 'alch' && p.sub && p.sub.id === id && p.sub.n > 0) { p.sub.n = Math.min(subCap(), p.sub.n + SUB[id].n); p.sel = 'sub'; return true; }
-    return subGive0(p, id);
+    if (p.cls === 'alch' && p.sub && p.sub.id === id && p.sub.n > 0) { p.sub.n = Math.min(subCap(), p.sub.n + SUB[id].n); p.sel = 'sub'; alchSyncBlade(p); return true; }
+    const ok = subGive0(p, id); alchSyncBlade(p); return ok;
 }
 // Vuông (dash) của Giả Kim: CHẠM (thả trong ALCH.tapT) = Dịch chuyển (sau boss vùng 6) · GIỮ (đứng yên, có bình) = hiện VÒNG CHỌN BÌNH: mũi tên chỉ về loại nào thì loại đó sáng, NHẢ nút = chọn.
 //   Thứ tự theo chiều kim đồng hồ từ trên: xăng (↑) · sét (→) · băng (↓) · độc (←) (FLASK_ORDER). Mở vòng thì mũi tên không còn đi / nhảy (Player.update bỏ qua phím).
@@ -12906,7 +12993,7 @@ function alchStep(p, level, dt) {
         const tap = (p.sqT || 0) > 0 && p.sqT <= ALCH.tapT && !p.wheelOn;
         if (p.wheelOn) {
             p.wheelOn = false; const id = FLASK_ORDER[p.wheelSel];
-            if (subHas(p) && id !== p.sub.id) { p.sub.id = id; sndPlay('ui', { x: p.cx, p: 1.8 }); level.spawnBurst(p.cx, p.y, 6, SUB[id].col, 70); game.pickupMsg = { t: 0, text: 'Đổi sang ' + SUB[id].name }; }
+            if (subHas(p) && id !== p.sub.id) { p.sub.id = id; alchSyncBlade(p); sndPlay('ui', { x: p.cx, p: 1.8 }); level.spawnBurst(p.cx, p.y, 6, SUB[id].col, 70); game.pickupMsg = { t: 0, text: 'Đổi sang ' + SUB[id].name }; }
         }
         p.sqT = 0;
         if (tap && abilityHas('teleport')) alchTeleport(p, level);
@@ -13385,16 +13472,34 @@ function drawWinPanel() {
 
 function fmtTime(t) { const m = Math.floor(t / 60), sec = Math.floor(t % 60); return m + ':' + ('0' + sec).slice(-2); }
 // Màn chuyển level (SC: oTransition) — thời gian level/tổng, tiền level/tổng, giết; công chúa được cứu: "ANH HÙNG CỦA EM!"
+const _transIcon = {};
+function transIconDraw(kind, cx, by, box) {          // biểu tượng loài: dựng một con mẫu (không thêm vào màn) rồi vẽ thu vừa ô, đáy giữa tại (cx, by)
+    let e = _transIcon[kind]; if (e === undefined) { try { e = foeMake(kind, 0, 0) || null; } catch (err) { e = null; } _transIcon[kind] = e; }
+    if (!e) { ctx.fillStyle = '#9aa0b0'; ctx.fillRect(cx - 4, by - 8, 8, 8); return; }
+    const k = Math.min(1, box / Math.max(e.w, e.h));
+    ctx.save(); ctx.translate(cx, by); ctx.scale(k, k); ctx.translate(-(e.x + e.w / 2), -(e.y + e.h));
+    try { e.alive = true; drawEntity(e, ctx, 1); } catch (err) { /* bỏ qua */ }
+    ctx.restore();
+}
 function drawTransPanel() {
     const t = game.trans, lines = [
         ['Thời gian  ' + fmtTime(t.levelT) + ' / ' + fmtTime(t.runT)],
         [[['Tiền nhặt  '], ['$' + t.gold, '#ffd24a'], [' / '], ['$' + t.goldAll, '#ffd24a'], [' · đang có '], ['$' + t.have, '#ffd24a']]],
         ['Giết ' + t.kills + ' quái']
     ];
+    const PER = 5, rows = Math.ceil(t.kinds.length / PER), gridAt = lines.length;
+    for (let i = 0; i < rows * 2; i++) lines.push(['']);          // chỗ cho lưới thống kê (mỗi hàng 22 px)
+    if (t.done && t.cleared && t.reward) lines.push(['DIỆT SẠCH QUÁI!  ' + t.reward.txt, '#ffe45a']);
     if (t.rescued > 0) lines.push([t.pets >= t.rescued ? 'Thú cưng dụi vào chân bạn!' : 'Công chúa: "Anh hùng của em!"', '#ffb0d0']);
     if (game.levelIdx + 1 === FINALE_LEVEL) lines.push(['Sắp tới: TRẬN CUỐI — Hang núi lửa', '#ff9a5a']);
     else if (zoneIdx(game.levelIdx + 1) !== zoneIdx(game.levelIdx)) lines.push(['Sắp tới: vùng ' + zoneOf(game.levelIdx + 1).name, '#9ad0ff']);
     drawPanel(lines, 'XONG ' + t.name, '#7fe08a');          // v1.07 (Dan): kéo hết chiều rộng màn hình (v0.77 từng để hẹp 75 %), bỏ dòng «Phím bất kỳ: tiếp tục», số tiền màu vàng
+    const h = 20 + lines.length * 11 + 10, y0 = Math.round((VIEW_H - h) / 2) + 22 + gridAt * 11, cw = 60, x0 = Math.round((VIEW_W - Math.min(PER, t.kinds.length) * cw) / 2);
+    t.kinds.forEach((kd, i) => {          // v1.18zg: lưới thống kê giết theo loài, hiện lần lượt, số đếm tăng dần
+        const sh = (t.t - TRANS_STAT.t0 - i * TRANS_STAT.per) / TRANS_STAT.per; if (sh < 0) return;
+        const r = Math.floor(i / PER), c = i % PER, x = x0 + c * cw, y = y0 + r * 22, n = Math.min(kd.n, Math.ceil(kd.n * Math.min(1, sh / 0.8)));
+        transIconDraw(kd.k, x + 12, y + 18, 16); drawText('×' + n, x + 26, y + 6, n >= kd.n ? '#ffffff' : '#9aa0b0');
+    });
 }
 
 // 15c_scene — MÀN WELCOME + MÀN CHỌN SLOT kiểu pixel (v0.61, Dan): vẽ bằng chính ô / sprite của game trên một «bản đồ» thu nhỏ vừa khít màn hình (20×15 ô).
@@ -13663,7 +13768,7 @@ function muiWrap(text, w) {
 }
 // v0.99: chữ hướng dẫn theo LỚP đang chơi (game.cls)
 function clsHelpText(k) {
-    const c = clsOf(game.cls), who = { sword: 'Knight', alch: 'Sorceress', hunt: 'Assassin' }[c];
+    const c = clsOf(game.cls), who = { sword: 'Knight', alch: 'Wizard', hunt: 'Stryker' }[c];
     const jump = { sword: 'Nhảy · bấm lần 2 trên không = nhảy đôi', alch: 'Nhảy · giữ khi đang rơi = lượn', hunt: 'Nhảy' }[c];
     const atk = { sword: 'Chém (giữ = chém nạp) · ↑ + ' + k('attack') + ' chém lên · trên không ↓ + ' + k('attack') + ' chém xuống · đang cầm đồ = ném',
         alch: 'Bắn gậy phép (↑ + ' + k('attack') + ' bắn lên · giữ rồi thả = đạn hệ 3 tia) · đang cầm đồ = ném',
@@ -13943,7 +14048,7 @@ function loadLevel(def, fresh) {
     if (game.genMeta && !def.boss && L.id !== 'test' && hasBench(game.levelIdx)) benchPlace(L);          // H1: ghế nghỉ ở màn thứ 3 của vùng
     if (L.dark && !def.boss) { const t = entAdd(new Torch(L.spawn.x + 22, L.spawn.y - 14)); }
     const nCarry = carryoverPlace(L);                    // quái sót từ level trước, rải xa điểm vào
-    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.trans = null;
+    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.trans = null;
     game.boss = null; game.bossDone = false; game.flash = null; game.banner = null;
     game.popQ = []; game.popT = undefined; game.levelT = 0; game.fade = 1; game.ghostWarned = game.ghostOut = false; game.ghostBonus = 0; game.hint = '';
     if (!fresh && game.wanted && L.exit && !def.boss) wantedAmbush(L); else levelFeeling(def);
@@ -13958,8 +14063,8 @@ function restartRun() { newRun(game.seed); }          // chơi lại CÙNG seed 
 function stepGame() {
     const L = game.level, p = game.player;
     if (game.trans) {                                 // màn chuyển level (SC: oTransition): đứng yên, chờ phím
-        game.trans.t += STEP; inp.endStep();
-        if (game.trans.t > 0.5 && game.anyKey) { game.trans = null; nextLevel(); }
+        game.trans.t += STEP; inp.endStep(); transStatStep(game.trans);
+        if (game.trans.t > 0.5 && game.trans.done && game.anyKey) { game.trans = null; nextLevel(); }          // v1.18zg: thống kê chạy xong mới bấm chuyển màn được
         game.anyKey = false; return;
     }
     if (game.won) {                                   // thắng vùng: thế giới đứng yên, chờ phím
@@ -14044,10 +14149,28 @@ function exitStep(L, p) {
         game.trans = transInfo(L, p);
     }
 }
+// v1.18zg (Dan): thống kê giết theo loài, hiện lần lượt từng loài (kiểu Battle City). TRANS_STAT = giây bắt đầu · giây mỗi loài · giữ cuối
+const TRANS_STAT = { t0: 0.7, per: 0.55, hold: 0.5, holdWin: 1.3 };
+function transStatStep(t) {
+    const n = t.kinds.length, k = Math.min(n, Math.floor((t.t - TRANS_STAT.t0) / TRANS_STAT.per) + 1);
+    if (t.t >= TRANS_STAT.t0 && k > t.tick) { t.tick = k; sndPlay('ui', { p: 1 + k * 0.05, vol: 0.5 }); }
+    if (!t.done && t.t >= TRANS_STAT.t0 + n * TRANS_STAT.per + (t.cleared ? TRANS_STAT.holdWin : TRANS_STAT.hold)) {
+        t.done = true; const p = game.player;
+        if (t.cleared && t.reward && p && !p.dead) {
+            if (t.reward.hp) p.hp = Math.min(Math.max(maxHpOf(p), p.hp), p.hp + t.reward.hp);
+            if (t.reward.gold) { p.gold += t.reward.gold; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + t.reward.gold; }
+            sndPlay('victory', { vol: 0.6 });
+        }
+    }
+}
 // Số liệu màn chuyển level (SC: thời gian level/tổng, tiền level/tổng, giết, công chúa "MY HERO!")
 function transInfo(L, p) {
     const s = game.stats, b = game.lvlStart || { goldTotal: 0, kills: 0, rescued: 0 };
-    return { t: 0, name: L.name, levelT: game.levelT, runT: game.runT, gold: s.goldTotal - b.goldTotal, goldAll: s.goldTotal, kills: s.kills - b.kills, rescued: s.rescued - b.rescued, pets: (s.pets || 0) - (b.pets || 0), have: p.gold };
+    const kinds = Object.keys(game.killsLv || {}).map(k => ({ k, n: game.killsLv[k] })).sort((a, b2) => b2.n - a.n || (a.k < b2.k ? -1 : 1)), total = kinds.reduce((a, x) => a + x.n, 0);
+    const left = game.entities.some(e => e.alive && e instanceof Enemy && !e.boss && !e.isBoss && e.kind !== 'shopkeeper'), def = L.def || {};
+    // v1.18zg (Dan): diệt sạch quái cả màn → thưởng theo độ khó: Dễ +2 tim · Thường +1 tim · Khó +½ tim · Hardcore +500 vàng
+    const cleared = total > 0 && !left && !def.boss && L.id !== 'test', RW = { easy: { hp: 2 * HP_UNIT, txt: '+2 tim' }, normal: { hp: HP_UNIT, txt: '+1 tim' }, hard: { hp: HP_UNIT / 2, txt: '+½ tim' }, hardcore: { gold: 500, txt: '+500 vàng' } }[game.diff || 'normal'];
+    return { t: 0, name: L.name, levelT: game.levelT, runT: game.runT, gold: s.goldTotal - b.goldTotal, goldAll: s.goldTotal, kills: s.kills - b.kills, rescued: s.rescued - b.rescued, pets: (s.pets || 0) - (b.pets || 0), have: p.gold, kinds, cleared, reward: cleared ? RW : null, tick: 0, done: false };
 }
 
 function renderFrame(alpha) {
@@ -14369,6 +14492,7 @@ function dbgDrawOverview() {
         const t = m.path.type[x][y], onPath = t !== 0;
         drawText(String(t), ox + (TILE + x * LVL.roomW * TILE + 4) * k, oy + (TILE + y * LVL.roomH * TILE + 2) * k, onPath ? '#ff8a6a' : '#9aa0b0');
     }
+    if (m && m.rooms) for (const rm of m.rooms) if (rm.code) drawText(rm.code, ox + (TILE + (rm.rx + 1) * LVL.roomW * TILE - 3) * k, oy + (TILE + rm.ry * LVL.roomH * TILE + 2) * k, '#7fe0ff', 'right');          // v1.18zf: mã phòng ở góc phải trên mỗi phòng — ghi lại để sửa mẫu trong room_designer
     drawText('J: đóng bản đồ · ' + L.name + ' · seed ' + game.seed, VIEW_W / 2, VIEW_H - 10, '#ffe9a8', 'center');
 }
 
