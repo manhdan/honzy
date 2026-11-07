@@ -3210,9 +3210,13 @@ function assetLoad() {
         const im = new Image();
         im.onload = () => {
             assets.img[name] = im;
-            const c = makeCanvas(im.width, im.height), g = c.getContext('2d');
-            g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, im.width, im.height);
-            assets.white[name] = c;
+            const mk = () => {          // v1.2: ảnh nạp xong trước khi 06_render.js định nghĩa makeCanvas (chập chờn khi ảnh có sẵn trong bộ nhớ đệm) → thử lại sau
+                if (typeof makeCanvas !== 'function') { setTimeout(mk, 30); return; }
+                const c = makeCanvas(im.width, im.height), g = c.getContext('2d');
+                g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, im.width, im.height);
+                assets.white[name] = c;
+            };
+            mk();
         };
         im.src = ASSET_DATA[name];
     }
@@ -5226,6 +5230,10 @@ function drawWeatherHp(L, cx, cy) {
         if (q.a <= 0.02) continue;
         const x = hpr(q.x), y = hpr(q.y);
         if (W.mist) { ctx.globalAlpha = q.a * 0.6; ctx.fillRect(x - q.k / 2, y, q.k, 16); ctx.globalAlpha = q.a; ctx.fillRect(x - q.k / 3, y + 3, q.k * 0.66, 10); continue; }
+        if (W.glow && typeof fxGlow === 'function') {          // v1.2 (Dan): đom đóm / tàn lửa / bào tử — quầng tròn mềm + lõi nhỏ (thay ô vuông + khung vuông thô)
+            const o = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; fxGlow(x + 0.25, y + 0.25, 4 + W.sz * 2, W.col, q.a * 0.4); ctx.globalCompositeOperation = o;
+            const cs = Math.max(0.5, W.sz * 0.5); ctx.globalAlpha = q.a; ctx.fillStyle = W.col; ctx.fillRect(x, y, cs, cs); ctx.globalAlpha = q.a * 0.8; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 0.5, 0.5); ctx.fillStyle = W.col; continue;
+        }
         if (W.glow) { ctx.globalAlpha = q.a * 0.25; ctx.fillRect(x - 1, y - 1, W.sz + 2, W.sz + 2); }
         ctx.globalAlpha = q.a; ctx.fillRect(x, y, W.sz, W.sz);
         if (W.cross && q.a > 0.6) { ctx.fillRect(x - 1, y + W.sz / 2 - 0.25, W.sz + 2, 0.5); ctx.fillRect(x + W.sz / 2 - 0.25, y - 1, 0.5, W.sz + 2); }
@@ -7193,6 +7201,7 @@ class Player extends Thing {
     }
     stepHang(level, dt, ax, up, down) {
         this.vx = this.vy = 0; this.fallT = 0;
+        if (this.hangCd <= 0 && (down || ax === -this.facing)) { const f = this.facing; this.letGo(5 / 30); if (ax === -f) { this.facing = ax; this.vx = ax * 20; } return; }          // v1.2 (Dan): ↓ hoặc hướng ngược mặt = nhả tay, rơi xuống (quay mặt theo hướng vừa bấm)
         const hx = this.facing > 0 ? this.x + this.w + 1 : this.x - 1;
         if (!level.solidAt(hx, this.cy - 4) && !level.solidAt(hx, this.cy - 7)) { this.letGo(4 / 30); return; }    // mép bị phá
         if (this.bufferT > 0) {
@@ -7944,6 +7953,7 @@ const THING_NAMES = { tongue: 'lưỡi ếch', geodeshard: 'mảnh tinh thể', 
 
 // ---- Vụ nổ (SC: oExplosion 48×48, quái −30 máu, người chơi −10 máu + choáng, văng rand(4,6) px/khung ngang, −6 lên) ----
 function explode(level, x, y) {
+    if (typeof critBlast === 'function') critBlast(level, x, y);          // v1.2: chuột ló ra ở chỗ cao của phòng bị nổ
     const R = ITEM.blastR;
     // 1. Phá ô: mọi ô có hình vuông chạm vòng tròn bán kính R
     const c0 = Math.floor((x - R) / TILE), c1 = Math.floor((x + R) / TILE), r0 = Math.floor((y - R) / TILE), r1 = Math.floor((y + R) / TILE);
@@ -9289,8 +9299,7 @@ function foeWitness(dead) {
 function foeAiDraw(c) {          // dấu «!» trên đầu quái nhát đang giật mình
     for (const a of game.entities) if (a.alive && a.startleT > 0) {
         const x = Math.round(a.cx), y = Math.round(a.y - 8 - Math.sin(game.time * 30) * 1);
-        c.fillStyle = '#15131c'; c.fillRect(x - 2, y - 2, 4, 9); c.fillRect(x - 2, y + 8, 4, 3);
-        c.fillStyle = '#ffd84a'; c.fillRect(x - 1, y - 1, 2, 7); c.fillRect(x - 1, y + 9, 2, 1);
+        paAlert(c, a.cx, y - 2);          // v1.2: dấu «!» vẽ nửa điểm có viền
     }
 }
 function foeHazardAhead(level, e) {
@@ -13340,13 +13349,179 @@ function alchTeleport(p, level) {
     return true;
 }
 
+// 13zc_pixart — VẼ PIXEL NỬA ĐIỂM cho đồ trang trí / sinh vật nhỏ / dấu «!» (v1.2, Dan: «vẽ pixel rất thô và xấu, vẽ lại cho phân giải cao tương đương nhân vật»).
+//   Mỗi hình là một mảng chuỗi (mỗi ký tự = 1 điểm NỬA pixel logic = 1 pixel thật khi RES = 2), '.' = trong suốt, bảng màu theo ký tự. Viền tối tự tạo quanh hình (giống viền nhân vật).
+//   paSpr(khoá, hàng, bảng màu) dựng + lưu cache canvas nhỏ; paDraw(g, spr, x, y, ax, ay, lật, alpha) vẽ sao cho điểm (ax, ay) của hình trùng toạ độ logic (x, y).
+const PA = { out: 'rgba(18,13,18,0.9)', cache: {} };
+function paBuild(rows, pal) {
+    const h = rows.length; let w = 0; for (const r of rows) w = Math.max(w, r.length);
+    const cv = makeCanvas(w + 2, h + 2), g = cv.getContext('2d'), at = (x, y) => (y < 0 || y >= h || x < 0 || x >= w) ? '.' : (rows[y][x] || '.');
+    g.fillStyle = PA.out;
+    for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) if (at(x, y) === '.' && (at(x - 1, y) !== '.' || at(x + 1, y) !== '.' || at(x, y - 1) !== '.' || at(x, y + 1) !== '.')) g.fillRect(x + 1, y + 1, 1, 1);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const ch = at(x, y); if (ch !== '.' && pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x + 1, y + 1, 1, 1); } }
+    return { cv, w, h };
+}
+function paSpr(key, rows, pal) { return PA.cache[key] || (PA.cache[key] = paBuild(rows, pal)); }
+function paDraw(g, s, x, y, ax, ay, flip, alpha) {
+    if (!s || !s.cv) return; const ga = g.globalAlpha; if (alpha !== undefined) g.globalAlpha = ga * alpha;
+    const px = Math.round(x * 2) / 2, py = Math.round(y * 2) / 2;
+    if (flip) { g.save(); g.translate(px, py); g.scale(-1, 1); g.drawImage(s.cv, -(ax + 1) * 0.5, -(ay + 1) * 0.5, s.cv.width * 0.5, s.cv.height * 0.5); g.restore(); }
+    else g.drawImage(s.cv, px - (ax + 1) * 0.5, py - (ay + 1) * 0.5, s.cv.width * 0.5, s.cv.height * 0.5);
+    g.globalAlpha = ga;
+}
+function paRect(g, x, y, hx, hy, hw, hh, col) { g.fillStyle = col; g.fillRect(x + hx * 0.5, y + hy * 0.5, hw * 0.5, hh * 0.5); }          // hình chữ nhật theo điểm nửa pixel, gốc (x, y) logic
+
+// ---- ĐỒ TRANG TRÍ (decoDraw gọi paDeco) ----
+const PA_BONE = { w: '#d6cfb8', s: '#a39b84', d: '#2b251d', t: '#c2baa2' };
+const PA_DECO = {
+    skull: { pal: PA_BONE, rows: ['..wwwwww..', '.wwwwwwwws', 'wwwwwwwwws', 'wddwwwwddw', 'wddwwwwddw', 'wwwwddwwws', '.wwwwwwws.', '..wtwtwt..'] },
+    bones: { pal: PA_BONE, rows: ['.ww........ww.', 'wwwwwwwwwwwwww', 'ssssssssssssss', '.ww........ww.', '...wwwwwwww...', '...ssssssss...'] },
+    ribs: { pal: PA_BONE, rows: ['..w...w...w...w.', '.www.www.www.www', '.w.w.w.w.w.w.w.w', 'ssssssssssssssss'] },
+    camp: { pal: { k: '#3a2a20', K: '#5a4230', g: '#66666e', G: '#868690', a: '#2a2622' }, rows: ['..k........k..', '..kkK....Kkk..', '.gkkkkkkkkkkg.', 'gGgaaaaaaaagGg', '.gggggggggggg.'] },
+    lamp: { pal: { m: '#6a5a3a', M: '#8a7a52', d: '#2a2018', y: '#9a8650' }, rows: ['..mmmm..', '...mm...', '..MMMM..', '.mdyydm.', '.mdyydm.', '.mdyydm.', '..MMMM..', '.mmmmmm.'] },
+    grave: { pal: { g: '#6f6f78', G: '#8d8d98', d: '#3c3c44' }, rows: ['..gggggg..', '.gGGGGGGg.', '.gGGddGGg.', '.gddddddg.', '.gGGddGGg.', '.gGGddGGg.', '.gGGGGGGg.', '.gGGGGGGg.', '.gggggggg.', 'gggggggggg'] },
+    icicle: { pal: { i: '#c8e8f8', w: '#ffffff', b: '#8ec0e0' }, rows: ['iiiiii', 'iwiiib', '.iwiib', '.iwiib', '..iib.', '..iib.', '...ib.', '...b..', '...b..'] }
+};
+function paShroom(cap, spot, tall) {
+    const rows = ['..cccc..', '.cpccpc.', 'cccccpcc', 'dddddddd', '...ee...', '...ee...', '..eeee..']; if (tall) rows.splice(4, 0, '...ee...', '...ee...');
+    return paSpr('shroom|' + cap + '|' + spot + '|' + (tall ? 1 : 0), rows, { c: cap, p: spot, d: 'rgba(0,0,0,0.35)', e: '#dcd4c2' });
+}
+function paShard(a, b) {
+    return paSpr('shard|' + a + '|' + b, ['.....bb.....', '....bbaa....', '....bbaa..b.', '...bbbaaa.ba', '.b.bbbaaa.ba', 'bba.bbaaaaba', 'bba.bbaaaaaa', 'baaabbaaaaaa', 'aaaaaaaaaaaa'], { a: a, b: b });
+}
+// ---- BỘ XƯƠNG NGỒI DỰA TƯỜNG (v1.2, Dan: «vẽ 1 bộ xương đầy đủ, đủ to, pixel mịn») — dựng bằng thuật toán trên lưới điểm nửa pixel rồi cache; quay mặt ra phía phòng, tường ở bên trái hình (lật khi tường bên phải)
+function paSkelRows() {
+    const S = 1.25, W = Math.round(34 * S), H = Math.round(26 * S), g = []; for (let y = 0; y < H; y++) g.push(new Array(W).fill('.'));
+    const put = (x, y, ch) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < W && y >= 0 && y < H) g[y][x] = ch; };
+    const rect = (x, y, w, h, ch) => { for (let j = 0; j < Math.round(h * S); j++) for (let i = 0; i < Math.round(w * S); i++) put(x * S + i, y * S + j, ch); };
+    const ell = (cx, cy, rx, ry, ch) => { rx *= S; ry *= S; cx *= S; cy *= S; for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) { const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry; if (dx * dx + dy * dy <= 1) put(x, y, ch); } };
+    const bone = (x0, y0, x1, y1, th, ch, knob) => { x0 *= S; y0 *= S; x1 *= S; y1 *= S; th = Math.max(1, Math.round(th * S)); const n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2); for (let k = 0; k <= n; k++) { const x = x0 + (x1 - x0) * k / n, y = y0 + (y1 - y0) * k / n; for (let a = 0; a < th; a++) for (let b = 0; b < th; b++) put(x - th / 2 + a + 0.5, y - th / 2 + b + 0.5, ch); }
+        if (knob) for (const [kx, ky] of [[x0, y0], [x1, y1]]) for (let a = -1; a <= th; a++) for (let b = -1; b <= th; b++) if ((a > -1 || b > -1) && (a < th || b < th)) put(kx - th / 2 + a + 0.5, ky - th / 2 + b + 0.5, ch); };
+    // chân xa (tối), nằm duỗi trên sàn
+    bone(11, 23, 22, 24, 2, 'S', true); bone(22, 24, 30, 24.5, 2, 'S', true); rect(29, 23, 4, 2, 'S');
+    // chân gần: đùi chống lên gối, ống chân xuống bàn chân
+    bone(10, 20, 19, 14, 2.2, 'w', true); bone(19, 14, 26, 22, 2, 'w', true); rect(25, 22.5, 7, 2, 'w'); for (const gx of [27, 29, 31]) rect(gx, 23.5, 1, 1, 'd');
+    // xương chậu
+    ell(8, 21, 4.6, 2.6, 'w'); ell(8, 21.5, 1.4, 1.2, 'd'); ell(5.5, 22, 1, 1, 's');
+    // cột sống (đốt)
+    for (let y = 9; y < 20; y += 1) { rect(7.2, y, 1.6, 1, (y % 2) ? 's' : 'w'); }
+    // lồng ngực: bầu tối + xương sườn ngang
+    ell(8.5, 14.5, 5.2, 5.0, 'd');          // lồng ngực nhìn nghiêng: xương sườn cong từ cột sống ra trước, cái gãy, cái mẻ
+    [[11, 0], [13.3, 0], [15.6, 1], [17.9, 2]].forEach(([ry, br], i) => {
+        const L = i < 3 ? 1 : 0.7; bone(8, ry, 8 + 3.6 * L, ry + 0.5, 0.8, 'w'); if (br !== 1) bone(8 + 3.6 * L, ry + 0.5, 8 + 5.3 * L, ry + (br === 2 ? 2 : 3), 0.8, 'w');
+        bone(8, ry + 0.4, 5.4, ry + 0.9, 0.8, 'S'); bone(5.4, ry + 0.9, 4, ry + 3, 0.8, 'S');
+    }); rect(13.2, 12, 0.8, 4.5, 's');
+    rect(2.8, 9.4, 11.4, 1, 'w'); rect(4, 10.2, 9, 0.6, 's');          // xương đòn
+    // tay gần: vai → khuỷu rũ xuống → cẳng tay chạm sàn, ngón tay
+    bone(13.2, 10.8, 14.4, 17, 1.8, 'w', true); bone(14.4, 17, 19, 23, 1.6, 'w', true); for (const fx of [18.5, 19.6, 20.6]) rect(fx, 23.4, 1.2, 1, 'w');
+    // sọ: hơi gục về phía trước, hàm nằm dưới
+    ell(7.4, 4.6, 5.2, 4.6, 'w'); rect(4.4, 7.6, 5.8, 1.6, 'w'); ell(9.6, 5.2, 3, 3.2, 's'); ell(7.2, 4.2, 4.6, 4, 'w');
+    rect(5.2, 4.6, 2.2, 2.2, 'd'); rect(9, 4.6, 2.2, 2.2, 'd'); rect(7.8, 7, 1, 1, 'd');          // hốc mắt, mũi
+    for (const tx of [5.6, 7.1, 8.6]) rect(tx, 8.4, 0.9, 1.1, 'd');          // kẽ răng
+    rect(3.8, 2.4, 2, 0.8, 'w');          // ánh sáng đỉnh sọ
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const h = (x * 7 + y * 13 + x * y * 3) % 11; if (g[y][x] === 'w' && h < 2) g[y][x] = 's'; else if (g[y][x] === 's' && h === 5) g[y][x] = 'S'; }          // cũ, ngả màu, loang bẩn
+    return g.map(r => r.join(''));
+}
+function paSkel(g, d, x, y) {          // (x, y) = góc trên-trái ô góc; d.s = hướng ra phòng (+1: tường bên trái)
+    const spr = paSpr('deco|skeleton', paSkelRows(), { w: '#cbbd98', s: '#a09270', S: '#6e6550', d: '#221c15' }), s = d.s, bx = s > 0 ? x : x + TILE;
+    paDraw(g, spr, bx - s * 2, y + TILE + 1, 0, spr.h, s < 0, 0.97);          // lùi 2px vào tường, lún 1px xuống sàn: ô đất vẽ sau che bớt
+}
+function paDeco(g, d, L, x, y, t) {
+    if (d.k === 'pile') { paSkel(g, d, x, y); return; }          // (x, y) = góc trên-trái của ô (đã cộng rung); vẽ theo nền ô
+    const f = d.v & 1 ? 1 : -1, fl = f < 0, bx = x + 8, by = y + TILE + 1.5, A = 0.9, k = d.k;
+    const one = (key, ax, ay, ox, oy, flip) => paDraw(g, paSpr('deco|' + key, PA_DECO[key].rows, PA_DECO[key].pal), bx + (ox || 0), by + (oy || 0), ax, ay, flip === undefined ? fl : flip, A);
+    if (k === 'skull') one('skull', 5, 8, 0, 0);
+    else if (k === 'bones') one('bones', 7, 6, 0, 0);
+    else if (k === 'remains') { one('ribs', 8, 4, 0, 0); one('skull', 5, 8, fl ? 5 : -5, 0, !fl); }
+    else if (k === 'camp') { one('camp', 7, 5, 0, 0); if (((t * 0.5 + d.c) % 4) < 0.18) { g.globalAlpha = 0.6; paRect(g, bx, by, -1, -5, 2, 1, '#ff7a2a'); g.globalAlpha = 1; } }
+    else if (k === 'lamp') { one('lamp', 4, 8, 0, 0); if (typeof fxGlow === 'function') { const o = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter'; fxGlow(bx, by - 4, 6, '#ffd070', 0.12 + 0.03 * Math.sin(t * 3 + d.c)); g.globalCompositeOperation = o; } }
+    else if (k === 'grave') one('grave', 5, 10, 0, 0);
+    else if (k === 'icicle') paDraw(g, paSpr('deco|icicle', PA_DECO.icicle.rows, PA_DECO.icicle.pal), bx, y - 1, 3, 0, fl, A);
+    else if (k === 'shroom') {
+        const th = L.themeName, col = th === 'forest' ? ['#b4553a', '#ecdcbc'] : th === 'crystal' ? ['#3fb8b0', '#d0f6f8'] : ['#6a5cc0', '#d8d0f4'];
+        paDraw(g, paShroom(col[0], col[1], d.v & 2), bx, by, 4, (d.v & 2) ? 9 : 7, fl, A);
+        if (th !== 'forest' && typeof fxGlow === 'function') { const o = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter'; fxGlow(bx, by - 4, 7, col[0], 0.18 + 0.05 * Math.sin(t * 2 + d.c)); g.globalCompositeOperation = o; }
+    } else if (k === 'shard') {
+        const col = L.themeName === 'amethyst' ? ['#9a6ad8', '#e0c8ff'] : ['#3fbfd0', '#d0f6fb'];
+        paDraw(g, paShard(col[0], col[1]), bx, by, 6, 9, fl, A);
+        if (typeof fxGlow === 'function') { const o = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter'; fxGlow(bx, by - 4, 8, col[0], 0.16 + 0.04 * Math.sin(t * 1.7 + d.r)); g.globalCompositeOperation = o; }
+    }
+}
+
+// ---- SINH VẬT NHỎ (critDraw gọi paCrit) ----
+function paCrit(c, q, t, L) {
+    const x = q.x, y = q.y !== undefined ? q.y : q.y0, f = q.d, fl = f < 0, k = q.k, A = 0.92 * (q.fade !== undefined ? q.fade : 1);
+    const S = (key, rows, pal, ax, ay, ox, oy, flip) => paDraw(c, paSpr('crit|' + key, rows, pal), x + (ox || 0), y + (oy || 0), ax, ay, flip === undefined ? fl : flip, A);
+    if (k === 'rat') {
+        const fr = Math.floor(t * 12 + q.x * 0.2) % 2;
+        S('rat' + fr, ['......rp..', '..rrrrrrr.', 'ppRRrrrrrk', '..rrrrrrr.', fr ? '...r.r.r..' : '..r.r.r.r.', fr ? '...r...r..' : '..r.....r.'], { r: '#5a4a40', R: '#7a665a', p: '#c8968a', k: '#1a1412' }, 5, 6);
+    } else if (k === 'roach') {
+        const fr = Math.floor(t * 18 + q.x) % 2;
+        S('roach' + fr, ['......a.', '.mmMMmmm', '.mmMMmmm', fr ? 'l.l.l.l.' : '.l.l.l.l'], { m: '#4a2e1c', M: '#7a5232', a: '#2a1a10', l: '#2a1a10' }, 4, 4);
+    } else if (k === 'ant') {
+        S('ant', ['.aaa.', 'a.a.a'], { a: '#1c1814' }, 2, 2); if (q.food) paRect(c, x, y, 0, -4, 1, 1, '#e8e0c0');
+    } else if (k === 'spider') {
+        const y0 = q.y0; c.globalAlpha = 0.5; c.fillStyle = '#e8e8f4'; c.fillRect(Math.round(x * 2) / 2, y0, 0.5, Math.max(0.5, y - y0)); c.globalAlpha = 1;
+        S('spider', ['.a..a.', 'a.bb.a', '.abba.', 'a.aa.a', '.a..a.'], { a: '#2a2430', b: '#4a4258' }, 3, 0, 0, 0, false);
+    } else if (k === 'butterfly' || k === 'moth' || k === 'ember') {
+        const open = Math.floor(t * 10 + q.x * 0.1) % 2, c0 = q.col[0], c1 = q.col[1];
+        if (q.glow && typeof fxGlow === 'function') { const old = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; fxGlow(q.x, q.y, 8, c0, 0.3 + 0.08 * Math.sin(t * 6 + q.x)); c.globalCompositeOperation = old; }
+        S('bf' + open + c0 + c1, open ? ['aaa..aaa', 'abakkaba', 'aaakkaaa', '.aa..aa.'] : ['...kk...', '..akka..', '..akka..', '...kk...'], { a: c0, b: c1, k: '#2a2220' }, 4, 2, 0, 0, false);
+    } else if (k === 'owlet') {
+        const fr = Math.floor(t * 12 + q.x * 0.1) % 2;
+        S('owl' + fr + q.col[0], fr ? ['..aaaa..', '.aayyaa.', 'aabbbbaa', '.abbbba.', 'aa.aa.aa'] : ['aa.aaaa.aa', 'aaaayyaaaa', '..aabbaa..', '...abba...'], { a: q.col[0], b: q.col[1], y: '#ffd84a' }, fr ? 4 : 5, 3, 0, 0, false);
+    } else if (k === 'hare') {
+        const hop = Math.abs(Math.sin(t * 8 + q.x * 0.3)) * (q.pause > 0 ? 0 : 3);
+        S('hare', ['........w.w.', '........w.w.', '.......wwwww', '..wwwwwwwkww', '.wwwwwwwwwwp', 'gwwwwwwwwww.', '.wwwwwwwwww.', '..ww.....ww.'], { w: '#eef2f8', g: '#9ab0c8', k: '#2a2a3a', p: '#e8a0a8' }, 6, 8, 0, -Math.round(hop * 2) / 2);
+    } else if (k === 'newt') {
+        const fr = Math.floor(t * 10 + q.x) % 2;
+        S('newt' + fr, ['........oo', 'ooooooooo.', 'oyyyyyyyoo', fr ? '.l..l..l..' : '..l..l..l.'], { o: '#dc5c28', y: '#ffb060', l: '#7a2a10' }, 5, 4);
+    } else if (k === 'fish') {
+        const fr = Math.floor(t * 8 + q.x * 0.2) % 2;
+        S('fish' + fr + q.col[0], [fr ? '...aaaa...' : '...aaaa...', fr ? 'a.aaaaaaa.' : '..aaaaaaa.', 'aaabbbbaak', fr ? 'a.aaaaaaa.' : '..aaaaaaa.', '...aaaa...'], { a: q.col[0], b: q.col[1], k: '#15131c' }, 5, 2);
+    } else if (k === 'bird') {
+        const fl2 = q.st === 'fly' ? Math.floor(t * 14 + q.x) % 2 : 0, peck = q.st === 'perch' && Math.floor(t * 2 + q.x) % 3 === 0 ? 1 : 0, snow = L.themeName === 'snow';
+        const pal = { a: snow ? '#dfe6f2' : '#6a4a32', b: snow ? '#f4f7fc' : '#a07c58', k: '#1a1410', Y: '#d8a030', l: '#4a3624' };
+        S('bird' + (snow ? 's' : 'b') + peck, [peck ? '........' : '....aaa.', peck ? '....aaa.' : '...aaakY', peck ? '...aaakY' : '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..', fl2 || q.st === 'fly' ? '........' : '..l..l..'], pal, 4, 8, 0, 0);
+        if (q.st === 'fly') { const wy = fl2 ? -11 : -6; paRect(c, x, y, -4, wy, 2, 4, pal.l); paRect(c, x, y, 2, wy, 2, 4, pal.l); }
+    } else if (k === 'leaf') {
+        const s = Math.floor(t * 4 + q.x) % 2;
+        S('leaf' + s + q.col, s ? ['aa.', '.aa'] : ['.aa', 'aa.'], { a: q.col }, 1, 1, 0, 0, false);
+    }
+}
+
+// ---- DẤU «!» (foeAiDraw) ----
+function paAlert(c, x, y) {
+    paDraw(c, paSpr('alert', ['YYyy', 'YYyy', 'YYyy', 'YYyy', 'YYyy', 'YYyy', '.yy.', '....', 'YYyy', 'YYyy'], { Y: '#fff0a0', y: '#ffc830' }), x, y, 2, 0, false);
+}
+
 // 13z_critters — sinh vật môi trường (v1.18zz+, Dan: «bướm bay, chuột chạy, lá rụng, gián chạy, nhện con thả tơ…»). THUẦN TRANG TRÍ: không va chạm, không sát thương, không lưu.
 //   Chỉ sinh trong khung nhìn (±CRIT.margin px), tối đa CRIT.cap con cùng lúc, biến mất khi ra xa / hết đời. Loài theo theme (CRIT_TH). Né người chơi (chuột / gián chạy, nhện thu tơ, bướm bay tránh).
 //   Dòng ngẫu nhiên: game.rngFx (không ảnh hưởng ván chơi). critStep(L, dt) gọi ở stepGame, critDraw(c, alpha) gọi trong renderFrame (toạ độ thế giới).
-const CRIT = { cap: 7, every: 0.7, margin: 48, life: 30, fleeR: 56, ratV: 26, ratFlee: 70, roachV: 34, roachFlee: 90 };
+const CRIT = { cap: 3, every: 1.5, margin: 48, life: 30, fleeR: 56, ratV: 26, ratFlee: 70, roachV: 34, roachFlee: 90 };
 const CRIT_TH = { mines: ['rat', 'roach', 'spider', 'ant', 'fish'], cave: ['rat', 'roach', 'spider', 'fish', 'fish', 'ant'], ruins: ['roach', 'rat', 'spider', 'ant', 'bird', 'fish'], forest: ['butterfly', 'butterfly', 'leaf', 'roach', 'bird', 'bird', 'ant', 'fish'], crystal: ['moth', 'fish'], amethyst: ['moth', 'fish'], deep: ['spider', 'roach', 'fish', 'fish'], snow: ['hare', 'hare', 'owlet', 'bird', 'fish'], magma: ['newt', 'ember'] };          // snow: thỏ tuyết nhảy · cú con đậu nhấp nháy mắt (chim nhỏ bay lượn) · magma: kỳ nhông lửa bò trên sàn · đom đóm lửa phát sáng
 function critSolid(L, x, y) { return L.solidAt(x, y); }
 function critWater(L, x, y) { const c = Math.floor(x / TILE), r = Math.floor(y / TILE); if (!L.inside(c, r)) return false; if (L.tile(c, r) === T_WATER) return true; return !!(L.amt && L.amtT[r * L.w + c] === 1 && L.amt[r * L.w + c] >= FLOW.thr); }
+// v1.2 (Dan): chuột / gián KHÔNG chạy lung tung — chỉ ló ra từ mép tường trên một dải sàn Ở TRÊN và XA người chơi, chạy ra một đoạn rồi chạy vào tường và biến mất (hoặc khi có bom nổ: ló ra ở chỗ cao trong phòng đó, sợ nên chạy ra chạy vào nhanh hơn)
+function critRunSpawn(L, kind, scared, bx, by) {
+    const R = game.rngFx, p = game.player; if (!p || p.dead) return false; const prow = Math.floor(p.cy / TILE);
+    for (let tries = 0; tries < 30; tries++) {
+        let c, r;
+        if (scared) { c = Math.floor((bx + R.range(-130, 130)) / TILE); r = Math.floor(by / TILE) - R.int(2, 9); }
+        else { c = Math.floor((cam.x + R.next() * VIEW_W) / TILE); r = Math.floor((cam.y + R.next() * VIEW_H) / TILE); if (r > prow - 2) continue; }
+        if (!L.inside(c, r) || L.isSolid(c, r) || !L.isSolid(c, r + 1) || L.tile(c, r + 1) === T_SPIKE || L.tile(c, r) === T_SPIKE) continue;
+        const w = L.isSolid(c - 1, r) ? -1 : L.isSolid(c + 1, r) ? 1 : 0; if (!w) continue;
+        const x = (w < 0 ? c : c + 1) * TILE; if (Math.abs(x - p.cx) < 48 || Math.hypot(x - p.cx, (r + 1) * TILE - p.cy) < 56) continue;
+        if (!scared && (x < cam.x + 8 || x > cam.x + VIEW_W - 8)) continue;
+        let free = 0; for (let i = 0; i < 4; i++) { const cc = c - w * i; if (!L.isSolid(cc, r) && L.isSolid(cc, r + 1)) free++; else break; } if (free < 2) continue;
+        L.crit.push({ k: kind, x, wx: x, y: (r + 1) * TILE, d: -w, t: 0, life: 20, st: 'out', run: scared ? R.range(18, 40) : R.range(26, 60), sc: scared ? 1.8 : 1, delay: scared ? R.range(0.3, 1.1) : 0, fade: 0 }); return true;
+    }
+    return false;
+}
+function critBlast(L, x, y) {          // gọi từ explode(): bom nổ → 1–2 con ló ra ở chỗ cao của phòng đó
+    if (!L || !L.themeName || game.title) return; const list = CRIT_TH[L.themeName] || [], kind = list.indexOf('rat') >= 0 ? 'rat' : list.indexOf('roach') >= 0 ? 'roach' : null; if (!kind) return;
+    if (!L.crit) L.crit = []; const n = 1 + (game.rngFx.next() < 0.5 ? 1 : 0); for (let i = 0; i < n && L.crit.length < CRIT.cap + 2; i++) critRunSpawn(L, kind, true, x, y);
+}
 function critSpawn(L) {
     const R = game.rngFx, list = CRIT_TH[L.themeName]; if (!list || !list.length) return;
     const kind = list[R.int(0, list.length - 1)], x0 = cam.x - CRIT.margin, y0 = cam.y - CRIT.margin, w = VIEW_W + CRIT.margin * 2, h = VIEW_H + CRIT.margin * 2;
@@ -13358,7 +13533,8 @@ function critSpawn(L) {
             if (!critWater(L, px, py) || !critWater(L, px, py - TILE) || !critWater(L, px, py + TILE)) continue;
             L.crit.push({ k: 'fish', x: px, y: py, y0: py, d: R.sign(), t: R.next() * 6, life: CRIT.life * 1.5, col: [['#e8a24a', '#ffd89a'], ['#7ab8e8', '#cfe8ff'], ['#c8d0e0', '#ffffff']][R.int(0, 2)] }); return;
         }
-        if (kind === 'rat' || kind === 'roach' || kind === 'hare' || kind === 'newt' || kind === 'ant' || kind === 'bird') {          // chạy trên sàn: tìm ô đặc phía dưới
+        if (kind === 'rat' || kind === 'roach') { critRunSpawn(L, kind, false); return; }
+        if (kind === 'hare' || kind === 'newt' || kind === 'ant' || kind === 'bird') {          // chạy trên sàn: tìm ô đặc phía dưới
             let rr = r; while (rr < r + 8 && L.inside(c, rr + 1) && !L.isSolid(c, rr + 1)) rr++;
             if (!L.inside(c, rr + 1) || !L.isSolid(c, rr + 1) || L.tile(c, rr) === T_SPIKE || L.tile(c, rr + 1) === T_SPIKE) continue;
             const x = (c + R.next()) * TILE, y = (rr + 1) * TILE; if (onScreen && Math.abs(x - cam.x - VIEW_W / 2) < VIEW_W / 2 - 8 && Math.abs(y - cam.y - VIEW_H / 2) < VIEW_H / 2 - 8 && R.next() < 0.7) continue;
@@ -13414,6 +13590,12 @@ function critStep(L, dt) {
         } else if (q.k === 'ant') {
             if (near) q.pause = 0; if (q.pause > 0) { q.pause -= dt; continue; } else if (R.next() < dt * 0.4) { q.pause = R.range(0.3, 1); continue; }
             const nx = q.x + q.d * 9 * dt, ahead = nx + q.d * 2; if (L.solidAt(ahead, q.y - 2) || !L.solidAt(ahead, q.y + 2)) { q.d = -q.d; continue; } q.x = nx;
+        } else if (q.st === 'out' || q.st === 'in') {          // chuột / gián kiểu mới: ló ra khỏi tường → chạy vào lại → biến mất
+            if (q.delay > 0) { q.delay -= dt; continue; }
+            const v = (q.k === 'rat' ? CRIT.ratV : CRIT.roachV) * 1.15 * (q.sc || 1), ahead = q.x + q.d * 4;
+            if (q.st === 'out') { const moved = Math.abs(q.x - q.wx); if (moved >= q.run || L.solidAt(ahead, q.y - 2) || !L.solidAt(ahead, q.y + 2)) { q.st = 'in'; q.d = -q.d; } else q.x += q.d * v * dt; }
+            else { q.x += q.d * v * dt; if ((q.d > 0 && q.x >= q.wx) || (q.d < 0 && q.x <= q.wx)) { arr.splice(i, 1); continue; } }
+            q.fade = Math.min(1, Math.abs(q.x - q.wx) / 7);
         } else if (q.k === 'rat' || q.k === 'roach' || q.k === 'hare' || q.k === 'newt') {
             const rat = q.k !== 'roach', v = (near ? (rat ? CRIT.ratFlee : CRIT.roachFlee) : (rat ? CRIT.ratV : CRIT.roachV)) * (q.k === 'hare' ? 1.2 : q.k === 'newt' ? 0.8 : 1);
             if (near) q.d = dx > 0 ? -1 : 1;
@@ -13438,61 +13620,48 @@ function critStep(L, dt) {
 function critDraw(c) {
     const L = game.level; if (!L || !L.crit || !L.crit.length) return;
     const t = game.time;
-    for (const q of L.crit) {
-        const x = Math.round(q.x), y = Math.round(q.y !== undefined ? q.y : q.y0);
-        if (q.k === 'rat') {
-            const f = q.d, k = Math.floor(t * 12 + q.x * 0.2) % 2; c.fillStyle = '#4a3c34';
-            c.fillRect(x - 3, y - 4, 6, 3); c.fillRect(f > 0 ? x + 2 : x - 4, y - 5, 2, 3); c.fillStyle = '#c89a8a'; c.fillRect(x - f * 5 + (f > 0 ? -1 : 0), y - 3, 3, 1); c.fillStyle = '#2a2220'; c.fillRect(f > 0 ? x + 3 : x - 4, y - 4, 1, 1);
-            c.fillRect(x - 2, y - 1, 1, 1 + k); c.fillRect(x + 1, y - 1, 1, 2 - k);
-        } else if (q.k === 'fish') {
-            const f = q.d, tail = Math.floor(t * 8 + q.x * 0.2) % 2; c.fillStyle = q.col[0]; c.fillRect(x - 3, y - 1, 6, 3); c.fillRect(f > 0 ? x - 5 : x + 3, y - 1 - tail, 2, 2 + tail * 2); c.fillStyle = q.col[1]; c.fillRect(x - 2, y - 1, 3, 1); c.fillStyle = '#15131c'; c.fillRect(f > 0 ? x + 2 : x - 3, y - 1, 1, 1);
-        } else if (q.k === 'bird') {
-            const f = q.d, fl = q.st === 'fly' ? Math.floor(t * 14 + q.x) % 2 : 0, peck = q.st === 'perch' && Math.floor(t * 2 + q.x) % 3 === 0 ? 1 : 0; c.fillStyle = L.themeName === 'snow' ? '#e8eef8' : '#6a4a32'; c.fillRect(x - 2, y - 4, 4, 3); c.fillRect(f > 0 ? x + 1 : x - 3, y - 6 + peck * 2, 2, 2); c.fillStyle = '#d8a030'; c.fillRect(f > 0 ? x + 3 : x - 4, y - 5 + peck * 2, 1, 1); c.fillStyle = '#4a3624'; c.fillRect(f > 0 ? x - 4 : x + 2, y - 3, 2, 1);
-            if (fl) { c.fillStyle = '#4a3624'; c.fillRect(x - 1, y - 7, 2, 2); } else if (q.st === 'fly') { c.fillStyle = '#4a3624'; c.fillRect(x - 1, y - 2, 2, 2); } else { c.fillRect(x - 1, y - 1, 1, 1); c.fillRect(x + 1, y - 1, 1, 1); }
-        } else if (q.k === 'ant') {
-            c.fillStyle = '#1c1814'; c.fillRect(x - 1, y - 1, 2, 1); c.fillRect(x + q.d, y - 2, 1, 1); if (q.food) { c.fillStyle = '#e8e0c0'; c.fillRect(x, y - 3, 1, 1); }
-        } else if (q.k === 'hare') {
-            const f = q.d, hop = Math.abs(Math.sin(t * 8 + q.x * 0.3)) * (q.pause > 0 ? 0 : 3), yy = y - Math.round(hop); c.fillStyle = '#f2f6fa';
-            c.fillRect(x - 3, yy - 5, 6, 4); c.fillRect(f > 0 ? x + 2 : x - 4, yy - 7, 3, 3); c.fillRect(f > 0 ? x + 2 : x - 3, yy - 10, 1, 3); c.fillRect(f > 0 ? x + 4 : x - 5, yy - 10, 1, 3); c.fillStyle = '#9ab0c8'; c.fillRect(f > 0 ? x - 4 : x + 3, yy - 4, 2, 2); c.fillStyle = '#2a2a3a'; c.fillRect(f > 0 ? x + 4 : x - 4, yy - 6, 1, 1);
-        } else if (q.k === 'newt') {
-            const k = Math.floor(t * 10 + q.x) % 2, f = q.d; c.fillStyle = '#ff6a2a'; c.fillRect(x - 4, y - 3, 8, 2); c.fillRect(f > 0 ? x + 3 : x - 5, y - 4, 2, 2); c.fillStyle = '#ffc060'; c.fillRect(x - 2, y - 3, 3, 1); c.fillStyle = '#7a2a10'; c.fillRect(x - 3, y - 1 + k, 1, 1); c.fillRect(x + 2, y - 1 + (1 - k), 1, 1); c.fillRect(f > 0 ? x - 6 : x + 4, y - 2, 2, 1);
-        } else if (q.k === 'roach') {
-            const k = Math.floor(t * 18 + q.x) % 2; c.fillStyle = '#3a2418'; c.fillRect(x - 2, y - 3, 4, 2); c.fillStyle = '#6a4a2a'; c.fillRect(x - 1, y - 3, 2, 1);
-            c.fillStyle = '#2a1a10'; c.fillRect(x - 3, y - 1 + k, 1, 1); c.fillRect(x + 2, y - 1 + (1 - k), 1, 1); c.fillRect(x, y - 1, 1, 1);
-        } else if (q.k === 'spider') {
-            const y0 = Math.round(q.y0); c.globalAlpha = 0.55; c.fillStyle = '#e8e8f4'; c.fillRect(x, y0, 1, Math.max(1, y - y0)); c.globalAlpha = 1;
-            c.fillStyle = '#1c1820'; c.fillRect(x - 1, y, 3, 2); c.fillRect(x - 2, y + 1, 1, 1); c.fillRect(x + 2, y + 1, 1, 1); c.fillRect(x - 2, y - 1, 1, 1); c.fillRect(x + 2, y - 1, 1, 1);
-        } else if (q.k === 'butterfly' || q.k === 'moth' || q.k === 'ember') {
-            const open = Math.floor(t * 10 + q.x * 0.1) % 2;
-            if (q.glow && typeof fxGlow === 'function') { const old = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; fxGlow(q.x, q.y, 9, q.col[0], 0.35 + 0.1 * Math.sin(t * 6 + q.x)); c.globalCompositeOperation = old; }
-            c.fillStyle = q.col[0]; if (open) { c.fillRect(x - 3, y - 2, 3, 3); c.fillRect(x + 1, y - 2, 3, 3); } else { c.fillRect(x - 1, y - 2, 1, 3); c.fillRect(x + 1, y - 2, 1, 3); }
-            c.fillStyle = q.col[1]; if (open) { c.fillRect(x - 2, y - 1, 1, 1); c.fillRect(x + 2, y - 1, 1, 1); } c.fillStyle = '#2a2220'; c.fillRect(x, y - 2, 1, 3);
-        } else if (q.k === 'owlet') {
-            const fl = Math.floor(t * 12 + q.x * 0.1) % 2; c.fillStyle = q.col[0]; c.fillRect(x - 2, y - 2, 4, 3); c.fillRect(x - 4, y - 2 + fl, 2, 1); c.fillRect(x + 2, y - 2 + fl, 2, 1); c.fillStyle = q.col[1]; c.fillRect(x - 1, y - 1, 2, 1); c.fillStyle = '#ffd84a'; c.fillRect(x - 1, y - 2, 1, 1); c.fillRect(x + 1, y - 2, 1, 1);
-        } else if (q.k === 'leaf') {
-            c.fillStyle = q.col; const s = Math.floor(t * 4 + q.x) % 2; c.fillRect(x, y, 2, s ? 1 : 2); c.fillRect(x + 1, y + 1, 1, 1);
-        }
-    }
+    for (const q of L.crit) { if (q.delay > 0) continue; paCrit(c, q, t, L); }          // v1.2: vẽ lại bằng pixel nửa điểm (13zc_pixart)
 }
 
 // 13zb_deco — CHI TIẾT KỂ CHUYỆN (v1.18zz4, Dan: «dấu vết của ai đã ở đây trước»): xương, đầu lâu, hài cốt kèm mũ, tàn lửa trại, đèn dầu cũ, bia mộ, nấm, nhũ băng, mảnh pha lê. THUẦN TRANG TRÍ (không va chạm, không lưu).
 //   Vị trí tính bằng BĂM (c, r, id màn) — KHÔNG dùng RNG sinh màn nên không đổi GEN_VERSION. Danh sách level.deco dựng lười ở lần vẽ đầu; mỗi khung kiểm lại nền còn đặc / chưa ngập nước.
 //   Sàn: ô trống có ô đặc ngay dưới · trần (nhũ băng / pha lê treo): ô trống có ô đặc ngay trên. Tránh cửa ra, điểm xuất phát, gai, thang, dung nham.
-const DECO = { gap: 3, nearExit: 3 };
+const DECO = { gap: 3, nearExit: 3, mul: 0.5 };          // v1.2 (Dan): mật độ giảm một nửa (mul)
 const DECO_TH = {          // [loại, xác suất mỗi ô ứng viên]
-    mines:    [['bones', 0.035], ['skull', 0.02], ['remains', 0.006], ['camp', 0.012], ['lamp', 0.012]],
-    cave:     [['bones', 0.03], ['skull', 0.02], ['lamp', 0.015], ['shroom', 0.03], ['camp', 0.008]],
-    ruins:    [['bones', 0.03], ['skull', 0.03], ['remains', 0.008], ['grave', 0.012], ['lamp', 0.015]],
-    forest:   [['shroom', 0.07], ['bones', 0.012], ['camp', 0.012], ['grave', 0.004]],
-    deep:     [['shroom', 0.06], ['bones', 0.02], ['skull', 0.015], ['remains', 0.004]],
+    mines:    [['camp', 0.012], ['lamp', 0.012]],
+    cave:     [['lamp', 0.015], ['shroom', 0.03], ['camp', 0.008]],
+    ruins:    [['grave', 0.012], ['lamp', 0.015]],
+    forest:   [['shroom', 0.07], ['camp', 0.012], ['grave', 0.004]],
+    deep:     [['shroom', 0.06], ['remains', 0.004]],
     crystal:  [['shard', 0.06], ['icicle', 0.05], ['shroom', 0.02]],
     amethyst: [['shard', 0.07], ['icicle', 0.03], ['shroom', 0.02]],
-    snow:     [['icicle', 0.08], ['bones', 0.015], ['camp', 0.01], ['remains', 0.005]],
-    magma:    [['bones', 0.035], ['skull', 0.03], ['remains', 0.006], ['lamp', 0.01]]
+    snow:     [['icicle', 0.08], ['camp', 0.01], ['remains', 0.005]],
+    magma:    [['lamp', 0.01]]
 };
 function decoHash(c, r, id) { let h = (c * 73856093) ^ (r * 19349663); for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0; h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15; return (h >>> 0) / 4294967296; }
+// v1.2 (Dan): thay vì rải xương / đầu lâu lẻ tẻ → MỘT BỘ XƯƠNG ngồi dựa tường ở góc một phòng (ưu tiên phòng cuối tầng = phòng có cửa ra, rồi các phòng gần nó). Góc = ô sàn sát tường, ≥ 2 ô liền phía trước còn trống và có nền đặc.
+const PILE_TH = { mines: 1, cave: 1, ruins: 1, deep: 1, snow: 1, magma: 1, forest: 1 };
+function decoPile(L) {
+    if (!PILE_TH[L.themeName] || !L.exit) return null;
+    const B = LVL.border, rw = LVL.roomW, rh = LVL.roomH, nrx = Math.floor((L.w - 2 * B) / rw), nry = Math.floor((L.h - 2 * B) / rh), ex = L.exit, sp = L.spawn, erx = Math.floor((ex.c - B) / rw), ery = Math.floor((ex.r - B) / rh);
+    const rooms = []; for (let ry = 0; ry < nry; ry++) for (let rx = 0; rx < nrx; rx++) rooms.push({ rx, ry, d: Math.abs(rx - erx) + Math.abs(ry - ery) }); rooms.sort((a, b) => a.d - b.d || a.ry - b.ry || a.rx - b.rx);
+    const spc = sp ? Math.floor(sp.x / TILE) : -99, spr = sp ? Math.floor(sp.y / TILE) : -99;
+    const okFloor = (c, r, hi) => L.tile(c, r) === T_EMPTY && T_IS_SOLID[L.tile(c, r + 1)] && L.tile(c, r + 1) !== T_SPIKE && L.tile(c, r + 1) !== T_ICE && L.tile(c, r - 1) === T_EMPTY && (!hi || L.tile(c, r - 2) === T_EMPTY);
+    for (let k = 0; k < rooms.length; k++) {
+        const rm = rooms[k], c0 = B + rm.rx * rw, r0 = B + rm.ry * rh, cand = [];
+        for (let r = r0; r < r0 + rh; r++) for (let c = c0; c < c0 + rw; c++) for (const s of [1, -1]) {
+            if (!L.isSolid(c - s, r) || L.tile(c - s, r) === T_SPIKE) continue;
+            let n = 0; for (let i = 0; i < 4; i++) { const cc = c + s * i; if (cc < c0 || cc >= c0 + rw || !okFloor(cc, r, false)) break; n++; }
+            if (n < 2 || Math.abs(c - ex.c) <= 4 && Math.abs(r - ex.r) <= 4 || Math.abs(c - spc) <= 5 && Math.abs(r - spr) <= 3) continue;
+            cand.push({ c, r, s, n });
+        }
+        if (cand.length) { const q = cand[Math.floor(decoHash(rm.rx, rm.ry, (L.id || 'x') + 'pile') * cand.length)]; return { k: 'pile', c: q.c, r: q.r, s: q.s, n: q.n, v: Math.floor(decoHash(q.c, q.r, 'pv') * 4) }; }
+    }
+    return null;
+}
 function decoBuild(L) {
-    L.deco = []; const tab = DECO_TH[L.themeName]; if (!tab) return; const ex = L.exit, sp = L.spawn;
+    L.deco = []; const tab = DECO_TH[L.themeName]; if (!tab) return;
+    { const pl = decoPile(L); if (pl) L.deco.push(pl); } const ex = L.exit, sp = L.spawn;
     const spc = sp ? Math.floor(sp.x / TILE) : -99, spr = sp ? Math.floor(sp.y / TILE) : -99;
     let lastC = -99, lastR = -99;
     for (let r = 1; r < L.h - 1; r++) for (let c = 1; c < L.w - 1; c++) {
@@ -13505,34 +13674,21 @@ function decoBuild(L) {
         let u = decoHash(c, r, L.id || 'x');
         for (const [k, p] of tab) {
             const isCeil = k === 'icicle'; if (isCeil ? !ceil : !floor) { u -= 0; continue; }
-            if (u < p) { L.deco.push({ k, c, r, v: Math.floor(decoHash(r, c, 'v') * 4) }); lastC = c; lastR = r; break; }
-            u -= p;
+            if (u < p * DECO.mul) { L.deco.push({ k, c, r, v: Math.floor(decoHash(r, c, 'v') * 4) }); lastC = c; lastR = r; break; }
+            u -= p * DECO.mul;
         }
     }
 }
-function decoDraw(g, cx, cy, L) {
+function decoDraw(g, cx, cy, L, pass) {          // pass 0 = lớp DƯỚI nền đất (xương, nấm: ô đất vẽ sau che bớt), 1 = còn lại
     if (!L.deco) decoBuild(L); if (!L.deco.length) return;
     const c0 = Math.floor(cx / TILE) - 1, c1 = Math.floor((cx + VIEW_W) / TILE) + 1, r0 = Math.floor(cy / TILE) - 1, r1 = Math.floor((cy + VIEW_H) / TILE) + 1, t = game.time;
     for (const d of L.deco) {
-        if (d.c < c0 || d.c > c1 || d.r < r0 || d.r > r1) continue;
+        if ((pass | 0) !== 0) continue;          // mọi đồ trang trí bất động đều ở lớp dưới nền
+        if (d.c < c0 - 4 || d.c > c1 + 4 || d.r < r0 || d.r > r1) continue;
         const ceil = d.k === 'icicle'; if (!T_IS_SOLID[L.tile(d.c, ceil ? d.r - 1 : d.r + 1)] || L.tile(d.c, d.r) !== T_EMPTY) continue;          // nền bị đào / phá → bỏ
         if (L.amt) { const k = d.r * L.w + d.c; if (L.amt[k] >= 0.25) continue; }
         const x = d.c * TILE + (game.swayK > 0.05 ? Math.sin(t * 30 + d.c * 1.7) * game.swayK * 0.9 : 0), y = d.r * TILE, f = d.v & 1 ? 1 : -1;          // rung khi nổ / rung màn hình
-        switch (d.k) {
-            case 'bones': g.fillStyle = '#d8d0b8'; g.fillRect(x + 3, y + 13, 7, 1); g.fillRect(x + 2, y + 12, 2, 2); g.fillRect(x + 9, y + 12, 2, 2); g.fillStyle = '#a8a088'; g.fillRect(x + 5, y + 14, 6, 1); g.fillStyle = '#d8d0b8'; g.fillRect(x + 8 + (d.v >> 1) * 2, y + 11, 1, 3); break;
-            case 'skull': g.fillStyle = '#e8e0c8'; g.fillRect(x + 5, y + 10, 6, 5); g.fillRect(x + 6, y + 9, 4, 1); g.fillStyle = '#1c1814'; g.fillRect(x + 6, y + 11, 1, 2); g.fillRect(x + 9, y + 11, 1, 2); g.fillRect(x + 8, y + 13, 1, 1); g.fillStyle = '#a8a088'; g.fillRect(x + 5, y + 15, 6, 1); break;
-            case 'remains': g.fillStyle = '#d8d0b8'; g.fillRect(x + 1, y + 13, 14, 1); g.fillRect(x + 3, y + 11, 1, 3); g.fillRect(x + 6, y + 11, 1, 3); g.fillRect(x + 9, y + 11, 1, 3); g.fillStyle = '#e8e0c8'; g.fillRect(f > 0 ? x + 12 : x + 1, y + 11, 3, 3); g.fillStyle = '#1c1814'; g.fillRect(f > 0 ? x + 13 : x + 2, y + 12, 1, 1);
-                g.fillStyle = '#7a4a2a'; g.fillRect(f > 0 ? x + 11 : x, y + 10, 5, 1); g.fillRect(f > 0 ? x + 12 : x + 1, y + 9, 3, 1); break;          // mũ nhà thám hiểm bỏ lại
-            case 'camp': g.fillStyle = '#26211c'; g.fillRect(x + 3, y + 14, 10, 2); g.fillStyle = '#3a2a20'; g.fillRect(x + 4, y + 12, 1, 3); g.fillRect(x + 11, y + 12, 1, 3); g.fillRect(x + 5, y + 13, 6, 1); g.fillStyle = '#5a5a60'; g.fillRect(x + 6, y + 14, 4, 1);
-                if (((t * 0.5 + d.c) % 4) < 0.18) { g.globalAlpha = 0.5; g.fillStyle = '#ff7a2a'; g.fillRect(x + 7, y + 13, 1, 1); g.globalAlpha = 1; } break;          // tàn lửa: đôi khi còn một đốm than
-            case 'lamp': g.fillStyle = '#3a2a1c'; g.fillRect(x + 6, y + 14, 4, 2); g.fillRect(x + 7, y + 10, 2, 4); g.fillStyle = '#6a5a3a'; g.fillRect(x + 5, y + 8, 6, 3); g.fillStyle = '#2a2018'; g.fillRect(x + 6, y + 9, 4, 1); g.fillStyle = '#8a7a52'; g.fillRect(x + 6, y + 8, 4, 1); g.fillStyle = '#1a1612'; g.fillRect(x + 7, y + 6, 2, 2); break;
-            case 'grave': g.fillStyle = '#6a6a72'; g.fillRect(x + 4, y + 7, 8, 9); g.fillRect(x + 5, y + 6, 6, 1); g.fillStyle = '#8a8a94'; g.fillRect(x + 5, y + 7, 6, 1); g.fillStyle = '#3a3a42'; g.fillRect(x + 7, y + 9, 2, 5); g.fillRect(x + 6, y + 10, 4, 1); g.fillStyle = '#4a6a3a'; g.fillRect(x + 4, y + 14, 3, 2); break;
-            case 'shroom': { const col = L.themeName === 'forest' ? ['#c0583a', '#f0e0c0'] : L.themeName === 'crystal' ? ['#4ad0c8', '#d8fbff'] : ['#7a6ad8', '#e0d8ff'], h = 3 + (d.v & 1); g.fillStyle = '#e8e0d0'; g.fillRect(x + 7, y + 16 - h, 2, h); g.fillStyle = col[0]; g.fillRect(x + 5, y + 15 - h, 6, 2); g.fillRect(x + 6, y + 14 - h, 4, 1); g.fillStyle = col[1]; g.fillRect(x + 6, y + 15 - h, 1, 1); g.fillRect(x + 9, y + 15 - h, 1, 1);
-                if (L.themeName !== 'forest' && typeof fxGlow === 'function') { const o = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter'; fxGlow(x + 8, y + 12, 8, col[0], 0.22 + 0.06 * Math.sin(t * 2 + d.c)); g.globalCompositeOperation = o; } break; }
-            case 'shard': { const col = L.themeName === 'amethyst' ? ['#a878e8', '#e8d0ff'] : ['#4ad0e0', '#d8fbff']; g.fillStyle = col[0]; g.fillRect(x + 6, y + 8, 3, 8); g.fillRect(x + 7, y + 6, 1, 2); g.fillRect(x + 3, y + 11, 2, 5); g.fillRect(x + 11, y + 10, 2, 6); g.fillStyle = col[1]; g.fillRect(x + 6, y + 8, 1, 7); g.fillRect(x + 3, y + 11, 1, 4);
-                if (typeof fxGlow === 'function') { const o = g.globalCompositeOperation; g.globalCompositeOperation = 'lighter'; fxGlow(x + 8, y + 11, 9, col[0], 0.2 + 0.05 * Math.sin(t * 1.7 + d.r)); g.globalCompositeOperation = o; } break; }
-            case 'icicle': g.fillStyle = '#c8e8f8'; g.fillRect(x + 5, y, 6, 2); g.fillRect(x + 6, y + 2, 4, 3); g.fillRect(x + 7, y + 5, 2, 4); g.fillRect(x + 7 + (d.v & 1), y + 9, 1, 2); g.fillStyle = '#ffffff'; g.fillRect(x + 6, y, 1, 5); break;
-        }
+        paDeco(g, d, L, x, y, t);          // v1.2: vẽ lại bằng pixel nửa điểm (13zc_pixart)
     }
 }
 
@@ -13546,13 +13702,18 @@ function fgDraw(g, cx, L) {
     for (let i = i0; i <= i1; i++) {
         const u = decoHash(i, 7, L.id || 'x'); if (u > 0.55) continue;
         const sx = Math.round(i * FG.step + decoHash(i, 3, 'fx') * (FG.step - 14) - off), w = 2 + Math.floor(decoHash(i, 5, 'w') * 3), len = 8 + Math.floor(decoHash(i, 9, 'l') * (FG.maxTop - 8)), sw = Math.sin(t * 0.9 + i) * 1.5;
+        const H = v => Math.round(v * 2) / 2, hp = (x, y, w, h) => g.fillRect(H(x), H(y), w, h);          // v1.2 (Dan): vẽ lại theo điểm NỬA pixel (mảnh, thon dần, có đung đưa mịn)
         if (u < 0.3) {          // phía trên: rễ / dây / lá rủ
-            if (T[1] === 'stal') { for (let k = 0; k < len; k += 2) { const ww = Math.max(1, Math.round(w * 2 * (1 - k / len))); g.fillRect(sx - (ww >> 1), k, ww, 2); } }
-            else { for (let k = 0; k < len; k += 2) g.fillRect(Math.round(sx + sw * (k / len)), k, w > 3 ? 2 : 1, 2); if (T[1] === 'leaf') { g.fillRect(Math.round(sx + sw) - 2, len - 3, 5, 2); g.fillRect(Math.round(sx + sw) - 1, len - 1, 3, 2); } }
+            if (T[1] === 'stal') { for (let k = 0; k < len; k += 0.5) { const ww = Math.max(0.5, H(w * 2 * Math.pow(1 - k / len, 0.85))); hp(sx - ww / 2, k, ww, 0.5); } }
+            else {
+                for (let k = 0; k < len; k += 0.5) { const wv = k < len * 0.5 ? 1 : 0.5; hp(sx + sw * (k / len) * (k / len), k, w > 3 ? wv + 0.5 : wv, 0.5); }
+                if (T[1] === 'leaf') { const lx = sx + sw, rows = [[-1, 2], [-1.5, 3], [-2, 4], [-1.5, 3], [-1, 2], [-0.5, 1]]; for (let q = 0; q < rows.length; q++) hp(lx + rows[q][0], len - 3 + q * 0.5, rows[q][1], 0.5); }
+                else if (len > 16) { hp(sx + sw * 0.8 - 1, len * 0.45, 1.5, 0.5); hp(sx + sw * 0.3 + 0.5, len * 0.7, 1.5, 0.5); }          // rễ có nhánh con
+            }
         } else {          // phía dưới: cỏ / măng đá / đá nhọn
             const h = 6 + Math.floor(decoHash(i, 11, 'h') * (FG.maxBot - 6)), y0 = VIEW_H - h;
-            if (T[1] === 'leaf') { for (let k = -2; k <= 2; k += 2) { const hh = h - Math.abs(k) * 2 + Math.round(sw * 0.5); g.fillRect(sx + k, VIEW_H - hh, 1, hh); } }
-            else { for (let k = 0; k < h; k += 2) { const ww = Math.max(1, Math.round(w * 2 * (k / h))); g.fillRect(sx - (ww >> 1), y0 + k, ww, 2); } }
+            if (T[1] === 'leaf') { for (let b = -3; b <= 3; b += 1.5) { const hh = h - Math.abs(b) * 1.6; for (let k = 0; k < hh; k += 0.5) hp(sx + b + sw * 0.5 * (k / hh) * (k / hh), VIEW_H - k - 0.5, k > hh * 0.6 ? 0.5 : 1, 0.5); } }
+            else { for (let k = 0; k < h; k += 0.5) { const ww = Math.max(0.5, H(w * 2 * Math.pow(k / h, 0.9))); hp(sx - ww / 2, y0 + k, ww, 0.5); } }
         }
     }
     g.globalAlpha = 1;
@@ -14916,9 +15077,10 @@ function renderFrame(alpha) {
     ctx.save();
     ctx.translate(-cx - sx, -cy - sy);
     drawExit(L); drawLava(ctx, L, cx, cy); drawCrumbleWarn(ctx, L); drawTrapWarn(ctx, L);
+    decoDraw(ctx, cx + sx, cy + sy, L, 0);          // v1.2: xương / nấm nằm dưới lớp nền
     drawLevel(L, cx + sx, cy + sy);
     drawRopes(L, cx + sx, cy + sy);
-    decoDraw(ctx, cx + sx, cy + sy, L);          // v1.18zz4: chi tiết kể chuyện (xương, đầu lâu, nấm…)
+    decoDraw(ctx, cx + sx, cy + sy, L, 1);          // v1.18zz4: chi tiết kể chuyện (xương, đầu lâu, nấm…)
     drawSecretGates(ctx, cx + sx, cy + sy);          // v0.56: dải sáng cổng phòng ẩn
     { const x0 = cx - 16, x1 = cx + VIEW_W + 16, y0 = cy - 16, y1 = cy + VIEW_H + 16; ctx.fillStyle = '#000'; ctx.globalAlpha = 0.22;          // v1.18zz9: bóng tiếp xúc dưới chân người, quái và đồ đang đứng trên đất
         for (const e of game.entities) if (e.alive && !e.holder && e.onGround && e.w > 3 && e.cx > x0 && e.cx < x1 && e.y > y0 && e.y < y1 && !(e.kind === 'fire' || e.kind === 'corpseless')) { const w = Math.round(e.w * 0.9), xx = Math.round(e.cx - w / 2), yy = Math.round(e.y + e.h - 1); ctx.fillRect(xx + 1, yy, w - 2, 1); ctx.fillRect(xx, yy + 1, w, 1); }
