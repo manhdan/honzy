@@ -371,15 +371,16 @@ function scFric(f, dt) { return Math.pow(f, dt * SC_FPS); }
 //   maxGap: khe nhảy ngang tối đa (ô) mà validator chấp nhận — để chặt (đi bộ cũng nhảy qua được).
 //   attempts: số lần sinh lại (seed con) nếu validator báo hỏng. Thống kê tỉ lệ sinh lại ở tools/fuzz_levels.js.
 // areaK (H1): hệ số mật độ theo diện tích = 16 / số phòng — nhân vào xác suất rải quái / vàng rời / bình / đá / thùng / bẫy / nhũ đá để tổng mỗi level gần bằng thời 4×4. Chỉnh khi chơi thử (không đụng mạch vàng trong đất).
-// v1.18v — NHÓM MẪU + RẢI Ô PHỤ BẰNG THUẬT TOÁN (nhóm [3], 07b genHazards). groupW = tỉ lệ 3 nhóm (v1.18v: 35 / 35 / 30 — nhóm [3] 30 %, hai nhóm kia 70 %): [1] Honzy-native · [2] Spelunky (+ G200 đặt hazard tay) · [3] 200 phòng thuật toán (mỗi nhóm chiếm đúng tỉ lệ này khi bốc mẫu, không phụ thuộc số mẫu).
+// v1.18v — NHÓM MẪU + RẢI Ô PHỤ BẰNG THUẬT TOÁN (nhóm [3], 07b genHazards). groupW = tỉ lệ 3 nhóm (v1.18zd: 30 / 25 / 45; v1.18v: 35 / 35 / 30 — nhóm [3] 30 %, hai nhóm kia 70 %): [1] Honzy-native · [2] Spelunky (+ G200 đặt hazard tay) · [3] 200 phòng thuật toán (mỗi nhóm chiếm đúng tỉ lệ này khi bốc mẫu, không phụ thuộc số mẫu).
 //   hz = xác suất rải mỗi ô đủ điều kiện (nhân hệ số vùng ZONES[].w của W V Z M N F; '^' và '=' không có hệ số vùng) · hzLava = tỉ lệ hố dung nham trong các hố chất lỏng · hzMax = hạn mức mỗi phòng · hzRoom = xác suất một phòng nhóm [3] được rải ô phụ (cổng đầu tiên; phòng không trúng giữ nguyên chỉ 0 / 1 / L) · hzType0Liquid = xác suất hố chất lỏng ở phòng loại 0 · hzTries = số lần thử rải lại khi phòng không qua genRoomOK (hết lần thì để phòng không có ô phụ).
 const GEN_HZ = { W: 1.2, V: 0.6, Z: 0.013, '^': 0.09, M: 0.034, '=': 0.012, F: 0.035, N: 0.3 };
-const GEN_HZ_MUL = { W: 1, V: 1, Z: 1, '^': 1, M: 1, '=': 1, F: 1, N: 1 };          // v1.18v: HỆ SỐ CHUNG mỗi loại ô phụ trên TOÀN map (mọi nhóm mẫu): 1 = như thiết kế · 0,5 = còn một nửa · 0 = không có · >1 = nhiều hơn. Gai / Z / M / F / N / bục: nhóm [3] nhân vào xác suất rải; nhóm [1][2] bị gỡ bớt ô (xác suất 1 − hệ số, chỉ khi phòng vẫn qua genRoomOK); nước / dung nham: nhân vào trọng số chọn mẫu có W / V và vào xác suất bể của nhóm [3]
+// v1.18z (Dan): N (mạng nhện) 1 → 0,5 = còn ~một nửa toàn map; nhóm [1][2] gỡ NGUYÊN CỤM (không gỡ lẻ ô) · GEN.webClusters = trần CỨNG số cụm N (ô kề nhau) mỗi phòng · GEN.webSide (v1.18za) = ô N không được kề đất / bục '=' ở hai bên (đứng trong nhện không nhảy lên bục được); cả hai ép bằng genWebFix trong genTry
+const GEN_HZ_MUL = { W: 1, V: 1, Z: 1, '^': 1, M: 1, '=': 1, F: 0.3, N: 0.5 };          // v1.18v: HỆ SỐ CHUNG mỗi loại ô phụ trên TOÀN map (mọi nhóm mẫu): 1 = như thiết kế · 0,5 = còn một nửa · 0 = không có · >1 = nhiều hơn. Gai / Z / M / F / N / bục: nhóm [3] nhân vào xác suất rải; nhóm [1][2] bị gỡ bớt ô (xác suất 1 − hệ số, chỉ khi phòng vẫn qua genRoomOK); nước / dung nham: nhân vào trọng số chọn mẫu có W / V và vào xác suất bể của nhóm [3]
 const GEN_HZ_MAX = { Z: 3, '^': 2, M: 2, F: 3, N: 4, '=': 4 };
-const GEN = { motif: true, motifNow: true, strictTries: 45, strictNow: true, roomTries: 8, clutterMax: 4.5, groupW: [0.35, 0.35, 0.30], hzMul: GEN_HZ_MUL, hz: GEN_HZ, hzMax: GEN_HZ_MAX, hzRoom: 0.42, hzType0Liquid: 0.8, hzTries: 6, climb2Max: 99, climb2Chance: 1, sealedMax: 5, sealedRun: 2, sealedPick: 0.2, foeBase: 8.5, foeEarly: [1.4, 1.35], foeLo: 0.75, foeHi: 1.5, walkerMax: 2, earlyMul: [1.95, 1.5],          // v0.89 (Dan: số quái giữa các bản đồ cùng màn chênh tối đa ~2 lần): mục tiêu = foeBase × rate vùng × zoneRamp × (1 + monsterPerLevel × màn) × foeEarly × mul; ép vào [foeLo, foeHi] × mục tiêu · walkerMax: bọ đá tối đa mỗi màn
+const GEN = { motif: true, motifNow: true, strictTries: 45, strictNow: true, roomTries: 8, clutterMax: 4.5, groupW: [0.30, 0.25, 0.45], webClusters: 2, webSide: true, pathMin: 3, pathDown: 0.5, pathSoft: [{ m: 2, pd: 0.6, t2: 1 }, { m: 2, pd: 0.4, t2: 0.5 }], hzMul: GEN_HZ_MUL, hz: GEN_HZ, hzMax: GEN_HZ_MAX, hzRoom: 0.42, hzType0Liquid: 0.8, hzTries: 6, climb2Max: 99, climb2Chance: 1, sealedMax: 5, sealedRun: 2, sealedPick: 0.2, foeBase: 8.5, foeEarly: [1.4, 1.35], foeLo: 0.75, foeHi: 1.5, walkerMax: 2, earlyMul: [1.95, 1.5],          // v0.89 (Dan: số quái giữa các bản đồ cùng màn chênh tối đa ~2 lần): mục tiêu = foeBase × rate vùng × zoneRamp × (1 + monsterPerLevel × màn) × foeEarly × mul; ép vào [foeLo, foeHi] × mục tiêu · walkerMax: bọ đá tối đa mỗi màn
     roomFly: 2, roomRanged: 2,          // v0.89 (Dan: 1-1 ít quái quá): earlyMul[levelIdx] = hệ số mật độ quái cho các màn đầu
     x5Mul: 1.3,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
-    trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0.4, crumbleDropP: 0.22, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống
+    trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0, crumbleDropP: 0.074, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống · v1.18x (Dan): sàn vỡ còn ~30% (GEN_HZ_MUL.F 1→0,3 · crumbleExitP 0,4→0,12 · crumbleDropP 0,22→0,066; đo 7,8 → 2,4 ô/màn) · mục 2: crumbleExitP = 0 (hết sàn vỡ kề cửa ra; đặt lại > 0 nếu muốn bật), crumbleDropP 0,074 bù để tổng vẫn ~30%: 2,34 ô/màn
     areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.22, aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
 const LOCK_SPARE = 1;          // đấu trường: cửa ra mở khi còn ≤ chừng này quái trong phòng (quái rơi khỏi phòng tính là đã hạ)
 // QUÁI SÓT MANG SANG LEVEL KẾ (cơ chế luôn bật, không có tuỳ chọn tắt). Qua cửa ra: lấy frac (làm tròn lên) số quái còn sống (kể cả quái đã mang sang mà chưa giết), chọn NGẪU NHIÊN (game.rngPlay), rải ở level kế. Hết vùng (zoneIdx đổi) thì xoá. Phòng boss/màn cuối không nhận.
@@ -394,7 +395,7 @@ const CARRYOVER = { frac: 0.5, minLeft: 1, max: 12, minDist: 12, avoidR: 6, pick
 //   Thuật toán: sfc32 (nhanh, chất lượng tốt, 4 số 32-bit trạng thái), khởi tạo từ chuỗi/số bằng băm splitmix32.
 //   Phiên bản bộ sinh level: GEN_VERSION (đổi bộ sinh => tăng số này; hiện cạnh seed, ghi vào báo lỗi).
 
-const GEN_VERSION = 59;     // 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
+const GEN_VERSION = 67;     // 67 (v1.18zd): tỉ lệ 3 nguồn phòng GEN.groupW = 30 / 25 / 45 (trước 35 / 35 / 30); kho mẫu tách 02_room1.js + 02_room2.js · 66 (v1.18zd): công thức đường chính MỀM theo màn trong vùng (GEN.pathSoft): x-1 ngắn + 1 phòng '2t', x-2 dài hơn chút + 50 % có '2t', x-3 trở đi như cũ · 65 (v1.18zc): đường chính dài hơn — GEN.pathMin = 3 phòng tối thiểu mỗi tầng, GEN.pathDown = 0,5 xác suất rẽ xuống (genPath viết lại; hết phòng loại 2t) · 64 (v1.18zb): bể đất / đá có thang bên trong vẫn ra nước (genHazards bước 1: thang coi như không tồn tại khi dò bể, nước đổ vào ô trống, thang giữ nguyên) · 63 (v1.18za): ô mạng nhện N không được có đất / bục '=' ở hai bên (GEN.webSide, genWebFix chạy cuối genTry) · 62 (v1.18z): mạng nhện N: giảm còn ~½ toàn map (GEN_HZ_MUL.N 0,5; nhóm [1][2] gỡ nguyên cụm) + mỗi phòng tối đa GEN.webClusters = 2 cụm (genWebCap). 61 (v1.18y): hết sàn vỡ kề cửa ra (GEN.crumbleExitP = 0). 60 (v1.18x): sàn vỡ F giảm còn ~30% (7,8 → 2,4 ô/màn). 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
 
 function rngHash(x) {      // splitmix32: số nguyên 32-bit -> số nguyên 32-bit "trộn đều"
     x = (x + 0x9E3779B9) | 0;
@@ -600,6 +601,8 @@ const TEST_LEVEL = {
     ]
 };
 
+// 02_room1 — KHO MẪU PHÒNG 10×8, NGUỒN [1] + [2] (ô phụ đã đặt sẵn trong mẫu). v1.18zd: tách từ 02a_templates.js (cũ); nguồn [3] (phòng thuật toán) nằm ở 02_room2.js. Chứa: ROOM_TPL, OBST_GROUND, OBST_AIR, ROOM_N1.
+// (Chú thích gốc của file cũ ở ngay bên dưới.)
 // 02a_templates — KHO MẪU PHÒNG 10×8 ô (v1.18u: còn 2 MỤC — [1] HONZY-NATIVE = nhóm A (gốc tay) + nhóm B (vẽ tay lần hai) gộp một · [2] SPELUNKY + CHUẨN 200 = 135 phòng Spelunky Dan đã sửa (nhóm C) + 200 phòng chuẩn tạm Dan đã đặt hazard, ghi bằng tools/tpl_check.js --write --tag "SPELUNKY + CHUAN 200"; khối «nhập: TÊN» mới (nếu có) thêm ở cuối file)
 //   Mẫu gốc: tự thiết kế; chỉ học CÁCH làm của Spelunky, không chép mẫu gốc.
 //   Ký tự: 0 trống · 1 đất (khi sinh: 10% thành khối đá, đất có 20% mạch vàng nhỏ / 10% mạch vàng lớn — SC oBrick/oBlock)
@@ -780,7 +783,7 @@ const OBST_AIR = [
 
 // ---- [1] (tiếp) nhóm B: BỘ MẪU VẼ TAY THỨ HAI (cũ 02b_templates2.js) — cùng mục HONZY-NATIVE với nhóm A ở trên ----
 // 02b_templates2 — BỘ MẪU PHÒNG VẼ TAY THỨ HAI (v1.18n, Dan: «thêm phòng vẽ tay nhiều hơn, nếu được thì gấp đôi»).
-//   Cùng ký tự + quy ước cửa với 02a_templates (xem đầu file đó). Thêm vào ROOM_TPL bằng push nên 02a giữ nguyên.
+//   Cùng ký tự + quy ước cửa với đầu file này. Thêm vào ROOM_TPL bằng push.
 //   LUẬT THIẾT KẾ (để «luôn có đường đi chỉ cần nhảy thường» ngay từ mẫu): bậc / gờ trên đường đi cao ≤ 1 ô so với chỗ đứng; hố trên sàn rộng ≤ 2 ô;
 //   bục cao hơn 1 ô chỉ để vào được qua thang / bậc thang; loại có lối rơi vào từ trên (3, '2t') luôn có gờ đỡ ở hàng ≤ 6 dưới MỌI cột 3–6 (hoặc là lỗ thông xuống);
 //   thang ≥ 3 ô, chân chạm sàn. tools/test_templates.js kiểm từng mẫu (cả bản lật) bằng đúng bộ kiểm của bộ sinh (genRoomOK) — mẫu hỏng sẽ báo FAIL.
@@ -1318,11 +1321,12 @@ const ROOM_N1 = {}; for (const k in ROOM_TPL) ROOM_N1[k] = ROOM_TPL[k].length;
 })();
 // <<< nhập: SPELUNKY + CHUAN 200
 
+// 02_room2 — KHO MẪU PHÒNG 10×8, NGUỒN [3] (PHÒNG THUẬT TOÁN, chỉ 0 / 1 / 2 / L; ô phụ do genHazards ở 07b_levelgen rải lúc sinh màn). v1.18zd: tách từ 02a_templates.js (cũ). Chứa: ROOM_TPL_ALGO. Ký tự + quy ước cửa: xem đầu 02_room1.js.
 // ============================================================================
 // [3] 200 PHÒNG THUẬT TOÁN (v1.18v) — chỉ 3 ô cơ bản: 0 trống · 1 đất (khi sinh: 10 % đá, 20 % / 10 % mạch vàng) · L thang; '2' = 50 % đất / 50 % trống như mọi mẫu.
 //   Mọi ô phụ (W nước · V dung nham · Z bẫy đè · ^ gai · M khối đẩy · = bục một chiều · F sàn vỡ · N mạng nhện) KHÔNG nằm trong mẫu mà do genHazards (07b_levelgen) rải lúc sinh màn,
 //   theo luật vị trí + tỉ lệ GEN.hz (nhân hệ số vùng ZONES[].w) + hạn mức GEN.hzMax mỗi phòng; rải xong phải qua genRoomOK, không thì thử lại / để phòng trống ô phụ.
-//   Ghi bằng: node tools/tpl_check.js cand.json --algo --write src/02a_templates.js --tag "GEN200 ALGO"
+//   Ghi bằng: node tools/tpl_check.js cand.json --algo --write src/02_room2.js --tag "GEN200 ALGO"
 // ============================================================================
 const ROOM_TPL_ALGO = { 0: [], 1: [], 2: [], 3: [], '2t': [] };
 
@@ -5624,7 +5628,7 @@ function boxHitsSolid(level, x, y, w, h) {
 //      Mỗi bước: ở cột giữa tung 1–5 (1–2 trái, 3–4 phải, 5 xuống); ở mép trái tung 3–5 (phải hoặc xuống); ở mép phải tung 5–7 (xuống hoặc trái).
 //      Không đi lại phòng đã đi. Đi xuống: phòng đang đứng thành loại 2, phòng dưới thành loại 3 (rơi tiếp từ phòng loại 3 => phòng đó thành '2t').
 //      Ở hàng dưới cùng mà định đi xuống => đặt phòng ra ở đó.
-//   2. Mỗi ô lưới chọn một mẫu cùng loại (02a_templates), lật trái-phải ngẫu nhiên; phòng ngoài đường = loại 0.
+//   2. Mỗi ô lưới chọn một mẫu cùng loại (02_room1.js; nguồn [3] ở 02_room2.js), lật trái-phải ngẫu nhiên; phòng ngoài đường = loại 0.
 //   3. Giải ô xác suất (2, 7, 4) và khối chướng ngại 5×3 (5 mặt đất, 6 lơ lửng); đất: 10% khối đá, 20% mạch vàng nhỏ, 10% mạch vàng lớn (SC oBrick/oBlock).
 //   4. Cửa vào: ô đứng được ngẫu nhiên trong phòng vào. Cửa ra: ô đứng được trong phòng ra mà bộ kiểm tra ĐI TỚI ĐƯỢC từ cửa vào (không bom, không dây, rơi ≤ GEN.maxFall).
 //      Không có ô nào như vậy => sinh lại với seed con (đếm số lần ở fuzz). Sàn dưới cửa ra = đá cứng (SC: block.invincible).
@@ -5634,23 +5638,33 @@ function boxHitsSolid(level, x, y, w, h) {
 //   Kết quả: def dạng { id, name, theme, map: [32 chuỗi × 40 ký tự] } — cùng dạng TEST_LEVEL, Level (07a) đọc được. Ký tự: TILE_CHARS + LVL_CHARS.
 
 // ---- 1. Đường chính ----
-function genPath(R) {
-    const W = LVL.roomsX, H = LVL.roomsY;
+// v1.18zc (Dan: «25 phòng mà chỉ cần đi qua ~½ là nhanh quá»): đường chính ĐI DÀI HƠN. Mỗi tầng phải đi qua ít nhất GEN.pathMin phòng (kể cả phòng vào tầng) rồi mới được rẽ xuống;
+//   khi đã đủ, mỗi bước có xác suất GEN.pathDown rẽ xuống; chạm mép tường thì buộc rẽ xuống. Hướng đi của tầng chọn lúc vào tầng, ưu tiên phía còn đủ chỗ cho GEN.pathMin phòng (cả hai đủ chỗ thì bốc ngẫu nhiên);
+//   trong một tầng không quay đầu. pathMin ≥ 2 nên KHÔNG còn phòng loại '2t' (vào rồi xuống ngay). Đo mô phỏng 4000 màn (pathMin 3, pathDown 0,5): đường chính TB 17,5 phòng (gốc 11,3), không màn nào dưới 15; loại 0 TB 7,5.
+// v1.18zd (Dan): công thức MỀM theo màn trong vùng (GEN.pathSoft, chỉ số = levelIdx % ZONE_LEN): x-1 ngắn hơn + chắc chắn có 1 phòng '2t'; x-2 dài hơn chút + 50 % có 1 phòng '2t'; từ x-3 đúng rule chuẩn (pathMin / pathDown, không '2t').
+//   Phòng '2t' = một tầng chỉ có 1 phòng (vào từ trên rồi rơi xuống ngay); chọn ngẫu nhiên một tầng 1..H-2 làm tầng '2t'.
+function genPath(R, levelIdx) {
+    const W = LVL.roomsX, H = LVL.roomsY, soft = (GEN.pathSoft && levelIdx !== undefined) ? GEN.pathSoft[levelIdx % ZONE_LEN] : null;
+    const m = Math.max(1, Math.min(W, (soft && soft.m) || GEN.pathMin || 1)), pd = soft && soft.pd !== undefined ? soft.pd : (GEN.pathDown === undefined ? 0.2 : GEN.pathDown);
+    const tRow = (soft && soft.t2 && H > 2 && R.chance(soft.t2)) ? R.int(1, H - 2) : -1;          // tầng sẽ có phòng '2t' (-1 = không)
     const type = []; for (let x = 0; x < W; x++) { type.push([]); for (let y = 0; y < H; y++) type[x].push(0); }
     let x = R.int(0, W - 1), y = 0;
     const start = { x, y }; let exit = null;
     type[x][y] = 1;
     const order = [{ x, y }];
-    let guard = 0;
+    let cnt = 1, dir = 0, guard = 0;
     while (y < H && guard++ < 500) {
-        const n = x === 0 ? R.int(3, 5) : x === W - 1 ? R.int(5, 7) : R.int(1, 5);
-        if (n === 1 || n === 2 || n === 6 || n === 7) { if (x > 0 && type[x - 1][y] === 0) { x--; type[x][y] = 1; order.push({ x, y }); } }
-        else if (n === 3 || n === 4) { if (x < W - 1 && type[x + 1][y] === 0) { x++; type[x][y] = 1; order.push({ x, y }); } }
-        else {                                     // n === 5: xuống
+        if (dir === 0) {          // vào tầng mới: chọn hướng đi
+            const okL = x >= m - 1, okR = W - 1 - x >= m - 1;
+            dir = okL && okR ? R.sign() : okL ? -1 : okR ? 1 : (x >= W - 1 - x ? -1 : 1);
+        }
+        const atWall = (dir < 0 && x === 0) || (dir > 0 && x === W - 1);
+        if (atWall || (y === tRow && cnt === 1) || (cnt >= m && R.chance(pd))) {          // rẽ xuống (tầng tRow: xuống ngay => '2t')
             if (y === H - 1) { exit = { x, y }; break; }
             type[x][y] = type[x][y] === 3 || type[x][y] === '2t' ? '2t' : 2;
-            y++; type[x][y] = 3; order.push({ x, y });
+            y++; type[x][y] = 3; order.push({ x, y }); cnt = 1; dir = 0; continue;
         }
+        x += dir; type[x][y] = 1; order.push({ x, y }); cnt++;
     }
     if (!exit) exit = { x, y: Math.min(y, H - 1) };
     return { type, start, exit, order };
@@ -5795,21 +5809,25 @@ function genHazards(R, cells, t, zone, levelIdx, RW, RH) {
     const noLava = levelIdx % ZONE_LEN === 0 || zk('V') === 0, lavaShare = t === 0 ? 0.5 : HZ.V, base = t === 0 ? GEN.hzType0Liquid : HZ.W;
     const wW = (1 - lavaShare) * zk('W') * MUL.W, wV = noLava ? 0 : lavaShare * zk('V') * MUL.V, liqCh = Math.min(0.9, base * (wW + wV));
     const holds = (r, c) => inB(r + 1, c) && (isSol(g[r + 1][c]) || g[r + 1][c] === 'W' || g[r + 1][c] === 'V');
+    // v1.18zb (Dan: bể đất / đá có thang bên trong vẫn phải ra nước): khi dò bể, THANG 'L' coi như KHÔNG TỒN TẠI — ô thang tính là ô trống (đỡ bởi cột thang chạm sàn / nước), nước chỉ đổ vào ô '0', thang giữ nguyên (đứng cạnh / giữa nước, leo ra được). Bể vẫn phải có đáy đặc + hai thành đặc (hoặc nước) ngoài cùng; chỉ toàn thang (không có ô trống nào) thì không phải bể.
+    const lchain = (r, c) => { let rr = r; while (rr + 1 < RH && g[rr + 1][c] === 'L') rr++; return rr; };
+    const open0 = (r, c) => g[r][c] === '0' || g[r][c] === 'L', holdsC = (r, c) => g[r][c] === 'L' ? holds(lchain(r, c), c) : holds(r, c);
     if (wW + wV > 0) for (let r = RH - 1; r >= 0; r--) {
         let c = 0;
         while (c < RW) {
-            if (g[r][c] !== '0' || !holds(r, c)) { c++; continue; }
-            const s = c; while (c < RW && g[r][c] === '0' && holds(r, c)) c++;
+            if (!open0(r, c) || !holdsC(r, c)) { c++; continue; }
+            const s = c; while (c < RW && open0(r, c) && holdsC(r, c)) c++;
             const e = c - 1; if (s <= 0 || e >= RW - 1) continue;
             const lt = g[r][s - 1], rt = g[r][e + 1], wall = x => isSol(x) || x === 'W' || x === 'V';
             if (!wall(lt) || !wall(rt)) continue;
             let hasW = lt === 'W' || rt === 'W', hasV = lt === 'V' || rt === 'V';
             for (let i = s; i <= e; i++) { if (g[r + 1][i] === 'W') hasW = true; if (g[r + 1][i] === 'V') hasV = true; }
             if (hasW && hasV) continue;
+            { let n0 = 0; for (let i = s; i <= e; i++) if (g[r][i] === '0') n0++; if (!n0) continue; }          // chỉ có thang, không có ô trống: không phải bể
             let ty = hasW ? 'W' : hasV ? 'V' : (R.next() * (wW + wV) < wV ? 'V' : 'W');
             for (let rr = Math.max(0, r - 1); rr <= Math.min(RH - 1, r + 1); rr++) for (let cc = Math.max(0, s - 2); cc <= Math.min(RW - 1, e + 2); cc++) if (ladder(rr, cc)) ty = 'W';          // gần thang: chỉ nước
             if ((ty === 'V' && noLava) || (ty === 'W' && wW === 0)) continue;          // vùng không có nước (magma) / không có dung nham: bỏ bể, kể cả khi gần thang
-            if (R.chance(liqCh)) { for (let i = s; i <= e; i++) g[r][i] = ty; if (tag.indexOf(ty) < 0) tag.push(ty); cnt[ty] = (cnt[ty] || 0) + 1; }
+            if (R.chance(liqCh)) { for (let i = s; i <= e; i++) if (g[r][i] === '0') g[r][i] = ty; if (tag.indexOf(ty) < 0) tag.push(ty); cnt[ty] = (cnt[ty] || 0) + 1; }
         }
     }
     // 2) bẫy đè Z
@@ -5864,8 +5882,37 @@ function genHazardsTry(R, cells, t, zone, levelIdx, RW, RH) {
 function genThin(R, cells, t, RW, RH) {
     const M = GEN.hzMul, rep = { '^': '0', Z: '0', M: '0', N: '0', '=': '0', F: '1' }; let any = false;
     const c2 = cells.map(r => r.slice());
-    for (let r = 0; r < RH; r++) for (let c = 0; c < RW; c++) { const ch = c2[r][c]; if (rep[ch] !== undefined && M[ch] < 1 && R.next() >= M[ch]) { c2[r][c] = rep[ch]; any = true; } }
+    for (let r = 0; r < RH; r++) for (let c = 0; c < RW; c++) { const ch = c2[r][c]; if (ch !== 'N' && rep[ch] !== undefined && M[ch] < 1 && R.next() >= M[ch]) { c2[r][c] = rep[ch]; any = true; } }
+    if (M.N < 1) for (const cl of genWebClusters(c2, RW, RH)) if (R.next() >= M.N) { for (const [r, c] of cl) c2[r][c] = '0'; any = true; }          // v1.18z: mạng nhện gỡ NGUYÊN CỤM (không gỡ lẻ từng ô)
     return any && genRoomOK(c2, t, RW, RH) ? c2 : null;
+}
+// v1.18z (Dan): CỤM mạng nhện = các ô 'N' kề nhau (4 hướng) trong một phòng. genWebClusters trả danh sách cụm (mỗi cụm là mảng [hàng, cột], theo thứ tự đọc);
+//   genWebCap ép trần CỨNG: phòng còn tối đa maxC cụm — giữ các cụm LỚN nhất (hoà thì cụm đầu theo thứ tự đọc), cụm thừa thành ô trống. 'N' là ô mềm (GEN_SOFT) nên gỡ không ảnh hưởng đường đi / genRoomOK; không dùng R => không lệch dòng ngẫu nhiên.
+function genWebClusters(cells, RW, RH, r0, c0) {          // r0 / c0: gốc cửa sổ phòng trong lưới (mặc định 0); toạ độ trả về là toạ độ lưới
+    r0 = r0 || 0; c0 = c0 || 0;
+    const seen = {}, out = [];
+    for (let r = r0; r < r0 + RH; r++) for (let c = c0; c < c0 + RW; c++) {
+        if (cells[r][c] !== 'N' || seen[r * 4096 + c]) continue;
+        const cl = [], st = [[r, c]]; seen[r * 4096 + c] = 1;
+        while (st.length) { const [a, b] = st.pop(); cl.push([a, b]); for (const [da, db] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = a + da, y = b + db; if (x >= r0 && x < r0 + RH && y >= c0 && y < c0 + RW && cells[x][y] === 'N' && !seen[x * 4096 + y]) { seen[x * 4096 + y] = 1; st.push([x, y]); } } }
+        out.push(cl);
+    }
+    return out;
+}
+function genWebCap(cells, RW, RH, maxC, r0, c0, empty) {
+    const cls = genWebClusters(cells, RW, RH, r0, c0); if (cls.length <= maxC) return 0;
+    const idx = cls.map((cl, i) => i).sort((a, b) => cls[b].length - cls[a].length || a - b); let removed = 0;
+    for (let k = maxC; k < idx.length; k++) for (const [r, c] of cls[idx[k]]) { cells[r][c] = empty || '0'; removed++; }
+    return removed;
+}
+// v1.18za (Dan: đứng trong mạng nhện không nhảy lên được bục kề bên, kể cả bục 1 ô): LUẬT HAI BÊN — ô 'N' không được có đất đặc / bục một chiều '=' ở ô liền trái hoặc liền phải (cùng hàng; ngoài bản đồ tính là tường); vi phạm thì ô đó thành trống.
+//   Chạy MỘT LẦN trên cả lưới sau mọi phòng đặc biệt (genTry), rồi ép trần cụm mỗi phòng (genWebCap). Không dùng R => không lệch dòng ngẫu nhiên. 'N' là ô mềm nên gỡ không ảnh hưởng đường đi. Trả về { side, cap }.
+function genWebFix(g, RW, RH, maxC, side) {
+    const H = g.length, W = g[0].length, res = { side: 0, cap: 0 };
+    const solidAt = (r, c) => r < 0 || r >= H || c < 0 || c >= W || g[r][c] === '=' || genSolidCh(g[r][c]);
+    if (side) for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (g[r][c] === 'N' && (solidAt(r, c - 1) || solidAt(r, c + 1))) { g[r][c] = '.'; res.side++; }
+    for (let ry = 0; ry * RH < H; ry++) for (let rx = 0; rx * RW < W; rx++) res.cap += genWebCap(g, RW, RH, maxC, ry * RH, rx * RW, '.');
+    return res;
 }
 function genTiles(R, path, zone, levelIdx) {
     const RW = LVL.roomW, RH = LVL.roomH, W = LVL.roomsX * RW, H = LVL.roomsY * RH;
@@ -6272,7 +6319,7 @@ const GEN_FOE_CH = 'STUCRAJOQIBdfls?!`*@j;:()u';          // v0.89: ký tự qu�
 function genTry(R, levelIdx, seedForDark, mul) {
     mul = (mul || 1) * diffOf().foeMul; if (levelIdx % ZONE_LEN === 4) mul *= GEN.x5Mul;          // v0.80: Khó / Hardcore quái +25 %
              // v0.77 (Dan): màn x-5 khó hơn — đủ loại quái của vùng, mật độ +30 %
-    const path = genPath(R);
+    const path = genPath(R, levelIdx);
     const zone = zoneOf(levelIdx), { g, rooms } = genTiles(R, path, zone, levelIdx);
     const shop = genShop(R, path, rooms, g, levelIdx);
     const pit = genPit(R, path, rooms, g, shop, levelIdx);
@@ -6284,6 +6331,7 @@ function genTry(R, levelIdx, seedForDark, mul) {
     const combo = genCombo(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie], levelIdx);          // v0.53: phòng tổ hợp theo hệ vùng
     const pushRoom = genPushRoom(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie, combo], levelIdx);          // v0.55: hầm khối đẩy đòi chém tụ lực
     const chasm = genChasm(R, path, rooms, g, [shop, pit, altar, chest, treasure, lake, aerie, combo, pushRoom], levelIdx);          // v0.54: vực dung nham đòi lướt
+    genWebFix(g, LVL.roomW, LVL.roomH, GEN.webClusters, GEN.webSide);          // v1.18z / v1.18za: mạng nhện — hai bên không có bục / đất, mỗi phòng ≤ GEN.webClusters cụm
     const RW = LVL.roomW, RH = LVL.roomH, B = LVL.border, W = g[0].length, H = g.length;
     // lưới có viền để kiểm tra
     const full = []; for (let r = 0; r < H + 2 * B; r++) full.push(new Array(W + 2 * B).fill('H'));
@@ -6799,7 +6847,7 @@ class Player extends Thing {
         this.weapon = null; this.boom = null; this.ammo = 0; this.gunCd = 0; this.items = {}; this.gliding = false; this.safe = null; this.safeAt = -9;
         this.bombs = ITEM.startBombs; this.ropes = ITEM.startRopes; this.gold = 0;
         this.dead = false; this.deadT = 0;
-        this.whipT = -1; this.whipHits = null; this.whipDir = 0; this.whipBufUp = false; this.chargeT = -1; this.chargeArm = false; this.chargeDir = 0; this.whipPower = false;        // chargeT: -1 = không nạp, ≥ 0 = giây đã nạp (H4c); whipDir: 0 = chém ngang, 1 = chém lên
+        this.whipT = -1; this.whipHits = null; this.whipDir = 0; this.whipBufUp = false; this.whipBufAim = 0; this.chargeT = -1; this.chargeArm = false; this.chargeDir = 0; this.whipPower = false;        // chargeT: -1 = không nạp, ≥ 0 = giây đã nạp (H4c); whipDir: 0 = chém ngang, 1 = chém lên
         this.equip = 'sword'; this.whistleCd = 0; this.sel = null; this.sub = null; this.hpUp = 0; this.blade = null;          // v0.74 (Dan): KHÔNG phát kiếm lửa từ đầu nữa — 1 ô cửa hàng luôn bán kiếm lửa tới khi mua (13d_shop); mua kiếm hệ khác thì thay ở cửa hàng thì thay
         this.flashT = 0; this.restT = 0;                                                   // trang bị đang chọn · chớp trắng khi vừa bị đánh
         this.jumpHeld = false; this.jumpT = 0;
@@ -6880,7 +6928,7 @@ class Player extends Thing {
         if (this.atkCd > 0) this.atkCd -= dt;
         pogoStep(this, level, dt); alchStep(this, level, dt);
         if (this.whipT >= 0) { this.whipT += dt; if (this.whipT >= WHIP.total) { this.whipT = -1; if (this.chargeArm && inp.held('attack')) this.chargeT = 0; this.chargeArm = false; } }          // H4c: nhát chém thường vừa hết mà vẫn giữ nút chém → bắt đầu nạp
-        if (this.whipBuf > 0) { this.whipBuf -= dt; if (this.whipCan() && !this.hold && this.state !== 'climb' && this.state !== 'hang' && this.state !== 'stun' && !this.dead) { this.whipBuf = 0; this.whipStart(this.whipBufUp ? 1 : 0); } }
+        if (this.whipBuf > 0) { this.whipBuf -= dt; if (this.whipCan() && !this.hold && this.state !== 'climb' && this.state !== 'hang' && this.state !== 'stun' && !this.dead) { this.whipBuf = 0; this.whipStart(this.whipBufAim || (this.whipBufUp ? 1 : 0)); } }
         this.chargeStep(level, dt);
     }
 
@@ -7132,15 +7180,17 @@ class Player extends Thing {
         const l = this.subList(); if (l.length < 2) return;
         const cur = this.selItem(), i = l.indexOf(cur); this.sel = l[(i + dir + l.length) % l.length]; sndPlay('ui', { x: this.cx });
     }
-    useSel(level, up, down) {          // Tam giác: dùng đồ phụ đang chọn
+    // v1.18zd (Dan): HƯỚNG NGẮM chung cho đánh / ném / bom / bình / súng / boomerang — 0 ngang · 1 THẲNG lên (↑) · 2 CHÉO LÊN (↑ + ←/→) · 3 CHÉO XUỐNG (↓ + ←/→, chỉ khi đang trên không; dưới đất ↓ vẫn là nhặt / đặt).
+    aimOf(ax, up, down) { return up ? (ax !== 0 ? 2 : 1) : (down && !this.onGround && ax !== 0 ? 3 : 0); }
+    useSel(level, up, down, aim) {          // Tam giác: dùng đồ phụ đang chọn
         if (this.dead || this.state === 'stun' || this.shocked()) return false;
         const it = this.selItem(); if (!it || this.whipT >= 0 || (this.hold && it !== 'rope')) return false;          // v0.94: đang ôm thú cưng / công chúa / chìa khoá vẫn dùng được móc
         const canAct = this.state !== 'climb' || this.hold;
-        if (it === 'bomb') { if (!down && this.stickBomb(level, up)) return true; this.throwBomb(up, down); return true; }
+        if (it === 'bomb') { if (!down && this.stickBomb(level, up)) return true; this.throwBomb(up, down, aim); return true; }
         if (it === 'rope') return hookThrow(level, this, inp.axisX(), up);          // v0.69: dây → móc
-        if (it === 'sub') return subThrow(this, up, down);
+        if (it === 'sub') return subThrow(this, up, down, aim);
         if (this.state === 'climb' || this.state === 'hang') return false;
-        if (it === 'shotgun') { weaponFire(this, level); return true; }
+        if (it === 'shotgun') { weaponFire(this, level, aim); return true; }
         if (it === 'boomerang') { if (!this.boom) { weaponThrowBoom(this); return true; } return false; }
         return false;
     }
@@ -7157,32 +7207,33 @@ class Player extends Thing {
         }
         return false;
     }
-    throwBomb(up, down) {
+    throwBomb(up, down, aim) {
         this.bombs--;
         const b = new Bomb(this.cx - 4, this.cy - 4); b.light();
-        entAdd(b); carryThrow(this, b, up, down);
+        entAdd(b); carryThrow(this, b, up, down, aim);
     }
     actions(level, ax, up, down) {
         if (this.hold && !this.hold.alive) this.hold = null;
+        const aim = this.aimOf(ax, up, down);
         const canAct = this.state !== 'climb' || this.hold;
         if (inp.pressed('use')) { this.useAction(level); return; }          // phím `use` (v0.12: mặc định trống, đã bỏ Space): đặt vật đang cầm / nhặt vật dưới chân (không mở thùng)
         if (inp.pressed('attack') && down && this.onGround && this.state !== 'climb' && this.useAction(level)) return;          // A17 (v0.9): ↓ + O dưới đất: đang cầm (kể cả thùng) thì đặt xuống, tay trống + có vật / thùng dưới chân thì nhặt; làm TRƯỚC đặt bom / thả dây. Không có gì thì rơi xuống nhánh bên dưới (đặt bom / thả dây nếu đã chọn)
         if (inp.pressed('attack')) {
             if (this.hold) {
-                carryThrow(this, this.hold, up, down);          // lần 29: đang nhảy/rơi + ↓ = ném THẲNG XUỐNG (đá trúng quái ngay bên dưới)
+                carryThrow(this, this.hold, up, down, aim);          // lần 29: đang nhảy/rơi + ↓ = ném THẲNG XUỐNG (đá trúng quái ngay bên dưới)
                 this.whipT = -1;
             } else if (down && this.onGround) {
                 carryPick(this, carryFind(this));
-            } else if (down && !this.onGround && this.state === 'air' && this.whipT < 0 && !this.shocked() && classHas('pogo')) {          // bước 6: dính Giật thì không chém xuống (rơi xuống nhánh chém cuối => báo từ chối)
+            } else if (down && ax === 0 && !this.onGround && this.state === 'air' && this.whipT < 0 && !this.shocked() && classHas('pogo')) {          // v1.18zd: ↓ + ←/→ = chém chéo xuống (aim 3); pogo chỉ khi ↓ thẳng          // bước 6: dính Giật thì không chém xuống (rơi xuống nhánh chém cuối => báo từ chối)
                 pogoStart(this);
             } else if (this.state !== 'climb' && this.state !== 'hang') {
                 if (this.shocked()) this.shockDeny();          // bước 6: dính Giật => không chém, không xếp hàng đợi nút
-                else if (this.whipCan()) this.whipStart(up ? 1 : 0); else { this.whipBuf = WHIP.buffer; this.whipBufUp = !!up; }
+                else if (this.whipCan()) this.whipStart(aim); else { this.whipBuf = WHIP.buffer; this.whipBufUp = !!up; this.whipBufAim = aim; }
             }
         }
-        if (inp.pressed('item')) { this.useSel(level, up, down); }          // v0.44: Tam giác — dùng đồ phụ đang chọn (nhiều lần, không tự về kiếm)
+        if (inp.pressed('item')) { this.useSel(level, up, down, aim); }          // v0.44: Tam giác — dùng đồ phụ đang chọn (nhiều lần, không tự về kiếm)
         // Phím riêng cho bom / dây (mặc định KHÔNG gán; ai gán trong menu Đổi phím thì dùng như trước H2)
-        if (inp.pressed('bomb') && this.bombs > 0 && this.whipT < 0) { if (down || !this.stickBomb(level, up)) this.throwBomb(up, down); }
+        if (inp.pressed('bomb') && this.bombs > 0 && this.whipT < 0) { if (down || !this.stickBomb(level, up)) this.throwBomb(up, down, aim); }
         if (inp.pressed('rope') && (this.ropes > 0 || this.hook) && this.whipT < 0 && canAct !== false) hookThrow(level, this, inp.axisX(), up);          // v0.69
     }
     shocked() { return statusActive(this, 'shock'); }          // bước 6 (A15): dính Giật = không chém, không lướt (09a_abilities); vẫn chạy, nhảy, ném, dùng bom / dây
@@ -7190,9 +7241,9 @@ class Player extends Thing {
     whipCan() { return !this.shocked() && (this.whipT < 0 || this.whipT >= WHIP.hitStart + WHIP.recover) && !(this.cls !== 'sword' && (this.atkCd > 0 || this.boom)); }
     whipStart(dir, power) {          // power = true: đòn nạp (H4c)
         if (this.cls !== 'sword' && classAttack(this, dir, power)) return;          // v0.95: Giả Kim = gậy phép · Thợ Săn = boomerang (13x_classweapon)
-        this.whipT = power ? WHIP.chargeSkip : 0; this.whipDir = dir ? 1 : 0; this.whipHits = new Set(); this.whipBuf = 0;
+        this.whipT = power ? WHIP.chargeSkip : 0; this.whipDir = Math.max(0, Math.min(3, dir | 0)); this.whipHits = new Set(); this.whipBuf = 0;          // v1.18zd: 0 ngang · 1 lên · 2 chéo lên · 3 chéo xuống
         this.whipPower = !!power; this.slashFlick = false; this.whipFireDone = false; this.whipIceDone = false; this.chargeT = -1; this.chargeArm = !power; this.chargeDir = this.whipDir;          // chỉ nhát thường mới mở được nạp; đòn nạp xong không tự nạp tiếp
-        sndPlay(this.whipDir ? 'swingUp' : 'swing', power ? { x: this.cx, p: 0.75 } : { x: this.cx });          // bước 8: chém lên có tiếng riêng (swingUp)
+        sndPlay(this.whipDir === 1 || this.whipDir === 2 ? 'swingUp' : 'swing', power ? { x: this.cx, p: 0.75 } : { x: this.cx });          // bước 8: chém lên có tiếng riêng (swingUp)
     }
     // H4c: nạp đòn. Bắt đầu ở update (nhát thường hết mà còn giữ nút chém); ở đây: đếm, báo đầy, thả nút thì tung đòn mạnh (đầy) hoặc huỷ (chưa đầy). Không nạp khi leo / bám / cầm vật / choáng / chết / dùng bom, dây, vũ khí khác.
     chargeStep(level, dt) {
@@ -7213,6 +7264,11 @@ class Player extends Thing {
     whipBox() {
         if (this.whipT < 0) return null;
         const f = this.facing, cx = this.cx, cy = this.cy, pw = this.whipPower, P = pw ? WHIP.chargeReach : 0, PH = pw ? WHIP.chargeH : 0;          // H4c: đòn nạp rộng hơn
+        if (this.whipDir >= 2) {                                    // v1.18zd: chém CHÉO lên (2) / chéo xuống (3): hộp ở góc phía trước, không có vung sau, bắt đầu ở hitStart
+            if (this.whipT < WHIP.hitStart) return null;
+            const rch = (this.weapon === 'machete' ? WPN.macheteReach : 0) + P + salmonReach(this), RX = 20 + rch, RY = 22 + rch, x0 = f > 0 ? cx + 2 : cx - 2 - RX, up2 = this.whipDir === 2;
+            return { x: x0, y: up2 ? cy - RY - PH : cy - 1, w: RX, h: RY + PH, front: true, up: up2, diag: this.whipDir };
+        }
         if (this.whipDir === 1) {                                   // chém lên: không có vung sau, đòn chính bắt đầu ở hitStart
             if (this.whipT < WHIP.hitStart) return null;
             const rch = (this.weapon === 'machete' ? WPN.macheteReach : 0) + salmonReach(this);          // cá hồi: tầm chém +10%
@@ -7239,7 +7295,7 @@ class Player extends Thing {
         if (this.dashT > 0) return { a: 'dash', i: clamp(Math.floor((1 - this.dashT / (this.dashTMax || ABIL.dashT)) * HERO_ANIMS.dash.n), 0, HERO_ANIMS.dash.n - 1) };
         if (this.whipT >= 0 && s !== 'hang' && s !== 'climb') {          // chém: khung 0 = lấy đà (tới hitStart), các khung sau chia đều tới hết đòn
             const k = this.whipT < WHIP.hitStart ? -1 : (this.whipT - WHIP.hitStart) / Math.max(1e-6, WHIP.total - WHIP.hitStart);
-            if (this.whipDir === 1) return { a: 'slashUp', i: k < 0 ? 0 : Math.min(HERO_ANIMS.slashUp.n - 1, 1 + Math.floor(k * (HERO_ANIMS.slashUp.n - 1))) };
+            if (this.whipDir === 1 || this.whipDir === 2) return { a: 'slashUp', i: k < 0 ? 0 : Math.min(HERO_ANIMS.slashUp.n - 1, 1 + Math.floor(k * (HERO_ANIMS.slashUp.n - 1))) };
             return { a: 'slash', i: k < 0 ? 0 : Math.min(HERO_ANIMS.slash.n - 1, 1 + Math.floor(k * (HERO_ANIMS.slash.n - 1))) };
         }
         if (s === 'hang' || (this.hook && this.hook.ph === 'on' && s === 'air')) return { a: 'hang', i: Math.floor(t * 2.5) % HERO_ANIMS.hang.n };          // v0.69: đu móc dùng khung treo (hai tay giơ cao)
@@ -7285,7 +7341,8 @@ class Player extends Thing {
         const s1 = ease, s0 = Math.max(Math.max(0, s1 - 0.72), k > 0.55 ? (k - 0.55) / 0.45 * 0.9 : 0);
         const mx = this.drawX(alpha) + this.w / 2, my = this.drawY(alpha) + this.h / 2, f = this.facing >= 0 ? 1 : -1, P = this.whipPower ? WHIP.chargeReach : 0, pw = this.whipPower;
         let cx, cy, rx, ry, t0, t1, fx = f;
-        if (this.whipDir === 1) { cx = mx; cy = my - 1; rx = 15 + P * 0.4; ry = -WHIP.uy0 - 1 + P; t0 = -Math.PI + 0.45; t1 = -0.45; }
+        if (this.whipDir >= 2) { cx = mx; cy = my; rx = ry = 20 + P * 0.6; if (this.whipDir === 2) { t0 = -2.2; t1 = -0.25; } else { t0 = 0.25; t1 = 2.2; } }          // v1.18zd: vệt chém chéo — cung quét trong góc phía trước-trên / phía trước-dưới
+        else if (this.whipDir === 1) { cx = mx; cy = my - 1; rx = 15 + P * 0.4; ry = -WHIP.uy0 - 1 + P; t0 = -Math.PI + 0.45; t1 = -0.45; }
         else { cx = mx - f * 3; cy = my + 1; rx = WHIP.fx1 + 3 + P; ry = 10 + P * 0.3; t0 = -1.15; t1 = 1.15; if (this.slashFlick) { t0 = 1.15; t1 = -1.15; cy = my + 5; } }          // v0.77 (Dan): chém vật nằm dưới (xác…) → vệt hất từ dưới lên
         const th = SLASH_FX.th * thin, al = fade, bc = bladeCol(this), C = pw ? (bc || SLASH_FX.power) : SLASH_FX.norm;
         ctx.save();
@@ -7385,7 +7442,7 @@ class Player extends Thing {
 //   H4a: (1) đạn đang bay (Bolt, Shell, Fireball, mũi tên bẫy) bị chém thì BẬT NGƯỢC (whipReflect); (2) vật nhẹ (WHIP_LIGHT) bị chém thì ĐÁNH BAY (whipLaunch). Chỉ đòn chính phía trước / chém lên (b.front) mới tính, vung sau lưng thì không.
 const WHIP_LIGHT = new Set(['rock', 'crate', 'corpse']);          // bình KHÔNG nằm đây: bình bị chém vẫn vỡ tại chỗ (hurt → shatter) như trước
 // Vector hướng chém: ngang = (facing, 0); chém lên = chếch lên nhẹ về phía trước
-function whipDirVec(p, b) { return b.up ? { x: p.facing * 0.5, y: -0.87 } : { x: p.facing, y: 0 }; }
+function whipDirVec(p, b) { return b.diag ? { x: p.facing * 0.7071, y: b.diag === 2 ? -0.7071 : 0.7071 } : b.up ? { x: p.facing * 0.5, y: -0.87 } : { x: p.facing, y: 0 }; }          // v1.18zd: chém chéo = 45°
 // Phản đòn: trả true nếu e là đạn và đã bị bật ngược
 function whipReflect(level, p, e, b) {
     let ok = false;
@@ -7410,8 +7467,9 @@ function whipReflect(level, p, e, b) {
 function whipLaunch(level, p, e, b) {
     if (!WHIP_LIGHT.has(e.kind)) return false;
     const mul = (e.throwMul || 1) * (p.whipPower ? WHIP.chargeLaunchMul : 1);          // H4c: đòn nạp hất mạnh hơn; xác to (cấp L) bay ngắn hơn
-    e.thrower = p; e.safeT = 10 / 30; e.hitSet = null; if (!b.up) p.slashFlick = true;          // v0.77: chém xác / đá → vệt chém hất từ dưới lên
-    if (b.up) { e.vx = p.facing * WHIP.launchUpVx * mul; e.vy = WHIP.launchUpVy * mul; }
+    e.thrower = p; e.safeT = 10 / 30; e.hitSet = null; if (!b.up && !b.diag) p.slashFlick = true;          // v0.77: chém xác / đá → vệt chém hất từ dưới lên
+    if (b.diag) { e.vx = p.facing * WHIP.launchVx * 0.7 * mul; e.vy = (b.diag === 2 ? WHIP.launchUpVy * 0.6 : -WHIP.launchVy) * mul; }          // v1.18zd: chéo lên hất lên-trước, chéo xuống hất xuống-trước
+    else if (b.up) { e.vx = p.facing * WHIP.launchUpVx * mul; e.vy = WHIP.launchUpVy * mul; }
     else { e.vx = p.facing * WHIP.launchVx * mul; e.vy = WHIP.launchVy * mul; }
     sndPlay('hit', { x: e.cx });          // v0.94: chém trúng đá / xác = tiếng 'hit'; quái nhỏ (1 hit) cũng dùng đúng tiếng này (hitSoundFor)
     level.spawnBurst(e.cx, e.cy, 3, e.col, 60);
@@ -7480,10 +7538,10 @@ function pushBlocksBox(level, p, b, hits) {
 function playerWhipStep(level) {
     const p = game.player; if (!p || p.dead) return;
     const b = p.whipBox(); if (!b) return;
-    if (p.whipPower && b.front && !b.up) pushBlocksBox(level, p, b, p.whipHits);          // H4c: đòn nạp ngang đẩy khối T_PUSH (tối đa WHIP.chargePush ô; 13f_pushblock lo phần rơi / đè)
+    if (p.whipPower && b.front && !b.up && !b.diag) pushBlocksBox(level, p, b, p.whipHits);          // H4c: đòn nạp ngang đẩy khối T_PUSH (tối đa WHIP.chargePush ô; 13f_pushblock lo phần rơi / đè)
     if (p.whipPower && p.blade === 'ice' && !p.whipIceDone && b.front) { p.whipIceDone = true; whipFreeze(level, p, b); }          // v0.70: kiếm băng đóng băng nước
     if (p.whipPower && p.blade === 'fire' && !p.whipFireDone && b.front) { p.whipFireDone = true; whipIgnite(level, p, b); }          // H4c-lửa: một lần cho mỗi đòn nạp, TRƯỚC vòng trúng mục tiêu (thùng dầu vỡ vì lửa thì không bị chém lại)
-    const fdir = p.facing >= 0 ? 1 : -1, b2 = (p.whipPower && b.front && !b.up) ? { x: fdir > 0 ? p.x + p.w - 2 : p.x - TILE + 2, y: b.y - TILE + 2, w: TILE, h: TILE } : null;          // v0.77 (Dan): đòn nạp ngang trúng cả ô phía TRÊN ô ngay trước mặt (tổng 3 ô: 2 ô trước mặt + 1 ô chéo trên)
+    const fdir = p.facing >= 0 ? 1 : -1, b2 = (p.whipPower && b.front && !b.up && !b.diag) ? { x: fdir > 0 ? p.x + p.w - 2 : p.x - TILE + 2, y: b.y - TILE + 2, w: TILE, h: TILE } : null;          // v0.77 (Dan): đòn nạp ngang trúng cả ô phía TRÊN ô ngay trước mặt (tổng 3 ô: 2 ô trước mặt + 1 ô chéo trên)
     for (const e of game.entities) {
         if (e === p || !e.alive || e.holder || p.whipHits.has(e)) continue;
         if (b.front && overlapBox(b, e) && ((classHas('reflect') && whipReflect(level, p, e, b)) || whipLaunch(level, p, e, b))) { p.whipHits.add(e); continue; }
@@ -7495,7 +7553,7 @@ function playerWhipStep(level) {
             const kb = p.whipPower ? WHIP.chargeKbMul : 1;
             if (p.whipPower && p.blade === 'fire' && e.alive && e.creature && !e.boss && !(e.wetT > 0) && !level.inWater(e)) { const res = affinityOf(e, 'fire') === 'resist'; e.burnT = FIRE.burnT * (res ? ELEM.resMul : 1); e.burnRes = res; e.burnTick = FIRE.burnTick; e.burnDmg = BLADE.fireBurn; }          // v0.79: quái kháng lửa cháy nửa thời gian          // v0.75: kiếm lửa = cháy LỚN (4 máu); quái trong lưỡi chém bắt lửa (13n_fire.fireStep lo nhịp cháy + châm dầu)
             if (p.whipPower && p.blade) bladeHit(level, p, e);          // v0.45: kiếm hệ băng / sét / độc (13s_blade); lửa ở dòng trên
-            if (!(e.def && e.def.heavy)) { if (b.up) e.vy -= 80 * kb; else e.vx += p.facing * 60 * kb; }          // chém lên hất lên, chém ngang hất ra (v0.88: bọ đá nặng không bị hất)
+            if (!(e.def && e.def.heavy)) { if (b.diag) { e.vx += p.facing * 45 * kb; e.vy += (b.diag === 2 ? -50 : 50) * kb; } else if (b.up) e.vy -= 80 * kb; else e.vx += p.facing * 60 * kb; }          // chém lên hất lên, chém ngang hất ra (v0.88: bọ đá nặng không bị hất)
             sndPlay(hitSoundFor(e, hp0), { x: e.cx });          // v0.92: nhỏ / giáp / to
             level.spawnBurst(e.cx, e.cy, 4, e.creature ? '#d23a3a' : e.col, 70);
         }
@@ -7930,12 +7988,14 @@ function carryPick(p, t) {
     return true;
 }
 // Ném vật t khỏi tay p (cũng dùng để ném bom vừa lấy ra: bom không qua bước "cầm")
-function carryThrow(p, t, up, down) {
+// v1.18zd (Dan): `aim` = hướng ném — 0 ngang · 1 THẲNG lên trời · 2 chéo lên · 3 chéo xuống (Player.aimOf). Không truyền (gọi cũ) thì suy từ `up`.
+function carryThrow(p, t, up, down, aim) {
     if (t.holder) t.release();
+    if (aim === undefined) aim = up ? 1 : 0;
     p.poseK = 'throw'; p.poseT = 0.2;          // v0.68: khung ném / đặt
     t.thrower = p; t.safeT = 10 / 30; t.hitSet = null;
     // đặt vật ra trước mặt, không chui vào tường
-    let x = p.cx + p.facing * 4 - t.w / 2, y = p.y + 2;
+    let x = p.cx + p.facing * (aim === 1 ? 0 : 4) - t.w / 2, y = aim === 3 ? p.y + p.h * 0.5 - t.h / 2 : p.y + 2;
     const level = game.level;
     if (boxHitsSolid(level, x, y, t.w, t.h)) x = p.cx - t.w / 2;
     if (boxHitsSolid(level, x, y, t.w, t.h)) y = p.y + p.h - t.h;
@@ -7943,9 +8003,12 @@ function carryThrow(p, t, up, down) {
     if (t.noThrow && !(down && p.onGround)) game.pickupMsg = { t: 0, text: 'Không ném được — đặt xuống' };
     if (t.noThrow) { t.vx = 0; t.vy = 0; if (p.onGround) t.teleport(x, p.y + p.h - t.h); }   // vật không ném được: luôn đặt nhẹ xuống
     else if (down && p.onGround) { t.vx = p.facing * ITEM.throwVx * 0.1; t.vy = 0; t.teleport(x, p.y + p.h - t.h); }   // đặt nhẹ xuống
+    else if (aim === 1) { t.vx = p.vx * 0.5; t.vy = ITEM.throwUpVy; }          // thẳng lên trời
+    else if (aim === 2) { t.vx = p.facing * ITEM.throwVx * 0.75 * (t.throwMul || 1) + p.vx; t.vy = ITEM.throwUpVy * 0.8; }          // chéo lên
+    else if (aim === 3) { t.vx = p.facing * ITEM.throwVx * 0.75 * (t.throwMul || 1) + p.vx; t.vy = ITEM.throwDownVy * 0.7; }          // chéo xuống
     else {
         t.vx = p.facing * ITEM.throwVx * (t.throwMul || 1) + p.vx;      // throwMul: xác to ném ngắn hơn
-        t.vy = up ? ITEM.throwUpVy : down ? (p.onGround ? ITEM.dropVy : ITEM.throwDownVy) : ITEM.throwVy;
+        t.vy = down ? (p.onGround ? ITEM.dropVy : ITEM.throwDownVy) : ITEM.throwVy;
         if (down) t.vx *= 0.1;
     }
     if (t.onThrown) t.onThrown(p, !!t.noThrow || (down && p.onGround));      // tham số 2: true = chỉ đặt nhẹ xuống (không phải ném thật)
@@ -11513,13 +11576,15 @@ function weaponNoise(x, y, r) {
         if (e.st === 'hang') e.st = 'fly';
     }
 }
-function weaponFire(p, level) {
+// v1.18zd: aim 0 ngang · 1 thẳng lên · 2 chéo lên · 3 chéo xuống (Player.aimOf)
+function weaponFire(p, level, aim) {
     if (p.gunCd > 0) return;
     if (p.ammo <= 0) { p.weapon = null; game.pickupMsg = { t: 0, text: 'Hết đạn — quay lại dùng roi' }; return; }
-    p.ammo--; p.gunCd = WPN.cd;
-    const f = p.facing, x = f > 0 ? p.x + p.w : p.x - 4, y = p.y + 6;
+    p.ammo--; p.gunCd = WPN.cd; aim = aim || 0;
+    const f = p.facing, x = aim === 1 ? p.cx - 2 : f > 0 ? p.x + p.w : p.x - 4, y = aim === 1 ? p.y - 4 : aim === 2 ? p.y + 2 : p.y + 6;
+    const base = aim === 1 ? -Math.PI / 2 : aim === 2 ? (f > 0 ? -Math.PI / 4 : -3 * Math.PI / 4) : aim === 3 ? (f > 0 ? Math.PI / 4 : 3 * Math.PI / 4) : (f > 0 ? 0 : Math.PI);
     for (let i = 0; i < WPN.pellets; i++) {
-        const a = (f > 0 ? 0 : Math.PI) + (i - (WPN.pellets - 1) / 2) * WPN.spread * f, b = entAdd(new Pellet(x, y));
+        const a = base + (i - (WPN.pellets - 1) / 2) * WPN.spread * f, b = entAdd(new Pellet(x, y));
         b.vx = Math.cos(a) * WPN.v; b.vy = Math.sin(a) * WPN.v; b.thrower = p; b.safeT = 0.15; b.life = WPN.life;
     }
     if (!p.onGround || true) p.vx -= f * WPN.recoil;
@@ -11538,12 +11603,12 @@ class Boomerang extends Thing {
     physStep(level, dt) {
         const p = this.owner; this.age += dt; const M = this.mode === 'far' ? CW.boomF : this.mode === 'near' ? CW.boomN : null, decel = M ? M.decel : BOOM.decel;
         if (!p || p.dead || this.age > BOOM.life) { this.finish(); return; }
-        if (!this.back) { const s = Math.sign(this.vx) || 1; this.vx -= s * decel * dt; if (Math.sign(this.vx) !== s) { this.back = true; if (!M) this.hit.clear(); } }
+        if (!this.back) { this.sp -= decel * dt; if (this.sp <= 0) { this.sp = 0; this.back = true; if (!M) this.hit.clear(); } else { this.vx = this.dx * this.sp; this.vy = this.dy * this.sp; } }          // v1.18zd: bay theo hướng ngắm (dx, dy) — ngang · lên · chéo
         if (this.back) { const dx = p.cx - this.cx, dy = (p.cy - (M ? 8 : 0)) - this.cy, d = Math.hypot(dx, dy) || 1; this.vx = dx / d * BOOM.back; this.vy = dy / d * BOOM.back; if (Math.hypot(p.cx - this.cx, p.cy - this.cy) < BOOM.catchR) { this.finish(); return; } }          // v0.95: vòng về nhắm cao hơn tâm người 1/2 ô → quái cao 1 ô cũng dính
         physMove(level, this, dt);
         if (this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0)) fireTrailIgnite(level, p, this.cx, this.cy);          // v1.04: boomerang hệ lửa châm dầu / mạng nhện dưới đường bay
-        if (this.el === 'ice' && this.mode === 'far') { this.iceB = this.iceB || { left: CW_ICE.tiles, side: 36 }; iceFreezeNear(level, p, this.cx, this.cy, this.iceB); }          // v1.10: boomerang băng xa đóng băng nước dọc đường bay
-        if (!this.back && (this.hitL || this.hitR)) { this.back = true; if (!M) this.hit.clear(); }
+        if (this.el === 'ice' && this.mode === 'far') { this.iceB = this.iceB || { left: CW_ICE.tiles, side: 36 }; this.iceB.sameRow = this.back; iceFreezeNear(level, p, this.cx, this.cy, this.iceB); }          // v1.10: boomerang băng xa đóng băng nước dọc đường bay
+        if (!this.back && (this.hitL || this.hitR || this.hitU || this.onGround)) { this.back = true; if (!M) this.hit.clear(); }
         for (const e of game.entities) {
             if (!e.alive || !e.creature || e === p || e.holder || this.hit.has(e) || !overlapBox(this, e)) continue;
             this.hit.add(e);
@@ -11565,9 +11630,10 @@ class Boomerang extends Thing {
     finish() { this.alive = false; if (this.owner) this.owner.boom = null; }
     draw(ctx, alpha) { if (ITEM_HP) { drawBoomerangHp(this, ctx, alpha); return; } const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha)), k = Math.floor(this.age * 20) % 2; ctx.fillStyle = '#e0a84a'; if (k) { ctx.fillRect(x, y + 3, 8, 2); ctx.fillRect(x + 3, y, 2, 4); } else { ctx.fillRect(x + 3, y, 2, 8); ctx.fillRect(x, y + 3, 5, 2); } }
 }
-function weaponThrowBoom(p, mode) {
-    const f = p.facing, b = entAdd(new Boomerang(p.cx - 4, p.cy - 6, p, mode)), M = mode === 'far' ? CW.boomF : mode === 'near' ? CW.boomN : null;
-    b.vx = f * (M ? M.v : BOOM.v); b.vy = 0; p.boom = b; sndPlay('swing', { x: p.cx, p: 1.4 }); return b;
+function weaponThrowBoom(p, mode, aim) {          // v1.18zd: aim 0 ngang · 1 thẳng lên · 2 chéo lên · 3 chéo xuống
+    const f = p.facing, b = entAdd(new Boomerang(p.cx - 4, p.cy - 6, p, mode)), M = mode === 'far' ? CW.boomF : mode === 'near' ? CW.boomN : null, K = 0.7071;
+    aim = aim || 0; b.dx = aim === 1 ? 0 : aim ? f * K : f; b.dy = aim === 1 ? -1 : aim === 2 ? -K : aim === 3 ? K : 0; b.sp = M ? M.v : BOOM.v;
+    b.vx = b.dx * b.sp; b.vy = b.dy * b.sp; p.boom = b; sndPlay('swing', { x: p.cx, p: 1.4 }); return b;
 }
 
 // ---- Pogo (lần 22; học Hollow Knight): trên không ↓ + đánh = chém xuống dưới chân. Trúng quái → quái mất máu như roi, người NẢY lên (hết thời gian rơi => không đau
@@ -12226,10 +12292,10 @@ function subGive0(p, id) { if (!SUB[id]) return false; p.sub = { id, n: SUB[id].
 function subGive(p, id) { return typeof alchGiveFlask === 'function' ? alchGiveFlask(p, id) : subGive0(p, id); }          // mua / nhặt xong tự chọn món mới
 function subHas(p) { return !!(p && p.sub && SUB[p.sub.id] && p.sub.n > 0); }
 function subSanitize(s, cls) { return s && typeof s === 'object' && SUB[s.id] && Number.isFinite(s.n) && s.n > 0 ? { id: s.id, n: Math.min((cls || (typeof game !== 'undefined' && game.cls)) === 'alch' ? 20 : 10, Math.round(s.n)) } : null; }
-function subThrow(p, up, down) {          // dùng 1 lần: tạo bình, ném như bom
+function subThrow(p, up, down, aim) {          // dùng 1 lần: tạo bình, ném như bom
     if (!subHas(p)) return false;
     const id = p.sub.id, x = p.cx - 5, y = p.cy - 5, f = id === 'water' ? new WaterFlask(x, y) : id === 'shock' ? new ShockFlask(x, y) : id === 'frost' ? new FrostFlask(x, y) : id === 'poison' ? new PoisonFlask(x, y) : new OilFlask(x, y);
-    f.dmgMul = classMul('dmg', p.cls); entAdd(f); carryThrow(p, f, up, down);
+    f.dmgMul = classMul('dmg', p.cls); entAdd(f); carryThrow(p, f, up, down, aim);
     if (--p.sub.n <= 0) p.sub = null;
     return true;
 }
@@ -12482,16 +12548,18 @@ function drawSecretGates(c, cx, cy) {
 const HOOK = { vertTiles: 10, horiz: 3, horizFar: 8, speed: 560, range: 10 * 16 + 8, reel: 70, pump: 620, damp: 0.5, maxV: 280, minLen: 20, releaseVy: 70, hop: 150, autoUp: 240, autoIn: 130, autoMax: 1.8, ledgeDx: 4, ledgeR: 3 * 16 + 4, farR: 8 * 16 - 6 };
 // v0.74b (Dan): KHÔNG còn hướng. Bấm dùng → (1) có MÉP GỜ trong 3 ô phía trên: móc vào góc ngoài của gờ rồi tự kéo lên đứng trên gờ; (2) không có: móc THẲNG LÊN TRẦN ngay trên đầu (tầm HOOK.range) rồi tự thu dây kéo lên. Đang tự kéo mà bấm BẤT KỲ phím nào (HOOK_STOP_KEYS) thì dừng, treo lơ lửng; sau đó ↑ = kéo tiếp, ↓ = tụt xuống, ←/→ đu, nhảy = nhả. Không có trần trong tầm thì không ném (không mất móc).
 const HOOK_STOP_KEYS = ['left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'swap', 'swapBack'];          // bấm một trong các phím này khi đang tự kéo = dừng kéo
+// v1.18zd (Dan): móc bám được cả mép BỤC MỘT CHIỀU (T_ONEWAY) như gờ đặc. Chỉ dùng để chọn / giữ điểm móc; đường bay, chỗ đứng phía trên vẫn xét ô đặc thật (level.isSolid).
+function hookSolid(level, c, r) { return level.isSolid(c, r) || level.tile(c, r) === T_ONEWAY; }
 function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ Săn có móc chéo: ưu tiên gờ phía mũi tên đang giữ)
     const c0 = Math.floor(p.cx / TILE), r0 = Math.floor(p.y / TILE), need = Math.max(1, Math.ceil(p.h / TILE)), hx = p.cx, hy = p.y + 2; let best = null;
     const losOk = (x1, y1) => { const dx = x1 - hx, dy = y1 - hy, n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 4)); for (let i = 1; i <= n; i++) if (level.isSolid(Math.floor((hx + dx * i / n) / TILE), Math.floor((hy + dy * i / n) / TILE))) return false; return true; };
     const hMax = hookHorizTiles(p) * TILE, vMax = HOOK.vertTiles * TILE;          // v1.02 (Dan): tầm móc = ≤ 10 ô theo CHIỀU CAO và ≤ 3 ô theo chiều NGANG (tính từ mép gờ tới người chơi); Thợ Săn sau boss vùng 2: ngang ≤ 8 ô
     for (let r = r0 - HOOK.vertTiles; r <= r0 + 1; r++) for (let c = c0 - Math.ceil(hMax / TILE) - 1; c <= c0 + Math.ceil(hMax / TILE) + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
-        if (!level.inside(c, r) || !level.isSolid(c, r)) continue;
+        if (!level.inside(c, r) || !hookSolid(level, c, r)) continue;
         const topY = r * TILE; if (topY > p.y + p.h - 24) continue;          // v1.12 (Dan): gờ chỉ cao hơn chân ≤ ~1 ô thì bỏ qua (tự nhảy lên được)                                  // chỉ gờ CAO hơn chân ít nhất 10 px
         let room = true; for (let k = 1; k <= need; k++) if (level.isSolid(c, r - k)) { room = false; break; } if (!room) continue;          // chỗ đứng phía trên
         for (const dir of [1, -1]) {
-            if (level.isSolid(c - dir, r) || level.isSolid(c - dir, r - 1)) continue;             // góc ngoài phải trống (đây mới là «mép»)
+            if (hookSolid(level, c - dir, r) || level.isSolid(c - dir, r - 1)) continue;             // góc ngoài phải trống (đây mới là «mép»)
             const ex = dir > 0 ? c * TILE : (c + 1) * TILE; if ((ex - p.cx) * dir < -TILE * 0.5) continue;          // mép phải quay về phía người chơi
             const tx = ex - dir * 1.5, ty = topY + 2;
             if (!losOk(tx, ty)) {          // v0.77 (Dan): trần dày 1 ô có LỖ 1 ô: cột trống cạnh mép nối thẳng xuống hàng đầu người chơi, ngang tầm ≤ 2 ô, đường ngang trống → vẫn móc vào mép (người chơi tự lách tới dưới lỗ rồi được kéo lên)
@@ -12547,7 +12615,7 @@ function hookStep(p, level, dt, ax, up, down) {
         if (h.tgt) {                                                    // v0.74: bay thẳng tới mép gờ đã chọn rồi ghim
             h.x += h.dx * HOOK.speed * dt; h.y += h.dy * HOOK.speed * dt;
             if (Math.hypot(h.x - h.x0, h.y - h.y0) >= h.dist) {
-                const g = h.tgt; if (!level.isSolid(g.c, g.r)) { hookRelease(p, true); return false; }
+                const g = h.tgt; if (!(g.ceil ? level.isSolid(g.c, g.r) : hookSolid(level, g.c, g.r))) { hookRelease(p, true); return false; }
                 h.ph = 'on'; h.x = h.ax = g.tx; h.y = h.ay = g.ty; h.c = g.c; h.r = g.r; h.minL = g.ceil ? 2 : HOOK.minLen; h.L = clamp(Math.hypot(h.ax - p.cx, h.ay - (p.y + 2)), h.minL, HOOK.range + 8); h.auto = { ph: 0, t: 0 };          // v0.77: móc trần thu dây tới SÁT trần (đầu chạm trần) để đặt bom ô sát trần h.auto = { ph: 0, t: 0 };
                 if (g.ceil && p.onGround) { p.vy = -HOOK.hop; p.onGround = false; }
                 if (p.cls !== 'hunt') p.ropes = Math.max(0, p.ropes - 1);
@@ -12574,7 +12642,7 @@ function hookStep(p, level, dt, ax, up, down) {
         return false;                                                   // đang bay: người chơi vẫn đi bình thường
     }
     // ---- đang treo ----
-    if (!level.isSolid(h.c, h.r)) { hookRelease(p); return false; }      // ô được móc đã bị phá
+    if (!(h.tgt && !h.tgt.ceil ? hookSolid(level, h.c, h.r) : level.isSolid(h.c, h.r))) { hookRelease(p); return false; }      // ô được móc đã bị phá
     if (p.state !== 'air') p.setState('air');
     if (ax !== 0) p.facing = ax;
     // nhảy = nhả (kèm bật nhẹ nếu đang đi lên)
@@ -12716,9 +12784,10 @@ function fireTrailIgnite(level, p, x, y, wide) {          // v1.13: dải châm 
 const CW_ICE = { tiles: 16, side: 24, below: 56 };          // CHỈ đóng băng các hàng nước nằm DƯỚI hàng của đạn (băng là chất rắn: nếu đóng băng ngay hàng đang bay thì đạn / boomerang bị chặn)
 function iceFreezeNear(level, p, x, y, B) {
     if (!B || B.left <= 0) return 0;
-    const r0 = Math.floor(y / TILE), fb = { x: x - (B.side || CW_ICE.side), y: (r0 + 1) * TILE, w: (B.side || CW_ICE.side) * 2, h: CW_ICE.below }, water = [];
+    const r0 = Math.floor(y / TILE), c0 = Math.floor(x / TILE), same = !!B.sameRow, fb = { x: x - (B.side || CW_ICE.side), y: (same ? r0 : r0 + 1) * TILE, w: (B.side || CW_ICE.side) * 2, h: CW_ICE.below + (same ? TILE : 0) }, water = [];
     for (let r = Math.floor(fb.y / TILE); r <= Math.floor((fb.y + fb.h - 0.01) / TILE); r++) for (let c = Math.floor(fb.x / TILE); c <= Math.floor((fb.x + fb.w - 0.01) / TILE); c++) {
         if (c < 0 || r < 0 || c >= level.w || r >= level.h || level.tile(c, r) !== T_WATER) continue;
+        if (r === r0 && (c === c0 || (c + 1) * TILE > p.x - 6 && c * TILE < p.x + p.w + 6)) continue;          // v1.18ze: hàng ngang đạn (boomerang đang quay về) — bỏ ô đạn đang ở và ô sát người chơi để không kẹt
         water.push({ c, r, d: Math.hypot((c + 0.5) * TILE - x, (r + 0.5) * TILE - y) });
     }
     if (!water.length) return 0;
@@ -12768,17 +12837,19 @@ class StaffShot extends Thing {
         ctx.fillStyle = c; ctx.fillRect(x + o, y + o, s, s); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 2, 2, 2);
     }
 }
-function staffFire(p, up, power) {
+// v1.18zd (Dan): `aim` = 0 ngang · 1 thẳng lên · 2 chéo lên · 3 chéo xuống (Player.aimOf); true / false cũ = 1 / 0.
+function staffFire(p, aim, power) {
+    aim = aim | 0; const up = aim === 1, K = 0.7071;
     const iceB = { left: CW_ICE.tiles };          // cả chùm dùng chung ngân sách ô nước
-    const f = p.facing >= 0 ? 1 : -1, C = CW.staff, v = power ? C.vP : C.v, mk = (ang, mul) => {
-        const dx = up ? 0 : f, dy = up ? -1 : 0, ca = Math.cos(ang), sa = Math.sin(ang), vx = (dx * ca - dy * sa) * v, vy = (dx * sa + dy * ca) * v;
-        const s = new StaffShot(p.cx + (up ? 0 : f * 2), p.cy - (up ? 8 : 4), vx, vy, p, power); s.iceB = iceB; s.mul = mul * (up ? C.upMul : 1); entAdd(s);
+    const f = p.facing >= 0 ? 1 : -1, C = CW.staff, v = power ? C.vP : C.v, ddx = aim === 1 ? 0 : aim ? f * K : f, ddy = aim === 1 ? -1 : aim === 2 ? -K : aim === 3 ? K : 0, mk = (ang, mul) => {
+        const dx = ddx, dy = ddy, ca = Math.cos(ang), sa = Math.sin(ang), vx = (dx * ca - dy * sa) * v, vy = (dx * sa + dy * ca) * v;
+        const s = new StaffShot(p.cx + (up ? 0 : f * 2), p.cy - (up ? 8 : aim === 2 ? 6 : aim === 3 ? 0 : 4), vx, vy, p, power); s.iceB = iceB; s.mul = mul * (aim === 1 || aim === 2 ? C.upMul : 1); entAdd(s);
     };
     const before = game.entities.length;
     if (power) { mk(-C.spread, 1); mk(0, 1); mk(C.spread, 1); }          // đạn hệ có lan: 3 tia nhỏ
     else mk(0, 1);
     // v1.17 (Dan): quái đứng SÁT người (nhất là dơi lao từ trên xuống) vẫn trúng — quét một hộp cận chiến trước mặt (cao hơn đầu 14 px) / phía trên đầu; trúng thì viên đạn tiêu luôn
-    { const sh = game.entities.slice(before), lv = game.level, box = up ? { x: p.x - 4, y: p.y - C.closeUp, w: p.w + 8, h: C.closeUp } : { x: f > 0 ? p.cx - 2 : p.cx - C.close, y: p.y - 14, w: C.close + 2, h: p.h + 14 };
+    { const sh = game.entities.slice(before), lv = game.level, fx0 = f > 0 ? p.cx - 2 : p.cx - C.close, box = up ? { x: p.x - 4, y: p.y - C.closeUp, w: p.w + 8, h: C.closeUp } : aim === 2 ? { x: fx0, y: p.y - C.closeUp, w: C.close + 2, h: C.closeUp + p.h * 0.5 } : aim === 3 ? { x: fx0, y: p.cy, w: C.close + 2, h: p.h * 0.5 + 14 } : { x: fx0, y: p.y - 14, w: C.close + 2, h: p.h + 14 };
       if (lv && sh.length) { const s0 = sh[Math.min(1, sh.length - 1)]; let hit = false;
         for (const e of game.entities) { if (!e.alive || e === p || e.holder || sh.indexOf(e) >= 0 || !(e.creature || e.breakOnImpact) || !overlapBox(box, e)) continue; s0.strike(lv, e); hit = true; if (!power) break; }
         if (hit) for (const s of sh) s.alive = false; } }
@@ -12786,15 +12857,15 @@ function staffFire(p, up, power) {
     sndPlay(power ? 'swing' : 'swingUp', { x: p.cx, p: power ? 0.7 : 1.6, vol: 0.5 });
 }
 // ---- Boomerang chính của Thợ Săn ----
-function hunterThrow(p, power) {
+function hunterThrow(p, power, aim) {
     if (p.boom) return false;
-    const b = weaponThrowBoom(p, power ? 'far' : 'near'); p.atkCd = power ? CW.boomF.cd : CW.boomN.cd; return !!b;
+    const b = weaponThrowBoom(p, power ? 'far' : 'near', aim); p.atkCd = power ? CW.boomF.cd : CW.boomN.cd; return !!b;
 }
 // vào từ Player.whipStart. Trả true nếu đã xử lý (không vung kiếm).
 function classAttack(p, dir, power) {
     if (power && !dir && game.level) { const f = p.facing >= 0 ? 1 : -1, R = WHIP.fx1 + WHIP.chargeReach; pushBlocksBox(game.level, p, { x: f > 0 ? p.cx : p.cx - R, y: p.cy - 8, w: R, h: 16 }, null); }          // v1.06 (Dan): đòn nạp của Giả Kim / Thợ Săn cũng đẩy khối sắt (như Kiếm Sĩ) → vào được phòng bí mật
-    if (p.cls === 'alch') { staffFire(p, !!dir, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = dir ? 1 : 0; } return true; }
-    if (p.cls === 'hunt') { hunterThrow(p, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = 0; } return true; }
+    if (p.cls === 'alch') { staffFire(p, dir | 0, !!power); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = dir | 0; } return true; }
+    if (p.cls === 'hunt') { hunterThrow(p, !!power, dir | 0); if (!power && inp.held('attack')) { p.chargeT = 0; p.chargeDir = dir | 0; } return true; }          // v1.18zd: Thợ Săn cũng ném boomerang theo hướng ngắm (trước đây chỉ ngang)
     return false;
 }
 
