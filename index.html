@@ -386,9 +386,9 @@ const GEN_HZ_MUL = { W: 1, V: 1, Z: 1, '^': 1, M: 0.75, '=': 1, F: 0.3, N: 0.5 }
 const GEN_HZ_MAX = { Z: 3, '^': 2, M: 2, F: 3, N: 4, '=': 4 };
 const GEN = { motif: true, motifNow: true, strictTries: 45, strictNow: true, roomTries: 8, clutterMax: 4.5, groupW: [0.30, 0.25, 0.45], webClusters: 2, webSide: true, pathMin: 3, pathDown: 0.5, pathSoft: [{ m: 2, pd: 0.6, t2: 1 }, { m: 2, pd: 0.4, t2: 0.5 }], hzMul: GEN_HZ_MUL, hz: GEN_HZ, hzMax: GEN_HZ_MAX, hzRoom: 0.42, hzType0Liquid: 0.8, hzTries: 6, climb2Max: 99, climb2Chance: 1, sealedMax: 5, sealedRun: 2, sealedPick: 0.2, foeBase: 8.5, foeEarly: [1.4, 1.35], foeLo: 0.75, foeHi: 1.5, walkerMax: 2, earlyMul: [1.95, 1.5],          // v0.89 (Dan: số quái giữa các bản đồ cùng màn chênh tối đa ~2 lần): mục tiêu = foeBase × rate vùng × zoneRamp × (1 + monsterPerLevel × màn) × foeEarly × mul; ép vào [foeLo, foeHi] × mục tiêu · walkerMax: bọ đá tối đa mỗi màn
     roomFly: 2, roomRanged: 2,          // v0.89 (Dan: 1-1 ít quái quá): earlyMul[levelIdx] = hệ số mật độ quái cho các màn đầu
-    x5Mul: 1.3,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
+    x5Mul: 1.2,          // v0.88 (DEV1): mỗi phòng tối đa roomFly quái bay (không tính dơi treo / nhện) và roomRanged quái tầm xa
     trapLoot: 0.25, trapLootLate: 0.6, dripLedge: 1.5, dripLedgeLate: 3, lateMul: 1.6, dropLoot: 0.3, dropLootLate: 0.6, dropLootMax: 4, spikeFrom: 2, spikeP: 0.2, spikeZ: 0.04, spikeMax: 3, spikeDrop: 4, crumbleExitR: 3, crumbleExitP: 0, crumbleDropP: 0.074, crumbleMax: 14,          // v0.66: sàn vỡ gần cửa ra / trên khoảng trống · v1.18x (Dan): sàn vỡ còn ~30% (GEN_HZ_MUL.F 1→0,3 · crumbleExitP 0,4→0,12 · crumbleDropP 0,22→0,066; đo 7,8 → 2,4 ô/màn) · mục 2: crumbleExitP = 0 (hết sàn vỡ kề cửa ra; đặt lại > 0 nếu muốn bật), crumbleDropP 0,074 bù để tổng vẫn ~30%: 2,34 ô/màn
-    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.25, altarRowW: [1, 3, 3, 3, 1], aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, stuckMax: 2, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.75, 0.9, 1.0, 1.1, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
+    areaK: 16 / (LVL.roomsX * LVL.roomsY), spawnSafeR: 9, crushSafeX: 2, crushSafeUp: 12, crushSafeSide: 4, dropHole: 2, monsterMul: 1.5, monsterPerLevel: 0.017, maxFall: 7, maxGap: 2, attempts: 60, shopChance: 0.4, princessChance: 0.45, pitChance: 0.3, altarChance: 0.25, altarRowW: [1, 3, 3, 3, 1], aerieChance: 0.3, comboChance: 0.35, chestChance: 0.18, treasureChance: 0.2, lakeChance: 0.2, openChance: 1, sealedKeep: 0.35, stuckMax: 2, routeFoe: 0.024, routeLoot: 0.02, dripChance: 0.05, zoneRamp: [0.95, 1.05, 1.1, 1.15, 1.2, 1.3], zoneLoot: [1.6, 1.3, 1.1, 1.0, 0.9, 0.9], arenaChance: 0.3, arenaFoes: 3, elemObj: 0.012, hitRX: 2, hitRY: 1, hitRYAir: 3 };      // v0.41: arenaChance = xác suất phòng ra thành đấu trường (khoá cửa tới khi còn ≤ LOCK_SPARE quái); elemObj = đặt vật theo hệ (ZONES[].objs) trên sàn đi tới được; hitR* = tầm kiếm chém tới (luật công bằng)
 // v1.18zj (Dan, tester): phải hạ ít nhất frac số quái có lúc vào màn (làm tròn lên, tối thiểu 1 nếu màn có quái) mới qua cửa ra được. Màn boss không áp dụng.
 // v1.18zj: giá trị vàng trong đất (giữ 50 / 150 như cũ; chỉnh kinh tế bằng giá cửa hàng SHOP.priceMul, vì người chơi thường chỉ đào được vài lần vì bom đắt).
 const GOLD_TILE = { small: 50, big: 150 };
@@ -406,7 +406,7 @@ const CARRYOVER = { frac: 0.5, minLeft: 1, max: 12, minDist: 12, avoidR: 6, pick
 //   Thuật toán: sfc32 (nhanh, chất lượng tốt, 4 số 32-bit trạng thái), khởi tạo từ chuỗi/số bằng băm splitmix32.
 //   Phiên bản bộ sinh level: GEN_VERSION (đổi bộ sinh => tăng số này; hiện cạnh seed, ghi vào báo lỗi).
 
-const GEN_VERSION = 73;     // 73 (v1.2): quét cuối genSanity — bục '=' không dính đáy ô đặc, bẫy đè Z phải gắn trần + trống bên dưới · 72 (v1.2): khối sắt đẩy M còn 75 % (GEN_HZ_MUL) · 69 (v1.18zh): ô phụ nhóm [3] rải theo CẢ TẦNG sau khi dựng xong mọi phòng (genHazardsFloor) · 68 (v1.18zg): bàn thờ chọn phòng theo tầng 1:3:3:3:1 (GEN.altarRowW), altarChance 0,22 → 0,25 · 67 (v1.18zd): tỉ lệ 3 nguồn phòng GEN.groupW = 30 / 25 / 45 (trước 35 / 35 / 30); kho mẫu tách 02_room1.js + 02_room2.js · 66 (v1.18zd): công thức đường chính MỀM theo màn trong vùng (GEN.pathSoft): x-1 ngắn + 1 phòng '2t', x-2 dài hơn chút + 50 % có '2t', x-3 trở đi như cũ · 65 (v1.18zc): đường chính dài hơn — GEN.pathMin = 3 phòng tối thiểu mỗi tầng, GEN.pathDown = 0,5 xác suất rẽ xuống (genPath viết lại; hết phòng loại 2t) · 64 (v1.18zb): bể đất / đá có thang bên trong vẫn ra nước (genHazards bước 1: thang coi như không tồn tại khi dò bể, nước đổ vào ô trống, thang giữ nguyên) · 63 (v1.18za): ô mạng nhện N không được có đất / bục '=' ở hai bên (GEN.webSide, genWebFix chạy cuối genTry) · 62 (v1.18z): mạng nhện N: giảm còn ~½ toàn map (GEN_HZ_MUL.N 0,5; nhóm [1][2] gỡ nguyên cụm) + mỗi phòng tối đa GEN.webClusters = 2 cụm (genWebCap). 61 (v1.18y): hết sàn vỡ kề cửa ra (GEN.crumbleExitP = 0). 60 (v1.18x): sàn vỡ F giảm còn ~30% (7,8 → 2,4 ô/màn). 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
+const GEN_VERSION = 74;     // 74 (v1.2, Dan): quái màn x-1…x-4 nhiều hơn (zoneRamp 0,95·1,05·1,1·1,15; x5Mul 1,2) cho đỡ chênh với x-5 / x-6 · 73 (v1.2): quét cuối genSanity — bục '=' không dính đáy ô đặc, bẫy đè Z phải gắn trần + trống bên dưới · 72 (v1.2): khối sắt đẩy M còn 75 % (GEN_HZ_MUL) · 69 (v1.18zh): ô phụ nhóm [3] rải theo CẢ TẦNG sau khi dựng xong mọi phòng (genHazardsFloor) · 68 (v1.18zg): bàn thờ chọn phòng theo tầng 1:3:3:3:1 (GEN.altarRowW), altarChance 0,22 → 0,25 · 67 (v1.18zd): tỉ lệ 3 nguồn phòng GEN.groupW = 30 / 25 / 45 (trước 35 / 35 / 30); kho mẫu tách 02_room1.js + 02_room2.js · 66 (v1.18zd): công thức đường chính MỀM theo màn trong vùng (GEN.pathSoft): x-1 ngắn + 1 phòng '2t', x-2 dài hơn chút + 50 % có '2t', x-3 trở đi như cũ · 65 (v1.18zc): đường chính dài hơn — GEN.pathMin = 3 phòng tối thiểu mỗi tầng, GEN.pathDown = 0,5 xác suất rẽ xuống (genPath viết lại; hết phòng loại 2t) · 64 (v1.18zb): bể đất / đá có thang bên trong vẫn ra nước (genHazards bước 1: thang coi như không tồn tại khi dò bể, nước đổ vào ô trống, thang giữ nguyên) · 63 (v1.18za): ô mạng nhện N không được có đất / bục '=' ở hai bên (GEN.webSide, genWebFix chạy cuối genTry) · 62 (v1.18z): mạng nhện N: giảm còn ~½ toàn map (GEN_HZ_MUL.N 0,5; nhóm [1][2] gỡ nguyên cụm) + mỗi phòng tối đa GEN.webClusters = 2 cụm (genWebCap). 61 (v1.18y): hết sàn vỡ kề cửa ra (GEN.crumbleExitP = 0). 60 (v1.18x): sàn vỡ F giảm còn ~30% (7,8 → 2,4 ô/màn). 59 (v1.18w): nhóm [3] thay bằng 200 phòng từ spelunky_rooms.json (loại 0/1/2/3 + '2t') · 58 (v1.18v): kho mẫu 3 nhóm — [1] Honzy-native · [2] Spelunky (+ G200 hazard tay) · [3] 200 phòng thuật toán (ROOM_TPL_ALGO, chỉ 0 / 1 / L, ô phụ rải lúc sinh màn bằng genHazards theo luật vị trí + GEN.hz × hệ số vùng; GEN.groupW chia nhóm); bỏ nốt dấu vết lò xo (GEN_SOFT, T_SPRING, springT, springStep → webCrumbleStep). 57 (v1.18u): kho mẫu gộp 2 mục (A+B Honzy-native · Spelunky C + 200 phòng chuẩn tạm, có hazard); bỏ hạn mức leo 2 ô (climb2Max 99); thang chỉ cần cụm đứng ≥ 1 ô; genRoomClutter tính mọi thứ trên map, clutterMax 2 → 4,5.     // 56 (v1.18r): nới luật — leo 2 ô tối đa 4 chỗ / màn (climb2Max 4), phòng kín tối đa 5 / màn và ≤ 2 liền nhau theo hàng (GEN.sealedMax / sealedRun / sealedPick).     // 55 (v1.18q): thêm 5 mẫu phòng nhập từ ảnh Spelunky (02c_templates_sp, tools/img2tpl.py).     // 54 (v1.18n): kiểm TỪNG PHÒNG (genRoomOK + genRoomClutter, họa tiết có luật, thang ≥ 3) + gấp đôi mẫu phòng (02b_templates2).     // 53 (v1.18n): cửa ra phải tới được không cần leo gờ 2 ô / móc (genReach strict; GEN.strictTries).     // 50 (v1.04): máy nghiền không đặt trên / cạnh cửa vào.     // 49 (v0.95): tạm tắt phòng Vực dung nham (CHASM.chance = 0) vì không lớp nào có cả nhảy đôi + lướt.     // 48 (v0.89): ổn định số quái mỗi màn (≤ 2 lần chênh), bọ đá ≤ 2 / màn, vào Hầm mỏ từ 1-2, 1-1 / 1-2 đông hơn.     // 47 (v0.88): giới hạn quái bay / tầm xa mỗi phòng.     // 41 (v0.73b): cá điện lại được ra từ x-1 (hồ). 40 (v0.73): màn x-1 của vùng = loài đã gặp + 1 loài hệ mới nhỏ nhất, to máu ra sau (FOE_FROM làm lại); 39 (v0.71): quái hệ mới xuất hiện lần lượt theo từng màn của vùng (FOE_FROM theo vùng). 38 (v0.70): quái khó chỉ từ màn x-3 / x-4 của mỗi vùng (FOE_FROM, zoneTbl). 37 (v0.69): gai ở một bên chỗ tiếp đất giếng rơi (GEN.spike*; từ màn 3 mỗi vùng). 36 (v0.66): sàn vỡ gần cửa ra / trên khoảng trống (GEN.crumble*). 35 (v0.58): bỏ lò xo, cửa hàng 3 hàng cố định + 2 ô ngẫu nhiên. 34 (v0.55): hầm khối đẩy đòi chém tụ lực (genPushRoom). 33 (v0.54): phòng ẩn vực dung nham đòi lướt (genChasm). 32 (v0.53): phòng mẫu tổ hợp (genCombo: hành lang dầu / ao sét / hầm độc). 31 (v0.47): gác cao có vật thưởng (mảnh tim `]` / đồ `[`). 30 (v0.46, H7): phòng ẩn «gác cao» (genAerie) đòi nhảy đôi + genReach có tham số năng lực. 29 (v0.45, E8): 5 quái đặc trưng (ếch ; · kẻ lắng nghe : · tinh thể vỡ ( · thầy chiêu hồn ) · hộp giả +) + bảng quái vùng làm lại (độc quyền mỗi vùng 1 loài). 28 (v0.41): luật công bằng quái chém tới được + đấu trường khoá cửa + vật theo hệ (ZONES[].objs). 27 (v0.39, E5 Độc): sên độc `!` + nấm bào tử `` ` `` + muỗi độc `?` vào bảng quái Rừng sâu / Vực sâu. 26 (v0.39, E4 Băng): yêu tuyết `*` + dơi băng `@` vào bảng quái Hang ngầm / Núi tuyết. 25 (v0.39, E3 Sét): Hang pha lê nhiều hồ hơn (lakeChance 0,5), cá điện trong hồ vùng Sét, tia lửa điện (j) vào bảng quái bay của Hang pha lê / Thạch anh tím. 24 (v0.35, ghép Spelunky lần 60): 3 quái vùng 9 (sên magma l · miệng phun v · hồn lửa s) → bản đồ màn 49–54 đổi với cùng seed; ván lưu dở ở vùng 9 ra màn khác.      // 23 (E1, v0.25; hoán Thạch anh tím / Vực sâu): Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Thạch anh tím · Vực sâu · Hang núi lửa; boss ở level 12 · 24 · 36 · 48 · 55.      // 22 (E1 bản đầu): đổi thứ tự 9 vùng (Hầm mỏ · Rừng sâu · Hang ngầm · Hang pha lê · Tàn tích · Núi tuyết · Vực sâu · Thạch anh tím · Hang núi lửa), gán lại rate theo vị trí, boss ở level 12 · 24 · 36 · 42 · 55 (bản đầu, Kẻ dẫn hồn ở 42).      // 21 (H1): lưới 5×5, hệ số mật độ areaK, khoá seed thêm lần thử trong vùng, luật công bằng quanh cửa vào.      // 1 = bộ sinh GĐ2 (đường chính SC + mẫu phòng tự thiết kế). 3 = thêm công chúa + phòng cửa hàng (level ≥ 2). 2 = validator không cho đáp xuống gai sau nhảy/leo (đi bộ qua gai vẫn được). Đổi bộ sinh => tăng số này.
 
 function rngHash(x) {      // splitmix32: số nguyên 32-bit -> số nguyên 32-bit "trộn đều"
     x = (x + 0x9E3779B9) | 0;
@@ -1814,12 +1814,23 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     const nav = navigator, q = (location.search || '').match(/[?&]touch=(\d)/), force = q ? q[1] === '1' : null;
     const ua = nav.userAgent || '', iPadOS = nav.platform === 'MacIntel' && nav.maxTouchPoints > 1;
     TOUCH.ios = /iPhone|iPad|iPod/.test(ua) || iPadOS;
-    const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-    const auto = (nav.maxTouchPoints > 0 && coarse) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || iPadOS;
+    const mm = q2 => { try { return !!(window.matchMedia && matchMedia(q2).matches); } catch (e) { return false; } };
+    const touchCap = nav.maxTouchPoints > 0 || 'ontouchstart' in window || mm('(any-pointer: coarse)');          // v1.2 (Dan): nhận biết rộng hơn — chỉ cần có cảm ứng + (con trỏ thô | không hover | UA di động | màn nhỏ)
+    const auto = (touchCap && (mm('(pointer: coarse)') || mm('(any-pointer: coarse)') || mm('(hover: none)') || Math.min(screen.width, screen.height) <= 1100)) || /Android|iPhone|iPad|iPod|Mobile|CriOS|FxiOS/i.test(ua) || iPadOS;
     TOUCH.on = force !== null ? force : auto;
-    TOUCH.standalone = !!(nav.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)));
+    TOUCH.standalone = !!(nav.standalone || mm('(display-mode: standalone)') || mm('(display-mode: fullscreen)'));
     if (TOUCH.standalone) document.documentElement.classList.add('standalone');
-    if (!TOUCH.on) return;
+    TOUCH.rot = false; TOUCH.ins = { t: 0, r: 0, b: 0, l: 0 };
+    // kích thước khả dụng theo khung NGANG ảo (điện thoại để dọc thì cả trang xoay 90°): 06_render.resizeCanvas và 15d_menuui đọc từ đây
+    TOUCH.vw = () => TOUCH.rot ? window.innerHeight : window.innerWidth; TOUCH.vh = () => TOUCH.rot ? window.innerWidth : window.innerHeight;
+    TOUCH.avail = () => { const i = TOUCH.vIns || { t: 0, r: 0, b: 0, l: 0 }; return { w: Math.max(50, TOUCH.vw() - i.l - i.r), h: Math.max(50, TOUCH.vh() - i.t - i.b) }; };
+    TOUCH.pt = e => TOUCH.rot ? { x: e.clientY, y: window.innerWidth - e.clientX } : { x: e.clientX, y: e.clientY };          // toạ độ chạm trong khung ngang ảo
+    if (TOUCH.on) setup();
+    else if (force !== false) {          // máy báo không phải di động nhưng có ngón chạm thật → bật ngay lúc đó
+        const late = e => { if (TOUCH.on) return; if (e.type === 'touchstart' || e.pointerType === 'touch') { TOUCH.on = true; window.removeEventListener('pointerdown', late, true); window.removeEventListener('touchstart', late, true); setup(); } };
+        window.addEventListener('pointerdown', late, true); window.addEventListener('touchstart', late, true);
+    }
+    function setup() {
     document.documentElement.classList.add('touch');
 
     // ---- icon cho «Thêm vào MH chính» (iOS đọc thẻ này lúc thêm) ----
@@ -1834,8 +1845,8 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     const css = document.createElement('style');
     css.textContent = [
         'html.touch, html.touch body { position: fixed; inset: 0; width: 100%; height: 100%; overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; touch-action: none; }',
-        'html.touch body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }',
-        'html.touch.portrait body { align-items: flex-start; }',
+        'html.touch body { box-sizing: border-box; }',
+        'html.touch.rot body { left: 0; top: 0; right: auto; bottom: auto; transform-origin: 0 0; }',
         '#tpad { position: fixed; inset: 0; z-index: 20; pointer-events: none; display: none; font: 700 12px/1 system-ui, sans-serif; -webkit-user-select: none; user-select: none; }',
         'html.touch #tpad { display: block; }',
         '#tpad .tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; background: rgba(30,36,60,.42); border: 2px solid rgba(255,255,255,.28); color: rgba(255,255,255,.85); display: flex; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; transition: background .06s; }',
@@ -1853,16 +1864,22 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     // ---- bố cục (đơn vị --u = cạnh ngắn của màn hình / 100) ----
     const pad = document.createElement('div'); pad.id = 'tpad'; document.body.appendChild(pad);
     const toast = document.createElement('div'); toast.id = 'ttoast'; document.body.appendChild(toast);
-    function layout() {
-        const w = window.innerWidth, h = window.innerHeight, port = h > w; document.documentElement.classList.toggle('portrait', port);
-        const u = Math.min(w, h) / 100, k = port ? 1.0 : 1.0; pad.style.setProperty('--u', u + 'px');
-        const dp = pad.querySelector('.dp'), place = (el, l, t, s) => { el.style.left = l + 'px'; el.style.top = t + 'px'; el.style.width = el.style.height = s + 'px'; };
-        const sb = 'env(safe-area-inset-bottom)';
-        const land = !port, D = land ? Math.min(h * 0.46, w * 0.28) : Math.min(w * 0.46, h * 0.26), B = land ? Math.min(h * 0.22, w * 0.13) : Math.min(w * 0.2, h * 0.1), S = B * 0.72, m = land ? 14 : 12, rx = w - m, by = h - (land ? 14 : 18);
-        place(dp, m, by - D, D);
-        place(btn.jump, rx - B, by - B * 1.45, B); place(btn.attack, rx - B * 2.15, by - B, B); place(btn.dash, rx - B * 1.6, by - B * 2.55, B);
+    const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(probe);
+    function layout() {          // luôn bố cục NGANG: điện thoại để dọc thì xoay cả trang 90° (CSS), toạ độ chạm đổi lại bằng TOUCH.pt
+        const W0 = window.innerWidth, H0 = window.innerHeight, rot = H0 > W0; TOUCH.rot = rot;
+        const cs = getComputedStyle(probe), I = { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+        const v = rot ? { t: I.r, r: I.t, b: I.l, l: I.b } : I; TOUCH.vIns = v;          // nghiêng: trên ảo = phải thật, phải ảo = trên thật, dưới ảo = trái thật, trái ảo = dưới thật
+        const w = TOUCH.vw(), h = TOUCH.vh(), bs = document.body.style;
+        document.documentElement.classList.toggle('rot', rot);
+        bs.width = rot ? w + 'px' : ''; bs.height = rot ? h + 'px' : ''; bs.transform = rot ? 'translateX(' + W0 + 'px) rotate(90deg)' : ''; bs.padding = v.t + 'px ' + v.r + 'px ' + v.b + 'px ' + v.l + 'px';
+        pad.style.setProperty('--u', Math.min(w, h) / 100 + 'px');
+        const place = (el, l, t, s) => { el.style.left = l + 'px'; el.style.top = t + 'px'; el.style.width = el.style.height = s + 'px'; };
+        const D = Math.min(h * 0.46, w * 0.28), B = Math.min(h * 0.22, w * 0.13), S = B * 0.72, mL = 14 + v.l, mR = 14 + v.r, rx = w - mR, by = h - 14 - v.b;
+        place(dp, mL, by - D, D);
+        place(btn.attack, rx - B, by - B * 1.45, B); place(btn.jump, rx - B * 2.15, by - B, B); place(btn.dash, rx - B * 1.6, by - B * 2.55, B);          // v1.2 (Dan): Nhảy ↔ Đánh đổi chỗ
         place(btn.item, rx - S * 2.1, by - B * 2.55 - S * 1.25, S); place(btn.rope, rx - S, by - B * 2.55 - S * 1.25, S); place(btn.bomb, rx - S * 3.2, by - B * 2.55 - S * 1.25, S);
-        place(btn.run, m, by - D - S * 1.15, S); place(btn.swap, m + S * 1.15, by - D - S * 1.15, S); place(btn.menu, w - S * 0.9 - m, 8, S * 0.8);
+        place(btn.run, mL, by - D - S * 1.15, S); place(btn.swap, mL + S * 1.15, by - D - S * 1.15, S); place(btn.menu, w - S * 0.9 - mR, 10 + v.t, S * 0.8);
+        if (typeof resizeCanvas === 'function') { try { resizeCanvas(); } catch (e) { } }
     }
 
     // ---- gửi phím ----
@@ -1870,12 +1887,13 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     const menuMode = () => typeof gpadMenuMode === 'function' && gpadMenuMode() || (typeof inp !== 'undefined' && inp.locked);
     const MENU_CODE = { jump: 'Enter', attack: 'Escape', dash: 'Backspace', left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' };
     const buzz = ms => { try { if (nav.vibrate) nav.vibrate(ms); } catch (e) { } };
+    TOUCH.cnt = {};          // mã phím -> số nguồn đang giữ (D-pad + Chạy tự hướng có thể cùng một phím)
     const press = (id, act, fixed) => {
         if (TOUCH.src[id] !== undefined) return;
         const menu = menuMode(); let code = fixed || (menu ? MENU_CODE[act] : (KEYMAP[act] && KEYMAP[act][0])); if (!code) { TOUCH.src[id] = ''; return; }
-        TOUCH.src[id] = code; send('keydown', code); buzz(8);
+        TOUCH.src[id] = code; if ((TOUCH.cnt[code] = (TOUCH.cnt[code] || 0) + 1) === 1) send('keydown', code); buzz(8);
     };
-    const release = id => { const c = TOUCH.src[id]; if (c === undefined) return; delete TOUCH.src[id]; if (c) send('keyup', c); };
+    const release = id => { const c = TOUCH.src[id]; if (c === undefined) return; delete TOUCH.src[id]; if (c && --TOUCH.cnt[c] <= 0) { TOUCH.cnt[c] = 0; send('keyup', c); } };
 
     // ---- D-pad ----
     const dp = document.createElement('div'); dp.className = 'dp';
@@ -1883,7 +1901,7 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     const dpEl = { up: dp.querySelector('.u'), down: dp.querySelector('.d'), left: dp.querySelector('.l'), right: dp.querySelector('.r') };
     let dpId = null;
     function dpUpdate(e) {
-        const r = dp.getBoundingClientRect(), R = r.width / 2, dx = (e.clientX - (r.left + R)) / R, dy = (e.clientY - (r.top + R)) / R, want = { left: dx < -0.3, right: dx > 0.3, up: dy < -0.38, down: dy > 0.38 };
+        const R = dp.offsetWidth / 2, pt = TOUCH.pt(e), dx = (pt.x - (dp.offsetLeft + R)) / R, dy = (pt.y - (dp.offsetTop + R)) / R, want = { left: dx < -0.3, right: dx > 0.3, up: dy < -0.38, down: dy > 0.38 };
         for (const a of ['left', 'right', 'up', 'down']) { if (want[a]) press('dp' + a, a); else release('dp' + a); dpEl[a].classList.toggle('on', !!want[a]); }
     }
     dp.addEventListener('pointerdown', e => { e.preventDefault(); dpId = e.pointerId; try { dp.setPointerCapture(e.pointerId); } catch (x) { } dpUpdate(e); });
@@ -1901,11 +1919,28 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
         return b;
     }
     mk('jump', 'NHẢY', 'jump', '');          // trong menu: Nhảy = Enter (xác nhận), Đánh = Esc (quay lại)
-     mk('attack', 'ĐÁNH', 'attack', ''); mk('dash', 'LƯỚT', 'dash', 'gm');
+    mk('attack', 'ĐÁNH', 'attack', ''); mk('dash', 'LƯỚT', 'dash', 'gm');
     mk('item', 'ĐỒ', 'item', 'sm gm'); mk('bomb', 'BOM', 'bomb', 'sm gm'); mk('rope', 'MÓC', 'rope', 'sm gm');
     mk('run', 'CHẠY', 'run', 'sm gm'); mk('swap', 'ĐỔI', 'swap', 'sm gm');
     mk('menu', '☰', null, 'sm', 'Escape');
-    layout(); window.addEventListener('resize', layout); window.addEventListener('orientationchange', () => setTimeout(layout, 250));
+    // CHẠY độc lập (v1.2, Dan): giữ nút = tự chạy theo hướng đang quay mặt, không cần giữ thêm nút hướng (điện thoại khó giữ 2 ngón + nút Chạy)
+    TOUCH.runHeld = false;
+    const runDown = () => { TOUCH.runHeld = true; }, runUp = () => { TOUCH.runHeld = false; };
+    btn.run.addEventListener('pointerdown', runDown); btn.run.addEventListener('pointerup', runUp); btn.run.addEventListener('pointercancel', runUp); btn.run.addEventListener('lostpointercapture', runUp);
+    setInterval(() => {
+        const pl = typeof game !== 'undefined' && game.player, want = TOUCH.runHeld && pl && !menuMode() ? (pl.facing < 0 ? 'left' : 'right') : null, cur = TOUCH.src.vdir === undefined ? null : (TOUCH.src.vdir === KEYMAP.left[0] ? 'left' : 'right');
+        const manual = TOUCH.src.dpleft !== undefined || TOUCH.src.dpright !== undefined;
+        if (cur && (!want || manual || cur !== want)) release('vdir');
+        if (want && !manual && TOUCH.src.vdir === undefined) press('vdir', want);
+    }, 40);
+    // Tên nút theo lớp nhân vật (v1.2, Dan): Knight Chém · Wizard Bắn / Đổi hệ · Stryker Ném / Lướt; Knight chưa học Lướt thì ẩn nút Lướt
+    const LBL = { sword: { attack: 'CHÉM' }, alch: { attack: 'BẮN', dash: 'ĐỔI HỆ' }, hunt: { attack: 'NÉM', dash: 'LƯỚT' } };
+    function relabel() {
+        const g = typeof game !== 'undefined' ? game : null; if (!g) return; const cls = (g.player && g.player.cls) || g.cls || 'sword', L = LBL[cls] || LBL.sword;
+        const hasDash = cls === 'alch' || (typeof abilityHas === 'function' && (abilityHas('dash') || abilityHas('shadowDash')));
+        btn.attack.textContent = L.attack || 'ĐÁNH'; btn.dash.textContent = L.dash || 'LƯỚT'; btn.dash.style.visibility = hasDash ? '' : 'hidden';
+    }
+    layout(); window.addEventListener('resize', layout); window.addEventListener('orientationchange', () => setTimeout(layout, 250)); try { window.visualViewport && window.visualViewport.addEventListener('resize', layout); } catch (e) { } setInterval(layout, 1000);          // iOS: thanh địa chỉ co giãn / xoay máy báo kích thước trễ → bố cục lại định kỳ
 
     // ---- chống cuộn / thu phóng / menu giữ ----
     document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
@@ -1930,7 +1965,6 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     if (!seen) {
         setTimeout(() => {
             if (TOUCH.ios && !TOUCH.standalone) say('Muốn chơi toàn màn hình như app: bấm nút Chia sẻ ⎙ của Safari → «Thêm vào MH chính».', 9000);
-            else if (window.innerHeight > window.innerWidth) say('Xoay ngang điện thoại để chơi thoải mái hơn.', 5000);
             try { localStorage.setItem('honzy_touch_hint', '1'); } catch (e) { }
         }, 1500);
     }
@@ -1938,7 +1972,7 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
     // ---- theo dõi trạng thái menu (ẩn nút chơi, hiện OK) + nhập tên bằng hộp thoại ----
     let nameDone = false;
     setInterval(() => {
-        const m = !!menuMode(); document.documentElement.classList.toggle('menu', m);
+        const m = !!menuMode(); document.documentElement.classList.toggle('menu', m); relabel();
         if (m) for (const id of Object.keys(TOUCH.src)) { if (id.indexOf('bi') === 0 || id.indexOf('bs') === 0) release(id); }
         const t = typeof game !== 'undefined' && game.title;
         if (t && t.page === 'name') {
@@ -1948,6 +1982,7 @@ const TOUCH = { on: false, standalone: false, ios: false, src: {}, hint: true };
 
     // ---- service worker (chạy offline, mở nhanh như app) ----
     try { if ('serviceWorker' in nav && /^https?:$/.test(location.protocol)) nav.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
+    }          // hết setup()
 })();
 
 // 04_audio — âm thanh tổng hợp bằng Web Audio (KHÔNG có file âm thanh nào). Khối dựng âm (nhiễu, bao biên độ, tông, tiếng ồn lọc) lấy ý tưởng từ audio.js của DiabloLike/CozyWorld, viết lại cho game này.
@@ -3442,7 +3477,8 @@ const TEXT = { q: [], size: 8.6, font: '"Segoe UI", "Noto Sans", "Helvetica Neue
 
 function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    const raw = Math.min(window.innerWidth * dpr / VIEW_W, window.innerHeight * dpr / VIEW_H);
+    const av = typeof TOUCH !== 'undefined' && TOUCH.on && TOUCH.avail ? TOUCH.avail() : { w: window.innerWidth, h: window.innerHeight };          // v1.2: di động để dọc → khung ngang ảo
+    const raw = Math.min(av.w * dpr / VIEW_W, av.h * dpr / VIEW_H);
     // SETTINGS.fit (mặc định BẬT): phóng vừa khít màn hình (có thể lẻ); TẮT: số nguyên khi đủ chỗ (từng pixel đều nhau, nhưng chừa viền)
     const s = (!SETTINGS.fit && raw >= 1) ? Math.floor(raw) : raw;
     view.scale = s;
@@ -14922,6 +14958,7 @@ function muiDrawMenu(t, themeName) {
 // ---- chuột ----
 function muiPos(e) {
     const r = canvas.getBoundingClientRect(); if (!r.width || !r.height) return null;
+    if (typeof TOUCH !== 'undefined' && TOUCH.rot) return { x: (e.clientY - r.top) * VIEW_W / r.height, y: (r.right - e.clientX) * VIEW_H / r.width };          // v1.2: trang xoay 90° (điện thoại để dọc)
     return { x: (e.clientX - r.left) * VIEW_W / r.width, y: (e.clientY - r.top) * VIEW_H / r.height };
 }
 function muiFind(t, p) { const h = t.hit || []; for (let k = h.length - 1; k >= 0; k--) { const b = h[k]; if (p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.h) return b; } return null; }
