@@ -5810,12 +5810,13 @@ class Level {
     breakAt(c, r) {
         const t = this.tile(c, r);
         if (!T_BREAKABLE[t]) return false;
-        this.setTile(c, r, T_EMPTY);
+        this.setTile(c, r, T_EMPTY); if (typeof awAdd === 'function' && game.level === this) awAdd('dug');          // Award (15e): thợ đào
         const x = (c + 0.5) * TILE, y = (r + 0.5) * TILE;
         if (this.amt && typeof sndPlay === 'function') for (const d of [1, -1, this.w, -this.w]) { const n = r * this.w + c + d; if (n >= 0 && n < this.amt.length && this.amtT[n] === 1 && this.amt[n] >= 0.6) { sndPlay('waterRush2', { x, vol: 0.9 }); break; } }          // v1.14: tường chắn bể nước vỡ => nước ào ra
+        game._ore = 1;          // đánh dấu vàng đào từ khối (thử thách đào vàng)
         if (t === T_GOLD && typeof spawnGold === 'function') spawnGold(x, y, 1, GOLD_TILE.small);          // v1.18zj: trước 50
         if (t === T_ARROW) this.traps = this.traps.filter(tr => tr.c !== c || tr.r !== r);
-        if (t === T_GOLDBIG && typeof spawnGold === 'function') spawnGold(x, y, 1, GOLD_TILE.big);          // v1.18zj: trước 150
+        if (t === T_GOLDBIG && typeof spawnGold === 'function') spawnGold(x, y, 1, GOLD_TILE.big); game._ore = 0;          // v1.18zj: trước 150
         if (t === T_STONE && typeof sndPlay === 'function') sndPlay('wallBreak', { x, vol: 0.6 });          // v0.68: khối đá vỡ có tiếng riêng (tiếng đã có sẵn nhưng chưa nối)
         const bc = t === T_GOLD || t === T_GOLDBIG ? '#ffd24a' : t === T_STONE ? '#8a8a8e' : this.theme.solid[0];
         this.spawnBurst(x, y, 3, bc, 90);
@@ -7289,6 +7290,7 @@ class Player extends Thing {
     onHurt(src) {
         ddaOnHit();          // DDA (13q): đếm lần trúng đòn của level
         comboHurt(src);          // v1.2: bị quái đánh → mất combo giết
+        awHit(src);          // v1.2: Award (15e): mất «không mất máu», đếm tên / đè
         if (this.hp <= 0) return;
         this.flashT = 0.12; this.restT = 0; game.hurtVig = 0.3;          // v1.2 (góp ý): trúng đòn → viền đỏ chớp ngắn
         if (src.kind !== DMG.SPIKE) { this.blinkT = Math.max(this.blinkT, 0.5); }
@@ -7301,7 +7303,7 @@ class Player extends Thing {
         this.dead = true; this.hp = 0; this.deadT = 0; this.whipT = -1; this.chargeT = -1; this.chargeArm = false; this.dashT = 0; this.lastHurt = src;
         carryDrop(this); this.setState('dead'); this.ignorePlat = false;
         sndPlay('dead', { x: this.cx }); fxShake(3, 0.3);
-        game.deathCause = dmgCauseText(src);
+        game.deathCause = dmgCauseText(src); awDeath(src);          // Award: bom chết
     }
 
     update(level, dt) {
@@ -7624,14 +7626,14 @@ class Player extends Thing {
         for (const [side, px, py] of cand) {
             const c = Math.floor(px / TILE), r = Math.floor(py / TILE);
             if (!level.isSolid(c, r) || !T_BREAKABLE[level.tile(c, r)]) continue;
-            this.bombs--; const b = new Bomb(this.cx - 4, this.cy - 4); b.light(); entAdd(b); b.stick(level, c, r, side, this);
+            this.bombs--; awAdd('bombs'); const b = new Bomb(this.cx - 4, this.cy - 4); b.light(); entAdd(b); b.stick(level, c, r, side, this);
             sndPlay('placeBomb', { x: b.cx }); this.poseK = 'throw'; this.poseT = 0.2;
             return true;
         }
         return false;
     }
     throwBomb(up, down, aim) {
-        this.bombs--;
+        this.bombs--; awAdd('bombs');
         const b = new Bomb(this.cx - 4, this.cy - 4); b.light();
         entAdd(b); carryThrow(this, b, up, down, aim);
     }
@@ -7663,6 +7665,7 @@ class Player extends Thing {
     shockDeny() { if (game.time - (this.shockDenyAt || -9) > 0.25) { this.shockDenyAt = game.time; sndPlay('st_shock', { x: this.cx, p: 1.6, vol: 0.35 }); } }          // báo "không chém được" (chống kêu liên tục khi bấm dồn)
     whipCan() { return !this.shocked() && !this.guardOn && (this.whipT < 0 || this.whipT >= WHIP.hitStart + WHIP.recover) && !(this.cls !== 'sword' && (this.atkCd > 0 || this.boom)); }
     whipStart(dir, power) {          // power = true: đòn nạp (H4c)
+        awLv('melee');
         if (this.cls !== 'sword' && classAttack(this, dir, power)) return;          // v0.95: Giả Kim = gậy phép · Thợ Săn = boomerang (13x_classweapon)
         this.whipT = power ? WHIP.chargeSkip : 0; this.whipDir = Math.max(0, Math.min(3, dir | 0)); this.whipHits = new Set(); this.whipBuf = 0;          // v1.18zd: 0 ngang · 1 lên · 2 chéo lên · 3 chéo xuống
         this.whipPower = !!power; this.slashFlick = false; this.whipFireDone = false; this.whipIceDone = false; this.chargeT = -1; this.chargeArm = !power; this.chargeDir = this.whipDir;          // chỉ nhát thường mới mở được nạp; đòn nạp xong không tự nạp tiếp
@@ -8740,7 +8743,7 @@ class Enemy extends Thing {
     onDie(src) {
         const L = game.level; if (typeof foeWitness === 'function') foeWitness(this);          // v1.18zz: đồng loại nhìn thấy cái chết → hoảng (nhát) / sẵn sàng (hung hăng)
         L.spawnBurst(this.cx, this.cy, 10, bloodOf(this), 110); L.spawnBurst(this.cx, this.cy, 5, this.col, 80);
-        sndPlay('enemyDie', { x: this.cx }); if (game.stats) game.stats.kills++;
+        sndPlay('enemyDie', { x: this.cx }); if (game.stats) game.stats.kills++; awKill(this, src);
         if (byPlayer(src)) comboKill(this);
         if (game.killsLv && this.kind !== 'shopkeeper') game.killsLv[this.kind] = (game.killsLv[this.kind] || 0) + 1;          // v1.18zg: thống kê giết theo loài trong màn (màn kết thúc kiểu Battle City)
         if (!this.isBoss && this.kind !== 'shopkeeper' && game.rngPlay) {        // lần 29/30: giết quái đôi khi rơi vàng, TOÉ ra về một bên
@@ -8814,6 +8817,7 @@ function comboKill(e) {
     const G = game, p = G.player; if (!p || p.dead || e.kind === 'shopkeeper' || e.boss || e.isBoss) return;
     const c = G.combo = G.combo || { n: 0, t: 0, best: 0 }; c.n++; c.t = COMBO.win; c.pt = game.time; c.best = Math.max(c.best, c.n);
     if (G.stats) G.stats.comboBest = Math.max(G.stats.comboBest || 0, c.n);
+    awMax('comboBest', c.n); awLvMax('combo', c.n);
     const R = G.rngPlay, x = e.cx, y = e.cy - 4;
     if (c.n === 3) { spawnGold(x, y, 1, COMBO.gold3); G.pickupMsg = { t: 0, text: 'KILL ×3! +' + COMBO.gold3 + ' vàng' }; sndPlay('coin', { x, p: 1.3 }); }
     else if (c.n === 5) {
@@ -8996,7 +9000,7 @@ function carryoverPlace(L) {
             if (s > best) { best = s; bi = i; }
         }
         const q = pool.splice(bi, 1)[0], e = foeMake(kind, q.c, q.r);
-        if (e) { entAdd(e); refs.push(q); placed++; }
+        if (e) { e.carried = true; entAdd(e); refs.push(q); placed++; }
     }
     return placed;
 }
@@ -10396,6 +10400,7 @@ function bossDefeated(level, boss) {
     game.banner = { text: 'ĐÃ HẠ ' + boss.def.name, t: 0 };
     if (boss.def.last) game.pickupMsg = { t: 0, text: '“' + boss.def.last + '”' };          // v1.2: lời trăn trối ngắn
     if (game.stats) game.stats.kills++;
+    awKill(boss, null); if (!game.lvlHit) awAdd('bossNoHit');          // Award (15e)
     if (game.killsLv) game.killsLv[boss.kind || 'boss'] = (game.killsLv[boss.kind || 'boss'] || 0) + 1;
     wizardBossReward();                                // 13m_gear: Giả Kim boss đầu → +1 tim vĩnh viễn + chọn ngọc kháng hệ
     abilityReward(game.levelIdx);                      // 09a_abilities: boss vùng 2 / 6 tặng nhảy đôi / lướt
@@ -11497,7 +11502,7 @@ class Gold extends Thing {
     update(level, dt) {
         super.update(level, dt); this.age += dt;
         const p = game.player;
-        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; this.alive = false; goldFx(this); }          // v0.92: bé / vừa / lớn (âm + hiệu ứng: goldFx, v1.18zz13)
+        if (this.age > 0.25 && p && !p.dead && overlapBox(this, p)) { p.gold += this.value; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + this.value; if (this.ore) awLv('digGold', this.value); this.alive = false; goldFx(this); }          // v0.92: bé / vừa / lớn (âm + hiệu ứng: goldFx, v1.18zz13)
     }
     draw(ctx, alpha) {
         if (ITEM_HP) { drawGoldHp(this, ctx, alpha); return; }
@@ -11509,7 +11514,7 @@ class Gold extends Thing {
 }
 function spawnGold(x, y, n, value) {
     const R = game.rngPlay;
-    for (let i = 0; i < n; i++) { const g = entAdd(new Gold(x - 2, y - 2, value || 10)); g.vx = R.range(-60, 60); g.vy = R.range(-120, -40); }
+    for (let i = 0; i < n; i++) { const g = entAdd(new Gold(x - 2, y - 2, value || 10)); g.vx = R.range(-60, 60); g.vy = R.range(-120, -40); g.ore = !!game._ore; }
 }
 
 // Cá hồi (bước 5 / H5): rơi RẤT HIẾM từ bình và thùng gỗ. Chạm là ăn (như vàng, không chiếm ô), LUÔN ăn được kể cả đầy máu: +SALMON.heal máu
@@ -11782,7 +11787,7 @@ class Princess extends Thing {
     onDie(src) {
         const L = game.level; L.spawnBurst(this.cx, this.cy, 8, '#b070e0', 90); L.spawnBurst(this.cx, this.cy, 4, '#ffd24a', 70);
         sndPlay('hurt', { x: this.cx, p: 1.5 });
-        if (src && src.sacrifice) { game.pickupMsg = { t: 0, text: 'Thú cưng đã hy sinh!' }; return; }        // chủ động ném lần cuối: không tính là "mất người cần cứu"
+        if (src && src.sacrifice) { game.pickupMsg = { t: 0, text: 'Thú cưng đã hy sinh!' }; awAdd('petSac'); return; }        // chủ động ném lần cuối: không tính là "mất người cần cứu"
         game.pickupMsg = { t: 0, text: (src && src.kind === DMG.BITE ? (this.pet ? 'Thú cưng bị quái cắn!' : 'Công chúa bị quái cắn!') : (this.pet ? 'Thú cưng gặp nạn!' : 'Công chúa gặp nạn!')) };
         game.stats.princessLost = (game.stats.princessLost || 0) + 1;
     }
@@ -11825,7 +11830,7 @@ function princessRescue(L, p, up) {
         if (full) { p.gold += 1000; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + 1000; } else p.hp += heal;
         L.spawnBurst(e.c * TILE + 8, e.r * TILE + 4, 10, '#ff7a9a', 90);
         game.pickupMsg = { t: 0, low: true, text: full ? 'Công chúa cảm ơn bạn! +1000 vàng' : (t.pet ? 'Thú cưng quấn quýt! +' : 'Công chúa cảm ơn bạn! +') + heal / HP_UNIT + ' tim' };
-        game.stats.rescued = (game.stats.rescued || 0) + 1; if (t.pet) game.stats.pets = (game.stats.pets || 0) + 1;
+        game.stats.rescued = (game.stats.rescued || 0) + 1; if (t.pet) game.stats.pets = (game.stats.pets || 0) + 1; awAdd(t.pet ? 'pets' : 'princess'); awMin(t.pet ? 'bestPetT' : 'bestPrT', game.levelT);
         sndPlay('unlock', { x: p.cx });
     }
     return n;
@@ -12425,7 +12430,7 @@ function lavaCool(L, cx, cy, r) {
         L.setTile(c, rr, T_STONE); if (L.amt) L.amt[rr * L.w + c] = 0; if (fin) L.iceMelt.push({ c, r: rr, t: FROST.finaleT, back: T_LAVA, was: T_STONE });
         L.spawnBurst((c + 0.5) * TILE, (rr + 0.5) * TILE, 4, '#e8e8f0', 50); n++;
     }
-    if (n) { sndPlay('rock', { x: cx, vol: 0.5, p: 2.2 }); sndPlay('splash', { x: cx, vol: 0.4, p: 1.6 }); }
+    if (n) { awLv('cool', n); sndPlay('rock', { x: cx, vol: 0.5, p: 2.2 }); sndPlay('splash', { x: cx, vol: 0.4, p: 1.6 }); }
     return n;
 }
 function lavaStep(L, p) {
@@ -12441,7 +12446,7 @@ function lavaStep(L, p) {
         if (!lavaTouch(L, e)) continue;
         if (e.creature || e.kind === 'princess' || e.kind === 'shopkeeper') burn(e);
         else if (e.kind === 'bomb') { if (!(e.fuseT >= ITEM.bombFuse + ITEM.bombFuse2 - 0.15)) { e.chain(); L.spawnBurst(e.cx, e.cy, 4, '#ff8a2a', 60); } }          // bom rơi vào dung nham: nổ ngay (chain() của Bomb)
-        else if (e.carryable || e.kind === 'gold') { e.alive = false; L.spawnBurst(e.cx, e.cy, 5, e.kind === 'gold' ? '#ffd24a' : '#ff8a2a', 70); sndPlay('rock', { x: e.cx, vol: 0.3, p: 2 }); }          // đá, bình, thùng, VÀNG: cháy mất
+        else if (e.carryable || e.kind === 'gold') { if (e.kind === 'gold') awLv('goldBurn'); else if (e.kind === 'goods') awLv('goodsBurn'); e.alive = false; L.spawnBurst(e.cx, e.cy, 5, e.kind === 'gold' ? '#ffd24a' : '#ff8a2a', 70); sndPlay('rock', { x: e.cx, vol: 0.3, p: 2 }); }          // đá, bình, thùng, VÀNG: cháy mất
     }
 }
 function drawLava(ctx, L, cx, cy) {
@@ -12755,7 +12760,7 @@ function weaponNoise(x, y, r) {
 function weaponFire(p, level, aim) {
     if (p.gunCd > 0) return;
     if (p.ammo <= 0) { p.weapon = null; game.pickupMsg = { t: 0, text: 'Hết đạn — quay lại dùng roi' }; return; }
-    p.ammo--; p.gunCd = WPN.cd; aim = aim || 0;
+    awLv('gun'); p.ammo--; p.gunCd = WPN.cd; aim = aim || 0;
     const f = p.facing, x = aim === 1 ? p.cx - 2 : f > 0 ? p.x + p.w : p.x - 4, y = aim === 1 ? p.y - 4 : aim === 2 ? p.y + 2 : p.y + 6;
     const base = aim === 1 ? -Math.PI / 2 : aim === 2 ? (f > 0 ? -Math.PI / 4 : -3 * Math.PI / 4) : aim === 3 ? (f > 0 ? Math.PI / 4 : 3 * Math.PI / 4) : (f > 0 ? 0 : Math.PI);
     for (let i = 0; i < WPN.pellets; i++) {
@@ -13105,7 +13110,7 @@ function barrelLoot(t) {
 class Barrel extends Thing {
     constructor(x, y) { super(x, y, 12, 14, { kind: 'barrel', hp: 1, mass: 2, breakOnImpact: true, col: '#7a5a2a' }); }
     onDie(src) {
-        const L = game.level, hot = src && (src.kind === DMG.FIRE || src.kind === DMG.EXPLOSION);
+        const L = game.level, hot = src && (src.kind === DMG.FIRE || src.kind === DMG.EXPLOSION); if (game.lv) game.lv.barrelT = game.time;
         L.spawnBurst(this.cx, this.cy, 8, '#7a5a2a', 100); L.spawnShards(this.cx, this.cy, 5, '#7a5a2a', 130, 5, '#c8a050'); sndPlay('crumble', { x: this.cx });
         const pools = [-34, -12, 12, 34].map(dx => oilSpill(this.cx + dx, this.y + this.h, true));      // lần 46: 4 vũng (≈ 80 px) thay vì 2 (≈ 40 px)
         if (hot) for (const o of pools) oilIgnite(o);
@@ -13505,6 +13510,7 @@ function subHas(p) { return !!(p && p.sub && SUB[p.sub.id] && p.sub.n > 0); }
 function subSanitize(s, cls) { return s && typeof s === 'object' && SUB[s.id] && Number.isFinite(s.n) && s.n > 0 ? { id: s.id, n: Math.min((cls || (typeof game !== 'undefined' && game.cls)) === 'alch' ? 20 : 10, Math.round(s.n)) } : null; }
 function subThrow(p, up, down, aim) {          // dùng 1 lần: tạo bình, ném như bom
     if (!subHas(p)) return false;
+    awLv('sub');
     const id = p.sub.id, x = p.cx - 5, y = p.cy - 5, f = id === 'water' ? new WaterFlask(x, y) : id === 'shock' ? new ShockFlask(x, y) : id === 'frost' ? new FrostFlask(x, y) : id === 'poison' ? new PoisonFlask(x, y) : new OilFlask(x, y);
     f.dmgMul = classMul('dmg', p.cls); entAdd(f); carryThrow(p, f, up, down, aim);
     if (--p.sub.n <= 0) p.sub = null;
@@ -13804,6 +13810,7 @@ function hookReach(p) { return HOOK.range; }          // v1.01: mọi lớp cùn
 function hookThrow(level, p, ax, up) {
     if (p.hook) { hookRelease(p, true); return true; }          // bấm lần nữa = thu móc
     if ((p.ropes <= 0 && p.cls !== 'hunt') || p.dead) return false;          // v0.95: Thợ Săn móc KHÔNG giới hạn
+    awLv('hook');
     // v1.01 (Dan): MẶC ĐỊNH móc về phía MẶT người chơi (mép gờ phía đó trước, không có mới tới gờ phía sau); chỉ giữ ↑ mới móc THẲNG LÊN TRẦN (không có trần trong tầm thì rơi về gờ)
     const face = ax ? (ax > 0 ? 1 : -1) : (p.facing >= 0 ? 1 : -1);
     const ceilHook = () => {
@@ -15001,7 +15008,7 @@ function profRecord(outcome) {
         PROF.top.push({ score: sc, depth: game.levelIdx + 1, win: outcome === 'win' }); PROF.top.sort((a, b) => b.score - a.score); PROF.top.length = Math.min(PROF.top.length, 5);
         game.newRecord = PROF.top[0].score === sc;
     }
-    clsProfAdd(game.cls, outcome, game.levelIdx + 1, p ? p.gold : 0);
+    clsProfAdd(game.cls, outcome, game.levelIdx + 1, p ? p.gold : 0); awRunEnd(outcome);          // Award (15e)
     profSave();
 }
 // Nguyên nhân chết hay gặp nhất: 'rơi vào gai ×3' hoặc ''
@@ -15119,7 +15126,7 @@ function slotChoose(s) {
     return true;
 }
 function slotWipe(s) {
-    clearRun(s); try { const k = slotKey(PROF_STORE, s); if (k) localStorage.removeItem(k); } catch (e) { }
+    awWipe(s); clearRun(s); try { const k = slotKey(PROF_STORE, s); if (k) localStorage.removeItem(k); } catch (e) { }
     if (s === SLOT.cur) { SLOT.cur = 0; profLoad(); }          // xoá đúng slot đang chơi: hết «Tiếp tục», buộc chọn slot lại
 }
 function slotsOpen() {          // từ menu Esc: lưu ván đang chơi rồi sang màn chọn slot
@@ -15153,7 +15160,7 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
         if (menuCanResume()) it.push({ text: 'Tiếp tục', act: titleClose });
         it.push({ text: 'Ván mới', act: go('class') });          // v0.80: chọn độ khó trước
         it.push({ text: 'Đổi người chơi (Slot ' + SLOT.cur + ')', act: slotsOpen });
-        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Hướng dẫn', act: () => { tutSeen(); go('help')(); } });
+        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Award', act: go('awards') }, { text: 'Hướng dẫn', act: () => { tutSeen(); go('help')(); } });
         return it;
     }
     if (t.page === 'opts') return [sliderS, sliderM, mute, tog('assist', 'Hỗ trợ nhảy (Celeste)'), tog('shake', 'Rung màn hình'), tog('ambient', 'Tối nền theo vùng'), tog('fit', 'Phóng vừa khung'), tog('pad', 'Tay cầm'), tog('dda', 'Độ khó thích ứng (DDA)'), tog('debug', 'Chế độ Debug (phím J I P N G K 0)'), back];
@@ -15227,6 +15234,9 @@ function titleKey(e) {
     if (e.code === 'Escape' && t.page === 'diff') { t.page = 'name'; t.sel = 0; t.msg = ''; return true; }
     if (e.code === 'Escape' && t.page === 'class' && t.fromSlots) { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; return true; }          // v0.90: Esc ở bảng độ khó (mở từ màn slot) → về màn slot
     if (e.code === 'Escape') { if (t.page === 'main') { if (menuCanResume()) titleClose(); } else { t.page = 'main'; t.sel = 0; t.msg = ''; } return true; }
+    if (t.page === 'awards') {          // v1.2: ↑↓ cuộn danh sách danh hiệu
+        if (e.code === 'ArrowUp' || e.code === 'ArrowDown') { t.awScroll = clamp((t.awScroll | 0) + (e.code === 'ArrowDown' ? 1 : -1), 0, awMaxScroll()); return true; }
+    }
     if (t.page === 'class') {          // v1.04 (Dan): chọn lớp theo chiều NGANG; ↓ xuống nút Quay lại, ↑ về lại lớp
         const nc = CLASS_LIST.length;
         if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { if (t.sel < nc) { t.sel = (t.sel + (e.code === 'ArrowLeft' ? -1 : 1) + nc) % nc; t.lastCls = t.sel; } return true; }
@@ -15626,12 +15636,12 @@ function muiHelpRows(dw) {          // [{k, lines}] — cột trái = phím (the
 // vẽ trang menu (mọi trang trừ welcome / slots / del) — gọi từ drawTitle
 function muiDrawMenu(t, themeName) {
     muiPalSet(themeName); TEXT.q.length = 0;          // menu che hết chữ HUD / gợi ý của màn đang chơi (đã xếp hàng trước trong khung này)
-    const cx = VIEW_W / 2, name = { class: 'CHỌN LỚP NHÂN VẬT', diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', help: 'HƯỚNG DẪN' }[t.page] || '';
+    const cx = VIEW_W / 2, name = { class: 'CHỌN LỚP NHÂN VẬT', diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', awards: 'AWARD', help: 'HƯỚNG DẪN' }[t.page] || '';
     const items = menuItems(t), rh = t.page === 'help' ? 16 : (MUI.rowH[t.page] || 16), blink = Math.floor(t.t * 3) % 2;
     const pw = t.page === 'class' ? 270 : t.page === 'main' || t.page === 'diff' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
         t.page === 'help' ? 304 : 292, KW = 64, dw = pw - 20 - KW - 6;
     const rows = t.page === 'help' ? muiHelpRows(dw) : null, LH = 9.5;
-    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'seed' || t.page === 'name' ? 36 : t.page === 'class' ? 86 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
+    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'awards' ? VIEW_H - 18 - 48 : t.page === 'seed' || t.page === 'name' ? 36 : t.page === 'class' ? 86 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
     if (rows) { const lines = rows.reduce((a, r) => a + r.lines.length, 0); info = lines * LH + rows.length * gap + 4; if (info + rh + 34 > VIEW_H - 18) { gap = 1; info = lines * LH + rows.length * gap + 4; } }
     const nRows = t.page === 'class' ? items.length - CLASS_LIST.length : items.length, ph = Math.min(VIEW_H - 18, info + nRows * rh + 32), px = Math.round(cx - pw / 2), py = Math.max(6, Math.round((VIEW_H - 12 - ph) / 2));
     muiPanel(px, py, pw, ph); muiTitle(name, cx, py + 7); t.hit = [];
@@ -15671,6 +15681,8 @@ function muiDrawMenu(t, themeName) {
             const td = profTopDeath(); if (td) line('Hay chết vì: ' + td, y + 48, '#ff9a9a');
             { const cr = clsProfLoad(); CLASS_LIST.forEach((c, i) => line(CLASSES[c].name + ': ' + cr[c].runs + ' ván · thắng ' + cr[c].wins + ' · xa nhất ' + profLevelName(cr[c].bestDepth), y + 62 + i * 11, CLASSES[c].col)); }
         }
+    } else if (t.page === 'awards') {          // v1.2 (Dan): bảng Award — 25 mục theo nhân vật (15e_awards)
+        awDrawPage(t, px, py, pw, y - 2);
     } else if (rows) {
         let yy = y - 4;
         rows.forEach((r, ri) => {
@@ -15710,7 +15722,7 @@ function muiDrawMenu(t, themeName) {
         hit.push({ x: rx, y: ry, w: rw, h, i });
     });
     if (t.msg) drawText(t.msg, cx, VIEW_H - 22, '#ff9a9a', 'center');
-    drawText(t.page === 'class' ? '←→ chọn lớp · Enter / bấm xác nhận · ↓ quay lại · Esc quay lại' : 'Chuột / ↑↓ chọn · bấm / Enter · ←→ chỉnh · Esc ' + (t.page === 'main' ? (menuCanResume() ? 'tiếp tục' : '') : 'quay lại'), cx, VIEW_H - 10, MUI.dim2, 'center');
+    drawText(t.page === 'class' ? '←→ chọn lớp · Enter / bấm xác nhận · ↓ quay lại · Esc quay lại' : t.page === 'awards' ? '↑↓ / lăn chuột cuộn · Esc quay lại' : 'Chuột / ↑↓ chọn · bấm / Enter · ←→ chỉnh · Esc ' + (t.page === 'main' ? (menuCanResume() ? 'tiếp tục' : '') : 'quay lại'), cx, VIEW_H - 10, MUI.dim2, 'center');
 }
 // ---- chuột ----
 function muiPos(e) {
@@ -15746,11 +15758,368 @@ function muiClick(e) {
 function muiInit() {
     if (typeof window === 'undefined' || !window.addEventListener || MUI.inited) return; MUI.inited = true;
     window.addEventListener('pointermove', muiMove);
-    window.addEventListener('wheel', e => { const t = game.title; if (t && t.page === 'slots') { t.sel = Math.max(0, Math.min(SLOT.n - 1, t.sel + (e.deltaY > 0 ? 1 : -1)));          // v1.18m: không cuộn vòng
+    window.addEventListener('wheel', e => { const t = game.title; if (t && t.page === 'awards') { t.awScroll = clamp((t.awScroll | 0) + (e.deltaY > 0 ? 1 : -1), 0, awMaxScroll()); e.preventDefault(); return; }          // Award: lăn chuột cuộn
+        if (t && t.page === 'slots') { t.sel = Math.max(0, Math.min(SLOT.n - 1, t.sel + (e.deltaY > 0 ? 1 : -1)));          // v1.18m: không cuộn vòng
          t.msg = ''; e.preventDefault(); } }, { passive: false });          // v1.04: lăn chuột cuộn danh sách slot
     window.addEventListener('pointerdown', e => { if (e.target && (e.target === canvas || e.target === hudCv || e.target.tagName === 'CANVAS' || e.target === document.body)) muiClick(e); });
 }
 muiInit();
+
+// 15e_awards — BẢNG AWARD / DANH HIỆU (v1.2, Dan): mỗi danh hiệu hiện NGƯỜI ĐANG GIỮ KỶ LỤC = biểu tượng hero (lớp đã chơi) + tên tài khoản (slot) + con số.
+//   Số liệu lưu theo (slot, lớp) — chung mọi slot trong một kho localStorage (`honzy_awards_v2`) để so sánh giữa các tài khoản; xoá slot (slotWipe) thì xoá luôn phần của slot đó.
+//   25 danh hiệu (xem AW_LIST): màn không mất máu / sạch hoàn toàn / dọn bình-hòm-thùng · chuỗi dài nhất · kỷ lục thời gian · giết / giẫm / combo · vàng · bom · đào · công chúa / thú cưng · bị tên bắn / bom / đè · lì đòn · giờ chơi.
+//   Cách đếm: awAdd / awMax / awMin gọi từ nơi sự kiện xảy ra (Player.onHurt / die, Enemy.onDie, comboKill, bossDefeated, transInfo → awLevelEnd, profRecord → awRunEnd, Level.breakAt, đặt bom, 13c_princess).
+//   Không đếm ở phòng thử hay khi chưa chọn slot. Ghi đĩa: cuối mỗi màn, lúc chết, hết ván, 30 s một lần, khi đóng trang.
+//   «Màn không mất máu» = vào cửa ra mà không dính sát thương nào trong màn (game.lvlHit). «Dọn bình-hòm-thùng» = không còn bình / thùng / thùng dầu / thùng nước / hòm lớn nào còn nguyên. «Sạch hoàn toàn» = diệt hết quái + dọn hết đồ.
+//   «Lì đòn» = qua màn khi chỉ còn ≤ ½ tim. «Bị tên bắn» đếm số lần TRÚNG tên; «Bị bom chết» = số lần chết do bom / nổ không có chủ. Hai danh hiệu theo độ khó (phá đảo nhanh nhất, ít chết nhất) xếp trong độ khó CAO NHẤT mà ai đó đã phá đảo, kèm nhãn độ khó.
+//   Danh hiệu «Thử thách hoàn thành» = số thử thách đầu màn đã đạt (khối THỬ THÁCH ĐẦU MÀN ở cuối file: chalRoll / chalResult / chalGive / chalDraw).
+
+const AW_STORE = 'honzy_awards_v2';
+const AW_CNT = ['noHit', 'tidy', 'clean', 'sub60', 'kills', 'bossNoHit', 'stomp', 'gold', 'bombs', 'bombKills', 'dug', 'princess', 'pets', 'petSac', 'arrowHit', 'bombDeath', 'crush', 'lowHp', 'chal', 'playT', 'shopKill'];          // cộng dồn
+const AW_REC = ['streakBest', 'comboBest', 'bestGold', 'bestLevelT', 'bestClearT', 'bestPrT', 'bestPetT'];          // kỷ lục (lớn nhất; các mục T là nhỏ nhất)
+const AW_BREAK = { pot: 1, crate: 1, barrel: 1, waterbarrel: 1, bigchest: 1 };          // thứ phải đập / mở để «dọn sạch»
+const AW_DIFFS = ['easy', 'normal', 'hard', 'hardcore'], AW_DIFF_SHORT = { easy: 'Dễ', normal: 'Thg', hard: 'Khó', hardcore: 'HC' };
+const AW = { s: {}, _d: false, _acc: 0 };          // s[slot] = { name, c: { lớp: số liệu } }
+function awBlank() { const o = { winT: {}, winDeaths: {} }; for (const k of AW_CNT) o[k] = 0; for (const k of AW_REC) o[k] = 0; return o; }
+function awLoad() {
+    let o = null; try { o = JSON.parse(localStorage.getItem(AW_STORE)); } catch (e) { o = null; }
+    AW.s = {};
+    if (o && typeof o === 'object' && o.s && typeof o.s === 'object') for (const sk in o.s) {
+        const e = o.s[sk]; if (!e || typeof e !== 'object' || !(+sk > 0)) continue;
+        const r = { name: typeof e.name === 'string' ? e.name.slice(0, 14) : '', c: {} };
+        for (const k of CLASS_LIST) {
+            const q = (e.c && e.c[k]) || {}, b = awBlank();
+            for (const f of AW_CNT.concat(AW_REC)) if (typeof q[f] === 'number' && isFinite(q[f]) && q[f] >= 0) b[f] = q[f];
+            for (const m of ['winT', 'winDeaths']) if (q[m] && typeof q[m] === 'object') for (const d in q[m]) if (typeof q[m][d] === 'number' && q[m][d] >= 0) b[m][d] = q[m][d];
+            r.c[k] = b;
+        }
+        AW.s[sk] = r;
+    }
+    AW._d = false;
+}
+function awSave() { if (!AW._d) return; AW._d = false; try { localStorage.setItem(AW_STORE, JSON.stringify({ v: 2, s: AW.s })); } catch (e) { /* bị chặn: bỏ qua */ } }
+function awWipe(slot) { if (AW.s[slot]) { delete AW.s[slot]; AW._d = true; awSave(); } }          // slotWipe (15b): xoá tài khoản thì xoá danh hiệu của nó
+function awOn() { return SLOT.cur > 0 && !!game.genMeta && !!game.level && game.level.id !== 'test'; }
+function awCls() {          // số liệu của (slot đang chơi, lớp đang chơi); cập nhật luôn tên tài khoản
+    const k = SLOT.cur, e = AW.s[k] || (AW.s[k] = { name: '', c: {} }), nm = ((game.heroName || '') || 'NGƯỜI CHƠI ' + k).slice(0, 14);
+    if (e.name !== nm) { e.name = nm; AW._d = true; }
+    const cl = clsOf(game.cls); return e.c[cl] || (e.c[cl] = awBlank());
+}
+function awAdd(k, n) { if (!awOn()) return; awCls()[k] += (n === undefined ? 1 : n); AW._d = true; if (k === 'bombs') awLv('bomb'); else if (k === 'dug') awLv('dug'); }
+function awMax(k, v) { if (!awOn()) return; const c = awCls(); if (v > c[k]) { c[k] = v; AW._d = true; } }
+function awMin(k, v) { if (!awOn() || !(v > 0)) return; const c = awCls(); if (!c[k] || v < c[k]) { c[k] = v; AW._d = true; } }
+// khởi tạo theo ván (newRun / resumeRun): mốc vàng đã tính + chuỗi không mất máu về 0
+function awRunInit() { game._awG = (game.stats && game.stats.goldTotal) || 0; game.awStreak = 0; game.lvlHit = false; game.lastKillT = 0; game.lvlBrkN = 0; game.lv = {}; game.chalHpN = 0; game.chalAnkh = 0; }
+// gộp số liệu đang chạy (vàng nhặt thêm, vàng cao nhất) vào kho
+function awSync() {
+    if (!awOn()) return; const c = awCls(), s = game.stats, p = game.player;
+    if (s) { const d = (s.goldTotal || 0) - (game._awG || 0); if (d > 0) { c.gold += d; AW._d = true; } game._awG = s.goldTotal || 0; }
+    if (p && p.gold > c.bestGold) { c.bestGold = p.gold; AW._d = true; }
+}
+function awTick(dt) {          // mỗi bước mô phỏng của ván đang chơi
+    if (!awOn()) return; awCls().playT += dt; AW._d = true; chalTrack(dt);
+    if ((AW._acc += dt) >= 30) { AW._acc = 0; awSync(); awSave(); }
+}
+function awBreakLeft() { let n = 0; for (const e of game.entities) if (e.alive && AW_BREAK[e.kind] && !(e.kind === 'bigchest' && e.open)) n++; return n; }
+function awLevelStart() { game.lvlHit = false; game.lastKillT = 0; game.lv = {}; game.lvlBrkN = awBreakLeft(); }          // loadLevel, sau spawnObjects
+function awHit(src) {          // Player.onHurt
+    game.lvlHit = true; game.awStreak = 0; if (!awOn() || !src) return;
+    if (src.kind === DMG.ARROW) awAdd('arrowHit'); else if (src.kind === DMG.CRUSH) awAdd('crush');
+}
+function awDeath(src) {          // Player.die
+    game.lvlHit = true; game.awStreak = 0; if (!awOn()) return;
+    if (src && src.kind === DMG.EXPLOSION && !src.by) awAdd('bombDeath');
+    awSync(); awSave();
+}
+function awKill(e, src) {          // Enemy.onDie + boss
+    if (!awOn()) return; if (e.kind === 'shopkeeper') { awAdd('shopKill'); return; } awAdd('kills');
+    if (e.boss || e.isBoss) return;
+    game.lastKillT = game.levelT || 0;
+    if (src && src.kind === DMG.STOMP) { awAdd('stomp'); awLv('stomp'); }
+    else if (src && src.kind === DMG.EXPLOSION && !src.by) {
+        awAdd('bombKills'); awLv('bombKill'); const lv = game.lv; if (lv) { lv.bombN = game.time - (lv.bombT === undefined ? -9 : lv.bombT) < 0.15 ? (lv.bombN | 0) + 1 : 1; lv.bombT = game.time; if (lv.bombN > (lv.bombMulti | 0)) lv.bombMulti = lv.bombN; }
+    }
+    if (!src) return;
+    const by = src.by;
+    if (src.kind === DMG.IMPACT && by && by.thrower === game.player) awLv('thrown');          // vật do người chơi ném
+    if (by && by.kind === 'princess' && by.pet) awLv('petKill');          // thú cưng bị ném
+    if (src.kind === DMG.DROWN) awLv('drown'); else if (src.kind === DMG.ARROW) awLv('arrowK');
+    else if (src.kind === DMG.FIRE && game.lv && game.time - (game.lv.barrelT === undefined ? -99 : game.lv.barrelT) < 20) awLv('fireKill');          // cháy trong 20 s sau khi thùng dầu vỡ
+}
+function awLevelEnd(L, p, total, left, def) {          // transInfo: người chơi vừa vào cửa ra → trả { tidy: được thưởng dọn đồ?, chal: kết quả thử thách | null }
+    if (!awOn() || L.id === 'test') return null; awSync(); const out = { tidy: false, chal: null };
+    const c = awCls(), boss = !!(def && def.boss), T = game.levelT || 0;
+    if (!game.lvlHit) { c.noHit++; game.awStreak = (game.awStreak | 0) + 1; if (game.awStreak > c.streakBest) c.streakBest = game.awStreak; }
+    if (p && p.hp > 0 && p.hp <= 1) c.lowHp++;
+    if (!boss) {
+        awMin('bestLevelT', T); if (T < 60) c.sub60++;
+        const N = game.lvlBrkN | 0, tidy = N > 0 && awBreakLeft() === 0;
+        if (tidy) { c.tidy++; out.tidy = true; }
+        if (!left && total > 0) awMin('bestClearT', game.lastKillT || T);
+        if (!left && (total > 0 || N > 0) && (N === 0 || tidy)) c.clean++;
+        out.chal = chalResult(total, left);
+        if (out.chal && out.chal.ok) c.chal++;
+    }
+    AW._d = true; awSave(); return out;
+}
+function awRunEnd(outcome) {          // profRecord: hết ván (chết thật / thắng)
+    if (!awOn()) return; awSync();
+    if (outcome === 'win') {
+        const c = awCls(), d = game.diff || 'normal', dead = (game.stats && game.stats.deaths) || 0, t = Math.round((game.runT || 0) * 10) / 10;
+        if (t > 0 && (!(d in c.winT) || t < c.winT[d])) c.winT[d] = t;
+        if (!(d in c.winDeaths) || dead < c.winDeaths[d]) c.winDeaths[d] = dead;
+        AW._d = true;
+    }
+    awSave();
+}
+// ---- hiển thị ----
+function awFmtT(s) { if (!(s > 0)) return '—'; if (s < 60) return s.toFixed(1) + 's'; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), q = Math.floor(s % 60), p2 = v => (v < 10 ? '0' : '') + v; return h ? h + ':' + p2(m) + ':' + p2(q) : m + ':' + p2(q); }
+function awFmtPlay(s) { const m = Math.floor(s / 60); return m < 60 ? m + ' phút' : Math.floor(m / 60) + 'g ' + (m % 60) + 'p'; }
+const AW_LIST = [          // f: số liệu (0 / null = chưa ai có) · lo: nhỏ hơn là tốt hơn · pd: theo độ khó (winT / winDeaths)
+    { n: 'Màn không mất máu', f: c => c.noHit },
+    { n: 'Màn sạch hoàn toàn', f: c => c.clean },
+    { n: 'Dọn hết bình, hòm, thùng', f: c => c.tidy },
+    { n: 'Ít lần chết nhất khi phá đảo', pd: 'winDeaths', lo: true, zero: true, fmt: v => String(v) },
+    { n: 'Qua màn nhanh nhất', f: c => c.bestLevelT, lo: true, fmt: awFmtT },
+    { n: 'Phá đảo nhanh nhất', pd: 'winT', lo: true, fmt: awFmtT },
+    { n: 'Màn chớp nhoáng (< 1 phút)', f: c => c.sub60 },
+    { n: 'Sát thủ (quái đã giết)', f: c => c.kills },
+    { n: 'Chủ nhân cú giẫm', f: c => c.stomp },
+    { n: 'Combo giết liên tiếp', f: c => c.comboBest, fmt: v => '×' + v },
+    { n: 'Phú hộ (vàng cao nhất)', f: c => c.bestGold, fmt: v => '$' + v },
+    { n: 'Bàn tay vàng (tổng vàng)', f: c => Math.round(c.gold), fmt: v => '$' + v },
+    { n: 'Chuyên gia bom', f: c => c.bombs, fmt: v => v + ' bom' },
+    { n: 'Thợ đào (khối đã phá)', f: c => c.dug },
+    { n: 'Hiệp sĩ cứu mỹ nhân', f: c => c.princess },
+    { n: 'Cứu công chúa nhanh nhất', f: c => c.bestPrT, lo: true, fmt: awFmtT },
+    { n: 'Nuôi thú cưng', f: c => c.pets },
+    { n: 'Cứu thú cưng nhanh nhất', f: c => c.bestPetT, lo: true, fmt: awFmtT },
+    { n: 'Kẻ diệt chủ tiệm', f: c => c.shopKill },
+    { n: 'Bị tên bắn trúng', f: c => c.arrowHit },
+    { n: 'Bị bom nổ chết', f: c => c.bombDeath },
+    { n: 'Bị đè bẹp', f: c => c.crush },
+    { n: 'Kẻ lì đòn (≤ ½ tim)', f: c => c.lowHp },
+    { n: 'Thời gian chơi', f: c => c.playT >= 60 ? c.playT : 0, fmt: awFmtPlay },
+    { n: 'Thử thách hoàn thành', f: c => c.chal }
+];
+// Người giữ từng danh hiệu: duyệt mọi (slot, lớp); trả mảng song song AW_LIST: { who: tên, cls, text } hoặc null
+function awBoard() {
+    const cands = []; for (const sk in AW.s) { const e = AW.s[sk]; for (const k of CLASS_LIST) if (e.c[k]) cands.push({ name: e.name || ('NGƯỜI CHƠI ' + sk), cls: k, c: e.c[k] }); }
+    return AW_LIST.map(a => {
+        let best = null;
+        for (const q of cands) {
+            let v, tag = '', rk = 0;
+            if (a.pd) { let di = -1; for (let i = 0; i < AW_DIFFS.length; i++) if (AW_DIFFS[i] in q.c[a.pd]) di = i; if (di < 0) continue; v = q.c[a.pd][AW_DIFFS[di]]; rk = di; tag = AW_DIFF_SHORT[AW_DIFFS[di]]; }
+            else { v = a.f(q.c); if (!(v > 0)) continue; }
+            if (!best || rk > best.rk || (rk === best.rk && (a.lo ? v < best.v : v > best.v))) best = { q, v, rk, tag };
+        }
+        if (!best) return null;
+        return { who: best.q.name, cls: best.q.cls, text: (a.fmt ? a.fmt(best.v) : String(best.v)) + (best.tag ? ' ' + best.tag : '') };
+    });
+}
+const AW_ROWS = 11, AW_RH = 14;
+function awMaxScroll() { return Math.max(0, AW_LIST.length - AW_ROWS); }
+function awHeroImg(cls) { return assets.img[cls === 'sword' ? 'hero_a_idle' : 'hero_' + cls + '_idle']; }
+function awClip(str, n) { return str.length > n ? str.slice(0, n - 1) + '…' : str; }
+function awDrawPage(t, px, py, pw, y) {          // gọi từ muiDrawMenu (15d) khi t.page === 'awards'; y = đầu vùng nội dung
+    const board = awBoard(), max = awMaxScroll(); t.awScroll = clamp(t.awScroll | 0, 0, max);
+    drawText('Danh hiệu', px + 12, y, MUI.dim); drawText('Người giữ', px + 144, y, MUI.dim); drawText('Số', px + pw - 18, y, MUI.dim, 'right');
+    const y0 = y + 12;
+    for (let i = 0; i < AW_ROWS; i++) {
+        const idx = t.awScroll + i, a = AW_LIST[idx]; if (!a) break; const ry = y0 + i * AW_RH, b = board[idx], ty = ry + 3;
+        if (i % 2 === 0) muiRect(px + 8, ry, pw - 16, AW_RH, MUI.rowFill);
+        drawText(a.n, px + 12, ty, b ? MUI.txt : MUI.dim2);
+        if (b) {
+            const im = awHeroImg(b.cls); if (im) { ctx.imageSmoothingEnabled = false; ctx.drawImage(im, 0, 0, 32, 34, px + 130, ry - 1.5, 16, 17); }
+            drawText(awClip(b.who, 8), px + 148, ty, MUI.gold); drawText(b.text, px + pw - 18, ty, MUI.gold2, 'right');
+        } else drawText('—', px + pw - 18, ty, MUI.dim2, 'right');
+    }
+    if (max > 0) { const th = AW_ROWS * AW_RH, bh = Math.max(8, Math.round(th * AW_ROWS / AW_LIST.length)), by = y0 + Math.round((th - bh) * t.awScroll / max); muiRect(px + pw - 12, y0, 3, th, MUI.ink); muiRect(px + pw - 12, by, 3, bh, MUI.gold); }
+}
+
+// ---- THỬ THÁCH ĐẦU MÀN (v1.2, Dan) ----
+//   Đầu mỗi màn thường (không boss / phòng thử / màn 1-1 / đang hướng dẫn) có CHAL.chance cơ hội bốc 1 thử thách; hiện MỘT dòng giữa màn hình (5 s đầu, dưới tên màn) kèm phần thưởng. Không bắt buộc, trượt không phạt.
+//   3 CẤP: Dễ (0) · Vừa (1) · Khó (2). Chấm lúc vào cửa ra (awLevelEnd → chalResult); thưởng phát ở bảng qua màn (transStatStep, 16_gameloop).
+//   49 thử thách (CHAL_DEFS): t = cấp · late = có thể bốc ở x-4…x-6 (◆) · lateKho = cấp Khó vẫn bốc được ở x-4, x-5 · maxPos = chỉ các màn đầu (0 = chỉ x-1) · dyn = cấp theo vị trí (x-1 Dễ, x-2 Vừa, x-3 Khó, cuối vùng không bốc).
+//   mk(s) nhận kết quả quét màn lúc vào (chalScan) và trả tham số P (hoặc rỗng nếu màn không đủ điều kiện) · ok(c, P) chấm theo số liệu cả màn (chalCtx) · txt(P) là chữ hiện.
+//   Số liệu theo màn (game.lv, awLv / awLvMax): bom, móc, chém (melee), đồ phụ, súng, giẫm, bom giết (+ nhiều quái một quả), vật ném giết, combo, chìm, tên, thú cưng giết, lửa sau thùng dầu, dung nham (hóa đá / nấu vàng / đốt hàng), đào, vàng đào, rơi đặt công chúa / thú cưng, chạm sàn tầng cuối, giờ sạch màn.
+//   PHẦN THƯỞNG theo cấp (CHAL_REW): mỗi mục có trọng số gốc nhân hệ số theo tình trạng lúc vào màn (chalRewFac): ít máu → hồi máu tăng (đầy máu = 0) · nhiều bom / móc → giảm · đang cầm đồ phụ → bình giảm · đã có súng / kiếm hệ → giảm · ít vàng → vàng tăng. +½ tim tối đa hiếm gấp đôi mỗi lần đã nhận (game.chalHpN) và 0 khi chạm trần máu; Ankh chỉ x-4…x-5, tối đa 1 lần mỗi ván, không khi đang có / hardcore. Mỗi cấp đúng 1 mục vàng (200 / 500 / 1000).
+//   Cộng thêm: dọn hết bình / hòm / thùng (không cần thử thách) → CHAL.tidyGold vàng ở bảng qua màn.
+const CHAL = { chance: 0.75, tierEarly: [0.4, 0.4, 0.2], tierLate: [0.5, 0.4, 0.1], tidyGold: 100 };
+const CHAL_TIER = ['Dễ', 'Vừa', 'Khó'];
+function awLv(k, n) { const lv = game.lv; if (lv) lv[k] = (lv[k] || 0) + (n === undefined ? 1 : n); }
+function awLvMax(k, v) { const lv = game.lv; if (lv && v > (lv[k] || 0)) lv[k] = v; }
+function chalFrac(x) { return x === 0.5 ? '½' : x === 1.5 ? '1½' : String(x); }
+// quét màn lúc vào: đếm những thứ thử thách cần
+function chalScan() {
+    const L = game.level, p = game.player, s = { foes: game.foesStart | 0, N: game.lvlBrkN | 0, thrN: 0, prin: 0, pets: 0, barrels: 0, wbarrels: 0, shopN: 0, carryN: 0, water: 0, arrowT: L.traps ? L.traps.length : 0, lava: !!L.hasLava, exitBottom: false, bombs: p.bombs, subN: subHas(p) ? p.sub.n : 0 };
+    for (const e of game.entities) {
+        if (!e.alive) continue;
+        if (e.kind === 'monkey' || e.kind === 'imp') s.thrN++;
+        if (e instanceof Princess) { if (e.pet) s.pets++; else s.prin++; }
+        if (e.kind === 'barrel') s.barrels++; else if (e.kind === 'waterbarrel') s.wbarrels++; else if (e.kind === 'goods') s.shopN++;
+        if (e.carried) s.carryN++;
+    }
+    for (let r = 0; r < L.h; r++) for (let c = 0; c < L.w; c++) if (L.tile(c, r) === T_WATER) s.water++;
+    const row = y => Math.floor((y / TILE - LVL.border) / LVL.roomH), er = L.exit ? row((L.exit.r + 0.5) * TILE) : -1;
+    s.exitBottom = er === LVL.roomsY - 1 && row(L.spawn.y) < er;
+    s.waterSrc = s.water > 0 || s.wbarrels > 0 || (p.sub && p.sub.id === 'water' && p.sub.n > 0);
+    return s;
+}
+const chalClean = c => !c.left && c.kills > 0 && (c.N === 0 || c.brk >= c.N);
+const CHAL_DEFS = [
+    // ---- cấp DỄ (0) ----
+    { id: 'thr2', t: 0, late: 1, mk: s => s.thrN >= 2 && {}, txt: () => 'Hạ ít nhất 2 khỉ hang hoặc quỷ lùn', ok: c => c.thrKills >= 2 },
+    { id: 'dig30', t: 0, late: 1, mk: () => ({}), txt: () => 'Phá hoặc đào ít nhất 30 khối', ok: c => c.dug >= 30 },
+    { id: 'brk70', t: 0, late: 1, mk: s => s.N >= 5 && { need: Math.ceil(0.7 * s.N), N: s.N }, txt: P => 'Đập ít nhất 70% bình, hòm, thùng (' + P.need + '/' + P.N + ')', ok: (c, P) => c.brk >= P.need },
+    { id: 'gold500', t: 0, late: 1, mk: () => ({}), txt: () => 'Nhặt ít nhất 500 vàng', ok: c => c.gold >= 500 },
+    { id: 'bomb3', t: 0, late: 1, mk: s => s.foes >= 3 && {}, txt: () => 'Hạ ít nhất 3 quái bằng bom', ok: c => c.bombKills >= 3 },
+    { id: 'stomp4', t: 0, late: 1, mk: s => s.foes >= 4 && {}, txt: () => 'Giẫm chết ít nhất 4 quái', ok: c => c.stomp >= 4 },
+    { id: 'thrown5', t: 0, late: 1, mk: s => s.foes >= 5 && {}, txt: () => 'Ném chết ít nhất 5 quái', ok: c => c.thrown >= 5 },
+    { id: 'kill80', t: 0, late: 1, mk: s => s.foes >= 5 && { need: Math.ceil(0.8 * s.foes), n: s.foes }, txt: P => 'Hạ ít nhất 80% số quái (' + P.need + '/' + P.n + ')', ok: (c, P) => c.kills >= P.need },
+    { id: 'carry6', t: 0, late: 1, mk: s => s.carryN >= 6 && {}, txt: () => 'Hạ hết quái sót đuổi theo', ok: c => c.carried === 0 },
+    { id: 'dig1000', t: 0, late: 1, mk: () => ({}), txt: () => 'Đào được 1000 vàng', ok: c => c.digGold >= 1000 },
+    { id: 'tidy', t: 0, late: 1, mk: s => s.N >= 3 && {}, txt: () => 'Dọn hết bình, hòm, thùng', ok: c => c.N > 0 && c.brk >= c.N },
+    { id: 'oilfire', t: 0, late: 1, mk: s => s.barrels >= 1 && s.foes >= 1 && {}, txt: () => 'Đốt cháy quái bằng thùng dầu', ok: c => c.fireKill >= 1 },
+    { id: 'cool', t: 0, mk: s => s.lava && s.waterSrc && {}, txt: () => 'Hóa đá dung nham bằng cách đổ nước vào', ok: c => c.cool >= 1 },
+    { id: 'goldburn', t: 0, mk: s => s.lava && {}, txt: () => 'Nấu vàng: hủy 1 cục vàng bằng dung nham', ok: c => c.goldBurn >= 1 },
+    { id: 'rescue', t: 0, late: 1, mk: s => s.prin + s.pets >= 1 && {}, txt: () => 'Cứu công chúa hoặc thú cưng', ok: c => c.rescued >= 1 },
+    { id: 'clear', t: 0, late: 1, mk: s => s.foes >= 1 && {}, txt: () => 'Diệt sạch quái', ok: c => !c.left && c.kills > 0 },
+    { id: 'combo5', t: 0, late: 1, mk: s => s.foes >= 5 && {}, txt: () => 'Combo giết 5 quái liên tiếp', ok: c => c.combo >= 5 },
+    // ---- cấp VỪA (1) ----
+    { id: 'bomb1x3', t: 1, late: 1, mk: s => s.foes >= 3 && {}, txt: () => 'Hạ ít nhất 3 quái bằng một quả bom', ok: c => c.bombMulti >= 3 },
+    { id: 'drown', t: 1, late: 1, mk: s => s.water >= 6 && s.foes >= 1 && {}, txt: () => 'Làm ít nhất 1 quái chết chìm', ok: c => c.drown >= 1 },
+    { id: 'arrowkill', t: 1, late: 1, mk: s => s.arrowT >= 1 && s.foes >= 1 && {}, txt: () => 'Bắn tên chết quái bằng bẫy hộp bắn tên', ok: c => c.arrowK >= 1 },
+    { id: 'nobombrope', t: 1, late: 1, mk: () => ({}), txt: () => 'Qua màn không dùng bom lẫn dây móc', ok: c => c.bombs === 0 && c.hooks === 0 },
+    { id: 'onlysub', t: 1, late: 1, mk: s => s.subN >= 3 && {}, txt: () => 'Qua màn chỉ dùng đồ phụ', ok: c => c.melee === 0 && c.bombs === 0 && c.sub >= 1 },
+    { id: 'onlybomb', t: 1, mk: s => s.bombs >= 4 && s.foes >= 1 && {}, txt: () => 'Qua màn chỉ dùng bom', ok: c => c.melee === 0 && c.sub === 0 && c.gun === 0 && c.thrown === 0 && c.bombs >= 1 },
+    { id: 'stomp6', t: 1, late: 1, mk: s => s.foes >= 6 && {}, txt: () => 'Giẫm chết ít nhất 6 quái', ok: c => c.stomp >= 6 },
+    { id: 'dig1500', t: 1, mk: () => ({}), txt: () => 'Đào được 1500 vàng', ok: c => c.digGold >= 1500 },
+    { id: 'thrall', t: 1, late: 1, mk: s => s.thrN >= 1 && { n: s.thrN }, txt: () => 'Hạ hết quái ném (khỉ, quỷ lùn) trong màn', ok: (c, P) => c.thrKills >= P.n },
+    { id: 'combo6', t: 1, mk: s => s.foes >= 6 && {}, txt: () => 'Combo giết 6 quái liên tiếp', ok: c => c.combo >= 6 },
+    { id: 'nohit', t: 1, late: 1, mk: () => ({}), txt: () => 'Không mất máu', ok: c => !c.hit },
+    { id: 'tidynohit', t: 1, mk: s => s.N >= 3 && {}, txt: () => 'Dọn hết bình, hòm, thùng mà không mất máu', ok: c => c.N > 0 && c.brk >= c.N && !c.hit },
+    { id: 'clear2m', t: 1, maxPos: 1, mk: s => s.foes >= 1 && {}, txt: () => 'Diệt sạch quái trong 2 phút', ok: c => !c.left && c.kills > 0 && c.lastKillT <= 120 },
+    { id: 'time90', t: 1, maxPos: 0, mk: () => ({}), txt: () => 'Qua màn trong 90 giây', ok: c => c.T <= 90 },
+    { id: 'nohit40', t: 1, mk: s => s.foes >= 3 && { need: Math.ceil(0.4 * s.foes), n: s.foes }, txt: P => 'Không mất máu và hạ ít nhất 40% số quái (' + P.need + '/' + P.n + ')', ok: (c, P) => !c.hit && c.kills >= P.need },
+    { id: 'rescuenohit', t: 1, mk: s => s.prin + s.pets >= 1 && {}, txt: () => 'Cứu công chúa hoặc thú cưng mà không mất máu', ok: c => c.rescued >= 1 && !c.hit },
+    { id: 'prdrop', t: 1, late: 1, mk: s => s.prin >= 1 && {}, txt: () => 'Cứu công chúa mà không đặt xuống', ok: c => c.rescuedPr >= 1 && !c.dropPr },
+    { id: 'petdrop', t: 1, late: 1, mk: s => s.pets >= 1 && {}, txt: () => 'Cứu thú cưng mà không đặt xuống', ok: c => c.rescuedPet >= 1 && !c.dropPet },
+    { id: 'pet4', t: 1, late: 1, mk: s => s.pets >= 1 && s.foes >= 4 && {}, txt: () => 'Giết 4 quái bằng thú cưng', ok: c => c.petKill >= 4 },
+    { id: 'buyall', t: 1, mk: s => s.shopN >= 1 && { n: s.shopN }, txt: () => 'Mua toàn bộ hàng ở cửa hàng', ok: (c, P) => c.bought >= P.n },
+    { id: 'floor', t: 1, mk: s => s.exitBottom && {}, txt: () => 'Qua màn không chạm sàn tầng cuối (rơi thẳng xuống cửa ra)', ok: c => !c.touched },
+    // ---- cấp KHÓ (2) ----
+    { id: 'cleanall', t: 2, mk: s => s.foes >= 1 && s.N >= 1 && {}, txt: () => 'Sạch màn: diệt hết quái và đập hết đồ', ok: chalClean },
+    { id: 'clearnohit', t: 2, lateKho: 1, mk: s => s.foes >= 1 && {}, txt: () => 'Diệt sạch quái mà không mất máu', ok: c => !c.left && c.kills > 0 && !c.hit },
+    { id: 'nohitnone', t: 2, lateKho: 1, mk: () => ({}), txt: () => 'Không mất máu, không đặt bom, không dùng dây móc', ok: c => !c.hit && c.bombs === 0 && c.hooks === 0 },
+    { id: 'combo8', t: 2, lateKho: 1, mk: s => s.foes >= 8 && {}, txt: () => 'Combo giết 8 quái liên tiếp', ok: c => c.combo >= 8 },
+    { id: 'cleannohit', t: 2, mk: s => s.foes >= 1 && s.N >= 1 && {}, txt: () => 'Sạch màn mà không mất máu', ok: c => chalClean(c) && !c.hit },
+    { id: 'cleanrescue', t: 2, mk: s => s.foes >= 1 && s.N >= 1 && s.prin + s.pets >= 1 && {}, txt: () => 'Sạch màn và cứu công chúa hoặc thú cưng', ok: c => chalClean(c) && c.rescued >= 1 },
+    { id: 'clean90', t: 2, maxPos: 0, mk: s => s.foes >= 1 && s.N >= 1 && {}, txt: () => 'Sạch màn trong 90 giây', ok: c => chalClean(c) && c.cleanT > 0 && c.cleanT <= 90 },
+    { id: 'time60', t: 2, maxPos: 0, mk: () => ({}), txt: () => 'Qua màn trong 60 giây', ok: c => c.T <= 60 },
+    { id: 'noweapon', t: 2, lateKho: 1, mk: s => s.foes >= 1 && {}, txt: () => 'Qua màn không dùng vũ khí, chỉ ném đá hoặc vật', ok: c => c.melee === 0 && c.bombs === 0 && c.sub === 0 && c.gun === 0 },
+    { id: 'burnshop', t: 2, mk: s => s.shopN >= 1 && s.lava && { n: s.shopN }, txt: () => 'Đốt cửa hàng: dùng dung nham phá hết đồ trong cửa hàng', ok: (c, P) => c.goodsBurn >= P.n },
+    // ---- cấp theo vị trí màn ----
+    { id: 'clean3m', dyn: 1, mk: s => s.foes >= 1 && s.N >= 1 && {}, txt: () => 'Sạch màn trong 3 phút', ok: c => chalClean(c) && c.cleanT > 0 && c.cleanT <= 180 }
+];
+function chalTierAt(d, pos) {
+    if (d.dyn) return pos <= 2 ? pos : null;
+    if (d.maxPos !== undefined && pos > d.maxPos) return null;
+    if (pos <= 2) return d.t;
+    if (d.t === 2) return d.lateKho && pos <= 4 ? 2 : null;
+    return d.late ? d.t : null;
+}
+// ---- phần thưởng theo cấp: p = các phần [loại, tham số] · w = trọng số gốc (mặc định 10) ----
+const CHAL_REW = [
+    [{ p: [['bomb', 3]] }, { p: [['rope', 5]] }, { p: [['bomb', 2], ['rope', 2]] }, { p: [['heal', 0.5]] }, { p: [['flaskWO', 6]] }, { p: [['gold', 200]] }],
+    [{ p: [['bomb', 5]] }, { p: [['rope', 8]] }, { p: [['heal', 1]] }, { p: [['flaskEl', 10]] }, { p: [['bomb', 4], ['rope', 4]] }, { p: [['heal', 1], ['bomb', 3]] }, { p: [['blade']] }, { p: [['gold', 500]] }],
+    [{ p: [['heal', 2]] }, { p: [['heal', 'full'], ['bomb', 3]] }, { p: [['bomb', 8], ['rope', 8]] }, { p: [['gun']], gate: () => game.levelIdx >= 2 }, { p: [['hpup', 0.5]], w: 4, sp: 'hpup' }, { p: [['ankh']], w: 2, sp: 'ankh' }, { p: [['gold', 1000]] }]
+];
+function chalRewFac(kind, p) {          // hệ số theo tình trạng người chơi lúc vào màn
+    const mx = maxHpOf(p), cnt = (n, a, b, c) => n >= a ? 0.2 : n >= b ? 0.5 : n >= c ? 1 : 2;
+    switch (kind) {
+        case 'bomb': return cnt(p.bombs, 10, 6, 3);
+        case 'rope': return p.cls === 'hunt' ? 0.2 : cnt(p.ropes, 8, 5, 3);
+        case 'heal': return p.hp >= mx ? 0 : p.hp <= HP_UNIT ? 4 : 0.5 + 3 * (1 - p.hp / mx);
+        case 'flaskWO': case 'flaskEl': return subHas(p) && p.sub.n > 0 ? 0.2 : 1.5;
+        case 'gun': return p.weapon === 'shotgun' && p.ammo > 0 ? 0.5 : 1;
+        case 'blade': return p.blade ? 0.5 : 1;
+        case 'gold': return p.gold < 300 ? 1.5 : p.gold >= 1500 ? 0.5 : 1;
+    }
+    return 1;
+}
+function chalRewW(e, p, pos) {
+    if (e.gate && !e.gate()) return 0;
+    if (e.sp === 'hpup') return (p.hpUp | 0) >= relicMaxUp(p) ? 0 : e.w * Math.pow(0.5, game.chalHpN | 0);
+    if (e.sp === 'ankh') return pos >= 3 && pos <= 4 && !gearHas(p, 'ankh') && !game.chalAnkh && gearUsable('ankh', game.diff) ? e.w : 0;
+    let f = 0; for (const q of e.p) f += chalRewFac(q[0], p); return (e.w || 10) * f / e.p.length;
+}
+const CHAL_BLADE_VN = { fire: 'lửa', ice: 'băng', shock: 'sét', poison: 'độc' };
+function chalRewPick(tier, p, pos, R) {          // → các phần đã cụ thể hóa [loại, ...] hoặc null
+    const pool = CHAL_REW[tier].map(e => ({ e, w: chalRewW(e, p, pos) })).filter(x => x.w > 0); if (!pool.length) return [['bomb', 3]];
+    let r = R.next() * pool.reduce((a, x) => a + x.w, 0), pick = pool[pool.length - 1].e; for (const x of pool) { if ((r -= x.w) < 0) { pick = x.e; break; } }
+    return pick.p.map(q => q[0] === 'flaskWO' ? ['flask', R.next() < 0.5 ? 'water' : 'oil', q[1]] : q[0] === 'flaskEl' ? ['flask', ['shock', 'frost', 'poison'][Math.floor(R.next() * 3) % 3], q[1]] : q[0] === 'blade' ? ['blade', BLADE_LIST[Math.floor(R.next() * BLADE_LIST.length) % BLADE_LIST.length]] : q.slice());
+}
+function chalRewTxt(parts) {
+    return parts.map(q => q[0] === 'bomb' ? '+' + q[1] + ' bom' : q[0] === 'rope' ? '+' + q[1] + ' móc' : q[0] === 'heal' ? (q[1] === 'full' ? 'hồi đầy máu' : 'hồi ' + chalFrac(q[1]) + ' tim') : q[0] === 'flask' ? SUB[q[1]].name + ' ×' + q[2] : q[0] === 'blade' ? 'kiếm hệ ' + CHAL_BLADE_VN[q[1]] : q[0] === 'gun' ? 'súng hoa cải' : q[0] === 'hpup' ? '+½ tim tối đa' : q[0] === 'ankh' ? 'Ankh hồi sinh' : '+' + q[1] + ' vàng').join(' · ');
+}
+function chalCtx(total, left) {
+    const lv = game.lv || {}, s = game.stats || {}, b = game.lvlStart || {}, kl = game.killsLv || {}, N = game.lvlBrkN | 0; let carried = 0;
+    for (const e of game.entities) if (e.alive && e.carried) carried++;
+    const resc = (s.rescued || 0) - (b.rescued || 0), pets = (s.pets || 0) - (b.pets || 0);
+    return {
+        T: game.levelT || 0, kills: total === undefined ? killsDone() : total, left: !!left, N, brk: Math.max(0, N - awBreakLeft()), hit: !!game.lvlHit, lastKillT: game.lastKillT || 0, cleanT: lv.cleanT || 0,
+        bombs: lv.bomb | 0, hooks: lv.hook | 0, melee: lv.melee | 0, sub: lv.sub | 0, gun: lv.gun | 0, stomp: lv.stomp | 0, bombKills: lv.bombKill | 0, bombMulti: lv.bombMulti | 0, thrown: lv.thrown | 0, combo: lv.combo | 0,
+        drown: lv.drown | 0, arrowK: lv.arrowK | 0, petKill: lv.petKill | 0, fireKill: lv.fireKill | 0, cool: lv.cool | 0, goldBurn: lv.goldBurn | 0, goodsBurn: lv.goodsBurn | 0, dug: lv.dug | 0, digGold: lv.digGold | 0,
+        gold: (s.goldTotal || 0) - (b.goldTotal || 0), rescued: resc, rescuedPet: pets, rescuedPr: resc - pets, dropPr: lv.dropPr | 0, dropPet: lv.dropPet | 0, touched: lv.touched | 0,
+        thrKills: (kl.monkey | 0) + (kl.imp | 0), carried, bought: (s.bought || 0) - (b.bought || 0)
+    };
+}
+function chalRoll(def) {          // loadLevel, sau killNeedOf (đã biết số quái)
+    game.chal = null; if (!awOn() || def.boss || game.levelIdx < 1 || (typeof tutOn === 'function' && tutOn())) return;
+    const R = game.rngFx; if (R.next() >= CHAL.chance) return;
+    const pos = game.levelIdx % ZONE_LEN, s = chalScan(), p = game.player, W = pos >= 3 ? CHAL.tierLate : CHAL.tierEarly, byTier = [[], [], []];
+    for (const d of CHAL_DEFS) { const t = chalTierAt(d, pos); if (t === null) continue; const P = d.mk(s); if (P) byTier[t].push({ d, P }); }
+    const w = W.map((x, i) => byTier[i].length ? x : 0), tot = w[0] + w[1] + w[2]; if (!(tot > 0)) return;
+    let r = R.next() * tot, tier = 0; while (tier < 2 && (r -= w[tier]) >= 0) tier++;
+    const list = byTier[tier], k = list[Math.floor(R.next() * list.length) % list.length], rew = chalRewPick(tier, p, pos, R);
+    game.chal = { id: k.d.id, tier, P: k.P, txt: k.d.txt(k.P), rew, rtxt: chalRewTxt(rew), st: 'run' };
+}
+function chalResult(total, left) {          // awLevelEnd: chấm thử thách → { txt, tier, rew, rtxt, ok } hoặc null
+    const k = game.chal; if (!k) return null; const d = CHAL_DEFS.find(x => x.id === k.id); if (!d) return null;
+    const ok = !!d.ok(chalCtx(total, left), k.P); k.st = ok ? 'ok' : 'fail';
+    return { txt: k.txt, tier: k.tier, rew: k.rew, rtxt: k.rtxt, ok };
+}
+function chalGive(parts) {          // transStatStep: phát thưởng thử thách
+    const p = game.player; if (!p || p.dead) return;
+    for (const q of parts) {
+        if (q[0] === 'bomb') p.bombs += q[1]; else if (q[0] === 'rope') p.ropes += q[1];
+        else if (q[0] === 'gold') { p.gold += q[1]; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + q[1]; }
+        else if (q[0] === 'heal') p.hp = q[1] === 'full' ? Math.max(maxHpOf(p), p.hp) : Math.min(Math.max(maxHpOf(p), p.hp), p.hp + Math.round(q[1] * HP_UNIT));
+        else if (q[0] === 'flask') { subGive(p, q[1]); if (p.cls !== 'alch' && p.sub && p.sub.id === q[1]) p.sub.n = q[2]; }
+        else if (q[0] === 'blade') bladeGive(p, q[1]);
+        else if (q[0] === 'gun') { p.ammo = (p.weapon === 'shotgun' ? (p.ammo | 0) : 0) + WPN.ammo; p.weapon = 'shotgun'; }
+        else if (q[0] === 'hpup') { const u = Math.round(q[1] * HP_UNIT); p.hpUp = (p.hpUp | 0) + u; p.hp += u; game.chalHpN = (game.chalHpN | 0) + 1; }
+        else if (q[0] === 'ankh') { gearGive(p, 'ankh'); game.chalAnkh = 1; }
+    }
+}
+function chalTrack(dt) {          // mỗi bước (ván đang chơi, chưa chết): chạm sàn tầng cuối · đặt công chúa / thú cưng xuống · giờ sạch màn
+    const lv = game.lv, p = game.player, L = game.level, k = game.chal; if (!lv || !p || !L) return;
+    if (k && k.id === 'floor' && p.onGround && Math.floor((p.cy / TILE - LVL.border) / LVL.roomH) >= LVL.roomsY - 1) lv.touched = 1;
+    const h = p.hold instanceof Princess ? p.hold : null;
+    if (h) lv.holdK = h.pet ? 'Pet' : 'Pr';
+    else if (lv.holdK) { const ex = L.exit; if (!(ex && Math.hypot(p.cx - (ex.c + 0.5) * TILE, p.cy - (ex.r + 0.5) * TILE) < 28)) lv['drop' + lv.holdK] = 1; lv.holdK = null; }
+    if (k && (k.id === 'clean90' || k.id === 'clean3m') && !lv.cleanT && ((lv.scanT = (lv.scanT || 0) - dt) <= 0)) {
+        lv.scanT = 0.25; let left = false; for (const e of game.entities) if (e.alive && e instanceof Enemy && !e.boss && !e.isBoss && e.kind !== 'shopkeeper') { left = true; break; }
+        if (!left && awBreakLeft() === 0) lv.cleanT = game.levelT || 0.01;
+    }
+}
+function chalDraw() {          // HUD: chỉ một dòng giữa màn hình (dưới tên màn, 5 s đầu, mờ dần)
+    const c = game.chal, p = game.player; if (!c || !p || p.dead || game.level.id === 'test' || game.levelT >= 5) return;
+    ctx.globalAlpha = clamp(5 - game.levelT, 0, 1); drawText('THỬ THÁCH ' + '★'.repeat(c.tier + 1) + ': ' + c.txt + ' → ' + c.rtxt, VIEW_W / 2, 62, '#ffe27a', 'center'); ctx.globalAlpha = 1;
+}
+awLoad();
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('pagehide', () => { try { awSync(); awSave(); } catch (e) { } });
 
     </script>
 
@@ -15909,7 +16278,7 @@ function newRun(seed) {
     game.rngPlay = rngPlayFor(game.seed); game.rngFx = rngFxFor(game.seed);
     game.wanted = false; game.runT = 0; game.deathCause = ''; game.deadShown = false; game.levelIdx = 0;
     game.trans = null; game.screen = 'play'; game.recorded = false; game.won = false; game.wonT = 0; game.retrySame = game.toTitle = false;
-    game.stats = { kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }; game.tut = null;
+    game.stats = { kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }; game.tut = null; awRunInit();
     game.abilities = abilitiesNone(); game.learn = null; game.pick = null; game.abBackup = null;
     game.dda = null; ddaInit();
     game.hpSnap = {};        // v0.74: máu tối đa (hpUp) lúc vào đầu vùng ('z'+vùng) / lúc ngồi ghế nghỉ ('b'+vùng) — chết thì về đúng mức đó (chống cày mảnh tim)
@@ -15947,7 +16316,7 @@ function resumeRun(d) {
     game.seed = d.seed; game.rngPlay = rngPlayFor(game.seed); game.rngFx = rngFxFor(game.seed);
     game.wanted = !!d.wanted; game.runT = d.runT || 0; game.deathCause = ''; game.deadShown = false; game.levelIdx = d.lvl;
     game.trans = null; game.screen = 'play'; game.recorded = false; game.won = false; game.wonT = 0; game.retrySame = game.toTitle = false;
-    game.stats = Object.assign({ kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }, d.stats || {}); game.tut = null;
+    game.stats = Object.assign({ kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0 }, d.stats || {}); game.tut = null; awRunInit();
     game.abilities = abilitySanitize(d.ab, game.cls); game.learn = null; game.pick = null; game.abBackup = null;
     game.dda = null; game.dda = ddaLoad(d.dda);
     game.tries = {}; game.bench = {}; game.hpSnap = {};
@@ -16013,11 +16382,12 @@ function loadLevel(def, fresh) {
     if (game.genMeta && !def.boss && L.id !== 'test' && hasBench(game.levelIdx)) benchPlace(L);          // H1: ghế nghỉ ở màn thứ 3 của vùng
     if (L.dark && !def.boss) { const t = entAdd(new Torch(L.spawn.x + 22, L.spawn.y - 14)); }
     const nCarry = carryoverPlace(L);                    // quái sót từ level trước, rải xa điểm vào
-    statusClear(game.player); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.combo = null; game.trans = null; game.killNeed = killNeedOf(L, def);
+    statusClear(game.player); awLevelStart(); game.lvlStart = Object.assign({}, game.stats); game.killsLv = {}; game.combo = null; game.trans = null; game.killNeed = killNeedOf(L, def);
     game.boss = null; game.bossDone = false; game.flash = null; game.banner = null;
     game.popQ = []; game.popT = undefined; game.levelT = 0; game.fade = 1; game.ghostWarned = game.ghostOut = false; game.ghostBonus = 0; game.hint = '';
+    chalRoll(def);          // thử thách đầu màn (15e_awards)
     if (!fresh && game.wanted && L.exit && !def.boss) wantedAmbush(L); else levelFeeling(def);
-    if (nCarry > 0) game.pickupMsg = { t: 0, text: 'Quái sót đuổi theo: ' + nCarry };
+    if (nCarry > 0) game.pickupMsg = { t: 0, text: 'Quái sót đuổi theo: ' + nCarry, mid: true };          // mid: căn giữa màn hình (dưới tên màn)
     camSnap(L, p);
     if (def.boss && !fresh) p.hp = Math.max(p.hp, maxHpOf(p));       // lần 28: vào phòng boss luôn có ≥ máu khởi đầu (bom KHÔNG tặng — lần 30)
     game.lvlHp = p.hp;
@@ -16067,7 +16437,7 @@ function stepGame() {
     camUpdate(L, p, STEP);
     game.atExit = false; lockStep(L, p); exitStep(L, p); fireTipStep(L, p); tutStep(STEP); carryHintCount(p, STEP);
     inp.endStep();
-    game.time += STEP; comboStep(); stillTick(); game.levelT += STEP; if (!p.dead) game.runT += STEP;
+    game.time += STEP; comboStep(); stillTick(); game.levelT += STEP; if (!p.dead) { game.runT += STEP; awTick(STEP); }
     if (game.fade > 0 && !p.dead) game.fade = Math.max(0, game.fade - STEP * 4);
     // Chết: sau 0,8s hiện chữ; bấm phím hành động bất kỳ (hoặc R) để chơi lại ngay
     if (p.dead && diffOf().respawn === 'level' && L.id !== 'test' && game.genMeta && !game.toTitle) { if (p.deadT > 1.4) easyRespawn(); }
@@ -16130,6 +16500,8 @@ const TRANS_STAT = { t0: 1.4, per: 0.55, hold: 0.5, holdWin: 1.3, top: [0.3, 0.6
 function transExtras(t) {          // các dòng sau lưới thống kê (cùng thứ tự vẽ)
     const a = [];
     if (t.cleared && t.reward) a.push(['DIỆT SẠCH QUÁI!  ' + t.reward.txt, '#ffe45a']);
+    if (t.tidyGold > 0) a.push(['DỌN HẾT BÌNH · HÒM · THÙNG!  +' + t.tidyGold + ' vàng', '#ffd24a']);
+    if (t.chal) a.push(t.chal.ok ? ['THỬ THÁCH XONG: ' + t.chal.txt + '  ' + t.chal.rtxt, '#9be0a5'] : ['Thử thách chưa đạt: ' + t.chal.txt, '#ff9a8a']);
     if (t.rescued > 0) a.push([t.pets >= t.rescued ? 'Thú cưng dụi vào chân bạn!' : 'Công chúa: "Anh hùng của em!"', '#ffb0d0']);
     if (game.levelIdx + 1 === FINALE_LEVEL) a.push(['Sắp tới: TRẬN CUỐI — Hang núi lửa', '#ff9a5a']);
     else if (zoneIdx(game.levelIdx + 1) !== zoneIdx(game.levelIdx)) a.push(['Sắp tới: vùng ' + zoneOf(game.levelIdx + 1).name, '#9ad0ff']);
@@ -16147,6 +16519,7 @@ function transStatStep(t) {
     { let m = 0; for (const x of TRANS_STAT.top) if (t.t >= x) m++; for (const x of sc.ex) if (t.t >= x) m++; if (m > (t.ltick | 0)) { t.ltick = m; sndPlay('coinLarge1', { vol: 0.8 }); } }
     if (!t.done && t.t >= sc.doneAt) {
         t.done = true; const p = game.player;
+        if (p && !p.dead) { if (t.tidyGold > 0) { p.gold += t.tidyGold; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + t.tidyGold; } if (t.chal && t.chal.ok) { chalGive(t.chal.rew); sndPlay('coinLarge1', { vol: 0.7 }); } }          // v1.2: thưởng dọn đồ + thử thách
         if (t.cleared && t.reward && p && !p.dead) {
             if (t.reward.hp) p.hp = Math.min(Math.max(maxHpOf(p), p.hp), p.hp + t.reward.hp);
             if (t.reward.gold) { p.gold += t.reward.gold; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + t.reward.gold; }
@@ -16162,7 +16535,8 @@ function transInfo(L, p) {
     const left = game.entities.some(e => e.alive && e instanceof Enemy && !e.boss && !e.isBoss && e.kind !== 'shopkeeper'), def = L.def || {};
     // v1.18zg (Dan): diệt sạch quái cả màn → thưởng theo độ khó: Dễ +2 tim · Thường +1 tim · Khó +½ tim · Hardcore +500 vàng
     const cleared = total > 0 && !left && !def.boss && L.id !== 'test', RW = { easy: { hp: 2 * HP_UNIT, txt: '+2 tim' }, normal: { hp: HP_UNIT, txt: '+1 tim' }, hard: { hp: HP_UNIT / 2, txt: '+½ tim' }, hardcore: { gold: 500, txt: '+500 vàng' } }[game.diff || 'normal'];
-    return { t: 0, name: L.name, levelT: game.levelT, runT: game.runT, gold: s.goldTotal - b.goldTotal, goldAll: s.goldTotal, kills: total, rescued: s.rescued - b.rescued, pets: (s.pets || 0) - (b.pets || 0), have: p.gold, kinds, cleared, reward: cleared ? RW : null, tick: 0, done: false };
+    const aw = awLevelEnd(L, p, total, left, def) || {};          // Award + thử thách (15e)
+    return { chal: aw.chal || null, tidyGold: aw.tidy ? CHAL.tidyGold : 0, t: 0, name: L.name, levelT: game.levelT, runT: game.runT, gold: s.goldTotal - b.goldTotal, goldAll: s.goldTotal, kills: total, rescued: s.rescued - b.rescued, pets: (s.pets || 0) - (b.pets || 0), have: p.gold, kinds, cleared, reward: cleared ? RW : null, tick: 0, done: false };
 }
 
 function renderFrame(alpha) {
@@ -16281,6 +16655,7 @@ function drawHud() {
     if (game.levelT < 2.5 && !p.dead) { ctx.globalAlpha = clamp(2.5 - game.levelT, 0, 1); drawText(game.level.name, VIEW_W / 2, game.banner ? 50 : 36, '#ffe9a8', 'center'); ctx.globalAlpha = 1; }          // v1.18zq: không có banner thì tên màn lên vị trí banner (y 36)
     if (inp.imeAt && performance.now() - inp.imeAt < 7000 && !p.dead) drawText('Vui lòng tắt bộ gõ tiếng Việt!', VIEW_W / 2, 40, '#ffffff', 'center');          // v0.78b
     if (game.wanted && !p.dead) { drawText('TRUY NÃ', VIEW_W - 6, 44, '#ff5a3a', 'right'); }
+    chalDraw();          // thử thách đầu màn (15e_awards)
     if (game.hint && !p.dead) {
         if (game.hint.indexOf('\n') >= 0) {          // v1.2 (Dan): gợi ý nhiều dòng (bàn hiến tế) — chữ to hơn, mỗi dòng một hàng
             const ls = game.hint.split('\n'), sz = TEXT.size * 1.3;
@@ -16290,7 +16665,7 @@ function drawHud() {
     carryHintDraw(p);          // v1.18zl: «Bấm ↓ + W để nhặt đồ / đưa công chúa theo» khi đứng cạnh vật nhặt được
     tutDraw();          // v1.18zk: bảng hướng dẫn người chơi lần đầu (16a_tutorial)
     exitHintDraw(p);          // v1.18zm: nhắc ↑ ở cửa ra (hoặc còn phải làm gì để mở)
-    if (game.pickupMsg && game.pickupMsg.low) drawText(game.pickupMsg.text, VIEW_W / 2, VIEW_H - HINT_CARRY.y, '#ffe9a8', 'center'); else if (game.pickupMsg) drawText(game.pickupMsg.text, p.cx - Math.round(cam.x), p.y - Math.round(cam.y) - 14 - game.pickupMsg.t * 8, '#ffe9a8', 'center');
+    if (game.pickupMsg && game.pickupMsg.mid) drawText(game.pickupMsg.text, VIEW_W / 2, 49, '#ffe9a8', 'center'); else if (game.pickupMsg && game.pickupMsg.low) drawText(game.pickupMsg.text, VIEW_W / 2, VIEW_H - HINT_CARRY.y, '#ffe9a8', 'center'); else if (game.pickupMsg) drawText(game.pickupMsg.text, p.cx - Math.round(cam.x), p.y - Math.round(cam.y) - 14 - game.pickupMsg.t * 8, '#ffe9a8', 'center');
     if (p.dead && game.deadShown && !game.title) drawDeathPanel();
     if (game.pick) pickDraw();
     if (game.learn && game.learn.trial) abilityTrialDraw();          // v0.91: màn mở khoá vẽ SAU CÙNG, che mọi chữ HUD khác
