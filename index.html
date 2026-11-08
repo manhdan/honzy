@@ -7173,7 +7173,7 @@ class Thing extends Entity {
         if (this.invulnT > 0) this.invulnT -= dt;
         if (this.blinkT > 0) this.blinkT -= dt;
         if (this.noiseT > 0) this.noiseT -= dt; else if (this.noiseMul) this.noiseMul = 0;
-        if (this.frozenT > 0) this.frozenT -= dt;
+        if (this.frozenT > 0) { this.frozenT -= dt; if (this.creature && this !== game.player && !this.boss && !this.isBoss) { if (this.stunT < this.frozenT) this.stunT = this.frozenT; if (!this.air) this.vx = 0; } }          // v1.4 (Dan): quái đóng băng ĐỨNG IM tới khi băng tan — trúng thêm đòn không được rút ngắn choáng / hất đi
         if (this.thrownT > 0) this.thrownT -= dt;
         if (this.holder && this.creature && this.wriggles && (this.heldT = (this.heldT || 0) + dt) > 3.5) { this.heldT = 0; this.stunT = 0; this.release(); }       // quái bị bế giãy ra sau 3.5s
         else if (!this.holder && this.heldT) this.heldT = 0;
@@ -7965,14 +7965,16 @@ function whipFreeze(level, p, b, ex) {          // ex: tầm thêm (px) — gậ
     let fb;
     if (b.up) { const top = b.y - (p.whipPower ? 22 : 6); fb = { x: b.x - 14, y: top, w: b.w + 28, h: b.y + b.h - top }; }
     else { const x0 = f > 0 ? p.cx - 2 : p.cx - R, x1 = f > 0 ? p.cx + R : p.cx + 2; fb = { x: x0, y: b.y - 10, w: x1 - x0, h: b.h + 46 }; }
-    level.iceMelt = level.iceMelt || []; let n = 0; const water = [], froze = [];
+    level.iceMelt = level.iceMelt || []; let n = 0; const water = [], froze = [], film = [];
     for (let r = Math.floor(fb.y / TILE); r <= Math.floor((fb.y + fb.h - 0.01) / TILE); r++) for (let c = Math.floor(fb.x / TILE); c <= Math.floor((fb.x + fb.w - 0.01) / TILE); c++) {
         if (c < 0 || r < 0 || c >= level.w || r >= level.h) continue;
         const t = level.tile(c, r), tb = { x: c * TILE, y: r * TILE, w: TILE, h: TILE };
-        if (overlapBox(tb, p)) continue;
+        if (overlapBox(tb, p)) { if ((t === T_WATER || filmCell(level, c, r)) && film.length < FILM_ICE.max) film.push({ c, r }); continue; }          // v1.4: ô nước người chơi đang đứng → chỉ băng mỏng (không đặc)
+        if (t !== T_WATER && t === T_EMPTY && filmCell(level, c, r) && film.length < FILM_ICE.max) film.push({ c, r });
         if (t === T_WATER) water.push({ c, r, d: Math.hypot((c + 0.5) * TILE - p.cx, (r + 0.5) * TILE - p.cy) });
         else if (t === T_LAVA && p.whipPower) { level.setTile(c, r, T_STONE); n++; level.spawnBurst((c + 0.5) * TILE, (r + 0.5) * TILE, 3, '#bfe9ff', 60); }
     }
+    for (const w of film) { if (filmFreeze(level, w.c, w.r)) n++; }
     water.sort((a, b2) => a.d - b2.d);          // v0.75: đóng băng tối đa BLADE.iceTiles ô nước gần nhất
     for (const w of water.slice(0, BLADE.iceTiles)) { level.setTile(w.c, w.r, T_ICE); level.iceMelt.push({ c: w.c, r: w.r, t: FROST.iceT, back: T_WATER }); froze.push(w); n++; level.spawnBurst((w.c + 0.5) * TILE, (w.r + 0.5) * TILE, 3, '#bfe9ff', 60); }
     if (froze.length) {          // quái nằm trong ô nước vừa đóng băng: mất BLADE.iceDmg máu (băng vỡ / kẹt)
@@ -8994,6 +8996,7 @@ function carryoverPlace(L) {
     if (!list || !list.length || L.id === 'test' || L.def.boss) return 0;
     let cells = carryoverCells(L, CARRYOVER.minDist);
     if (!cells.floor.length && !cells.ceil.length) cells = carryoverCells(L, CARRYOVER.minDist / 2);
+    { const ok = cells.floor.filter(q => !foeStuck(L, q.c, q.r)); if (ok.length) cells.floor = ok; }          // v1.4 (Dan): quái sót không bị rải vào ô kẹt 1 ô
     const R = game.rngPlay, sc = Math.floor(L.spawn.x / TILE), sr = Math.floor((L.spawn.y - 1) / TILE), refs = [];
     for (const e of game.entities) if (e.alive && e instanceof Enemy) refs.push({ c: Math.floor(e.cx / TILE), r: Math.floor(e.cy / TILE) });
     let placed = 0;
@@ -9016,7 +9019,28 @@ function carryoverPlace(L) {
 }
 
 // Tạo vật / quái theo danh sách đặt sẵn của level (ký tự LVL_CHARS)
+// v1.4 (Dan): mỗi màn chỉ tối đa 1 quái mặt đất bị KẸT MỘT Ô (đứng trên đỉnh bục 1 ô, hoặc bị kẹp giữa hai ô cản — đất / đá / hộp sắt…; mỗi bên là tường hoặc vực nên không đi được bước nào). Con thứ 2 trở đi được rải lại sang ô khác trong màn (cách điểm xuất phát ≥ GEN.spawnSafeR ô, không chồng lên vật khác).
+function foeStuck(L, c, r) {
+    const blocked = d => { const cc = c + d; if (L.isSolid(cc, r) || L.tile(cc, r) === T_LAVA || L.tile(cc, r) === T_SPIKE) return true; const f = L.tile(cc, r + 1); return !(L.isSolid(cc, r + 1) || f === T_ONEWAY) || f === T_LAVA || f === T_SPIKE; };
+    return blocked(-1) && blocked(1);
+}
+function foeTrapFix(level) {
+    const ground = o => (o.kind === 'snake' || (FOES[o.kind] && !(FOE_AIR[o.kind] || (ENEMY_DEFS[o.kind] && ENEMY_DEFS[o.kind].hang)))), R = game.rngPlay, used = new Set(level.objs.map(o => o.r * level.w + o.c));
+    let kept = 0, moved = 0, cand = null;
+    for (const o of level.objs) {
+        if (!ground(o) || !foeStuck(level, o.c, o.r)) continue;
+        if (kept < 1) { kept++; continue; }
+        if (!cand) { cand = []; const sp = level.spawn ? { c: Math.floor(level.spawn.x / TILE), r: Math.floor(level.spawn.y / TILE) } : null;
+            for (let r = 2; r < level.h - 2; r++) for (let c = 2; c < level.w - 2; c++) {
+                if (level.tile(c, r) !== T_EMPTY || level.tile(c, r - 1) !== T_EMPTY || !level.isSolid(c, r + 1) || level.tile(c, r + 1) === T_SPIKE || used.has(r * level.w + c) || foeStuck(level, c, r)) continue;
+                if (sp && Math.hypot(c - sp.c, r - sp.r) < GEN.spawnSafeR) continue; if (level.exit && Math.hypot(c - level.exit.c, r - level.exit.r) < 3) continue; cand.push(c * 4096 + r); } }
+        if (!cand.length) break;
+        const k = cand.splice(R.int(0, cand.length - 1), 1)[0]; used.delete(o.r * level.w + o.c); o.c = Math.floor(k / 4096); o.r = k % 4096; used.add(o.r * level.w + o.c); moved++;
+    }
+    return moved;
+}
 function spawnObjects(level) {
+    foeTrapFix(level);
     for (const o of level.objs) {
         const x = o.c * TILE, y = o.r * TILE;
         let e = null;
@@ -9077,7 +9101,7 @@ const FOES = {}, FOE_AIR = { flyer: true, diver: true, wisp: true, eel: true, sp
 
 class Foe extends Enemy {
     constructor(type, x, y) { super(type, x, y); this.st = 'walk'; this.t = 0; this.air = !!FOE_AIR[type]; if (this.air) { this.gravity = 0; this.home = { x, y }; } this.tx = 0; this.ty = 0; }
-    onHurt(src) { this.invulnT = 0.35; if (!this.air) this.stunT = 0.18; if (src && src.x !== undefined && !this.def.heavy) this.vx = (this.cx < src.x ? -1 : 1) * 60; }          // v0.88: quái nặng (bọ đá) không bị hất
+    onHurt(src) { this.invulnT = 0.35; const fz = this.frozenT > 0; if (!this.air && !fz) this.stunT = 0.18; if (!fz && src && src.x !== undefined && !this.def.heavy) this.vx = (this.cx < src.x ? -1 : 1) * 60; }          // v0.88: quái nặng (bọ đá) không bị hất
     // thấy người chơi? (tầm ngang sight, lệch dọc sightY, không tường chắn; front = chỉ nhìn phía trước)
     sees(level, front) {
         const p = game.player, d = this.def; if (!p || p.dead) return false;
@@ -11351,7 +11375,18 @@ function frostBurst(L, cx, cy, r, by) {
     }
     return out;
 }
+// v1.4 (Dan): NƯỚC MỎNG (màng nước < FLOW.thr, hoặc ô nước đang có người chơi đứng) cũng đóng băng — băng mỏng, KHÔNG đặc (người chơi không bị kẹt), tan nhanh hơn (FILM_ICE.t s); quái đứng trong màng bị đóng băng FROST.chainDur s lúc đóng. Danh sách L.iceFilm; vẽ ở drawIceFilm (13g_water).
+const FILM_ICE = { t: 3, max: 10 };
+function filmCell(L, c, r) { if (!L.amt || c < 0 || r < 0 || c >= L.w || r >= L.h) return false; const k = r * L.w + c; return L.amtT[k] === 1 && L.amt[k] >= 0.1; }
+function filmFreeze(L, c, r) {
+    L.iceFilm = L.iceFilm || []; for (const o of L.iceFilm) if (o.c === c && o.r === r) { o.t = FILM_ICE.t; return false; }
+    L.iceFilm.push({ c, r, t: FILM_ICE.t }); L.spawnBurst((c + 0.5) * TILE, (r + 0.6) * TILE, 3, '#d8f2ff', 50);
+    const tb = { x: c * TILE, y: r * TILE, w: TILE, h: TILE };
+    for (const e of game.entities) if (e.alive && e.creature && e !== game.player && !e.holder && overlapBox(tb, e)) freezeFoe(e, FROST.chainDur);
+    return true;
+}
 function iceMeltStep(L, dt) {
+    if (L.iceFilm && L.iceFilm.length) for (let i = L.iceFilm.length - 1; i >= 0; i--) if ((L.iceFilm[i].t -= dt) <= 0) L.iceFilm.splice(i, 1);
     const m = L.iceMelt; if (!m || !m.length) return;
     for (let i = m.length - 1; i >= 0; i--) {
         const o = m[i]; if ((o.t -= dt) > 0) continue; m.splice(i, 1);
@@ -12196,10 +12231,15 @@ function pushStep(L, p) {
 //   Vật (đá, bom, vàng…): chìm chậm, mất đà ngang. Quái bộ binh không bị ảnh hưởng (chưa).  Nước chỉ đặt trên sàn sâu ≤ 2 ô (mẫu phòng, ký tự W) để luôn thoát được bằng nhảy thường.
 //   Vẽ: lớp xanh trong phủ lên vật thể, mặt nước sáng; gợn nhẹ.
 // Lần 26: vẽ theo LƯỢNG từng ô (màng mỏng cũng thấy), mặt nước lượn sóng, đậm dần theo độ sâu, vệt sáng + bọt khí.
+function drawIceFilm(ctx, L, cx, cy) {          // v1.4: băng mỏng phủ lên màng nước (13a_items filmFreeze)
+    if (!L.iceFilm || !L.iceFilm.length || !L.amt) return;
+    for (const o of L.iceFilm) { const k = o.r * L.w + o.c, a = Math.min(1, Math.max(0.15, L.amt[k] || 0.3)), h = Math.max(3, Math.round(a * TILE)), x = o.c * TILE, y = o.r * TILE + TILE - h, fade = Math.min(1, o.t / 0.8);
+        ctx.globalAlpha = 0.85 * fade; ctx.fillStyle = '#bfe6fb'; ctx.fillRect(x, y, TILE, h); ctx.fillStyle = '#eefaff'; ctx.fillRect(x, y, TILE, 1.5); ctx.fillStyle = '#8fc6e8'; ctx.fillRect(x + 3 + (o.c * 5 & 5), y + 2, 4, 0.8); ctx.globalAlpha = 1; }
+}
 function drawWater(ctx, L, cx, cy) {
     drawOilCells(ctx, L, cx, cy);          // v0.82: dầu vẽ TRƯỚC nước → nước phủ lên dầu chìm
-    if (ITEM_HP) return drawWaterHp(ctx, L, cx, cy);
-    if (!L.amt) return;
+    if (ITEM_HP) { drawWaterHp(ctx, L, cx, cy); drawIceFilm(ctx, L, cx, cy); return; }
+    if (!L.amt) return; drawIceFilm(ctx, L, cx, cy);
     const c0 = Math.max(0, Math.floor(cx / TILE)), c1 = Math.min(L.w - 1, Math.floor((cx + VIEW_W) / TILE));
     const r0 = Math.max(0, Math.floor(cy / TILE)), r1 = Math.min(L.h - 1, Math.floor((cy + VIEW_H) / TILE)), t = game.time, W = L.w, A = L.amt, AT = L.amtT;
     const has = (c, r) => c >= 0 && r >= 0 && c < W && r < L.h && AT[r * W + c] === 1 && A[r * W + c] >= 0.05;
@@ -12505,7 +12545,7 @@ function webCrumbleStep(L, p) {
     for (const e of ents) {
         if (!e || e.dead || !e.alive) continue;
         if (e.webT > 0) e.webT -= STEP;
-        if (L.hasWeb && L.tile(Math.floor(e.cx / TILE), Math.floor((e.y + e.h * 0.5) / TILE)) === T_WEB) {
+        if (L.hasWeb && e.kind !== 'spider' && L.tile(Math.floor(e.cx / TILE), Math.floor((e.y + e.h * 0.5) / TILE)) === T_WEB) {          // v1.4 (Dan): nhện không bị mạng nhện làm vướng / chậm
             e.vx = clamp(e.vx * scFric(WEBS.fric, STEP), -WEBS.maxX, WEBS.maxX); e.vy = clamp(e.vy, -WEBS.maxV, WEBS.maxV); e.fallT = 0; e.webT = WEBS.T;
             if (e === p && p.bufferT > 0) { p.vy = WEBS.free; p.bufferT = 0; sndPlay('jump', { x: p.cx, vol: 0.4, p: 0.7 }); }
         }
