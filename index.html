@@ -3620,6 +3620,12 @@ function paintTiles(g, level, c0, r0, c1, r1, ox, oy) {
         } else if (t === T_LADDER) paintLadder(g, level, x, y, c, r);
         else if (t === T_SPIKE) paintSpike(g, th, x, y);
     }
+    if (g !== ctx && level.ground && th.style !== 'mines' && typeof paintGroundRound === 'function' && GROUND[level.ground]) {          // v1.5: bo góc mềm (chỉ trên canvas chunk trong suốt; không xoá nền khi vẽ thẳng lên màn hình)
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+            const t = level.tiles[r * level.w + c];
+            if (t === T_SOLID || t === T_GOLD || t === T_GOLDBIG || t === T_CRUMBLE) paintGroundRound(g, level, th, c, r, c * TILE - ox, r * TILE - oy, level.ground);
+        }
+    }
 }
 // ---- Vật liệu kiểu Hầm mỏ Spelunky (theme.style = 'mines'): đất nâu cục, mạch vàng, khối đá, thang sắt, gai, bẫy ----
 // Hình tự vẽ bằng fillRect (không dùng ảnh của game gốc). Ô biết hàng xóm: mép lộ ra thì có viền sáng / mép tối / thạch nhũ.
@@ -4274,6 +4280,46 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
     return true;
 }
 
+
+// ---------- BO GÓC khối đặc (v1.5, Dan): góc lồi (hai mặt cùng lộ) bị cắt tròn bán kính 3–5 px ngẫu nhiên theo ô + viền theo đường cong; góc lõm (hai ô kề đặc, ô chéo trống) được đắp fillet 3–4 px; thêm vài vết mẻ 1–2 px trên mặt bên / đáy. Chạy SAU khi cả chunk đã vẽ (chỉ trên canvas chunk trong suốt) ----------
+function paintGroundRound(g, room, th, c, r, x, y, style) {
+    const P = (th && th.pal && style === 'brick') ? th.pal : GROUND[style]; if (!P) return;
+    const S = (cc, rr) => _gmass(room, cc, rr), up = !S(c, r - 1), dn = !S(c, r + 1), lf = !S(c - 1, r), rt = !S(c + 1, r);
+    const N = k => tileNoise(c, r, k), edge = _gtint(th, P.edge), body = _gtint(th, P.body[N(1) < 0.5 ? 0 : 1]);
+    const inCircle = (a, b, rad) => { const dx = a + 0.5 - rad, dy = b + 0.5 - rad; return dx * dx + dy * dy <= rad * rad; };
+    const corner = (sx, sy, rad) => {          // sx, sy = ±1: góc nằm ở phía (trái/phải, trên/dưới) của ô
+        const px = (a) => sx < 0 ? x + a : x + TILE - 1 - a, py = (b) => sy < 0 ? y + b : y + TILE - 1 - b;
+        for (let b = 0; b < rad; b++) for (let a = 0; a < rad; a++) if (!inCircle(a, b, rad)) g.clearRect(px(a), py(b), 1, 1);
+        for (let b = 0; b < rad; b++) for (let a = 0; a < rad; a++) {
+            if (!inCircle(a, b, rad)) continue;
+            const edgeP = !inCircle(a - 1, b, rad) && a - 1 >= 0 || !inCircle(a, b - 1, rad) && b - 1 >= 0 || !inCircle(a + 1, b, rad) && a + 1 < rad || !inCircle(a, b + 1, rad) && b + 1 < rad;
+            if (edgeP) _gpx(g, edge, px(a), py(b), 1, 1);
+        }
+    };
+    const rr = k => 3 + (N(400 + k) < 0.5 ? 1 : 0) + (N(410 + k) < 0.25 ? 1 : 0);
+    if (up && lf) corner(-1, -1, rr(0)); if (up && rt) corner(1, -1, rr(1)); if (dn && lf) corner(-1, 1, rr(2)); if (dn && rt) corner(1, 1, rr(3));
+    // góc lõm: ô chéo trống, hai ô kề đặc → đắp fillet vào góc của ô trống (ô này chịu trách nhiệm góc đối diện)
+    const fillet = (dx, dy, k) => {
+        if (S(c + dx, r + dy) || !S(c + dx, r) || !S(c, r + dy)) return;
+        const rad = 3 + (N(420 + k) < 0.45 ? 1 : 0), ox = dx < 0 ? x : x + TILE, oy = dy < 0 ? y : y + TILE;
+        const px = a => dx < 0 ? ox - 1 - a : ox + a, py = b => dy < 0 ? oy - 1 - b : oy + b;
+        const air = (a, b) => a >= rad || b >= rad || a < 0 || b < 0 ? false : inCircle(a, b, rad);
+        for (let b = 0; b < rad; b++) for (let a = 0; a < rad; a++) {
+            if (air(a, b)) continue;
+            const e = air(a + 1, b) || air(a, b + 1);
+            _gpx(g, e ? edge : body, px(a), py(b), 1, 1);
+        }
+    };
+    fillet(-1, -1, 0); fillet(1, -1, 1); fillet(-1, 1, 2); fillet(1, 1, 3);
+    // vết mẻ nhỏ trên mặt bên / đáy phẳng (không đụng góc): 1–2 px
+    const chip = (vertical, side, k) => {
+        if (N(430 + k) > 0.14) return;
+        const t = 5 + Math.floor(N(440 + k) * (TILE - 10)), L = 1 + (N(450 + k) < 0.4 ? 1 : 0);
+        if (vertical) { const cx = side < 0 ? x : x + TILE - 1, ix = side < 0 ? x + 1 : x + TILE - 2; g.clearRect(cx, y + t, 1, L); _gpx(g, edge, ix, y + t, 1, L); _gpx(g, edge, cx, y + t - 1, 1, 1); _gpx(g, edge, cx, y + t + L, 1, 1); }
+        else { const cy = y + TILE - 1, iy = y + TILE - 2; g.clearRect(x + t, cy, L, 1); _gpx(g, edge, x + t, iy, L, 1); _gpx(g, edge, x + t - 1, cy, 1, 1); _gpx(g, edge, x + t + L, cy, 1, 1); }
+    };
+    if (lf && !up && !dn) chip(true, -1, 0); if (rt && !up && !dn) chip(true, 1, 1); if (dn && !lf && !rt) chip(false, 0, 2);
+}
 // ---------- bục một chiều ----------
 function paintGroundPlat(g, room, th, c, r, x, y, style) {
     const G = GROUND[style], kind = G && G.plat, P = GROUND_PLAT[kind]; if (!P) return false;
