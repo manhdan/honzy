@@ -4296,10 +4296,25 @@ function paintGroundRound(g, room, th, c, r, x, y, style) {
             if (edgeP) _gpx(g, edge, px(a), py(b), 1, 1);
         }
     };
-    const K = (style === 'grass' || style === 'snow' || style === 'crystal' || style === 'geode' ? 1 : 0.5) * (0.75 + 0.6 * tileNoise((game.levelIdx | 0) + 3, 77, 5));          // rừng / tuyết / pha lê / thạch anh giữ độ bo; vùng khác bo nhẹ hơn (½); mỗi màn lệch ±25 % cho đỡ giống nhau
+    const K = (style === 'grass' || style === 'snow' || style === 'crystal' ? 1 : style === 'geode' ? 0.5 : 0.5) * (0.75 + 0.6 * tileNoise((game.levelIdx | 0) + 3, 77, 5));          // rừng / tuyết / pha lê / thạch anh giữ độ bo; vùng khác bo nhẹ hơn (½); mỗi màn lệch ±25 % cho đỡ giống nhau
     const sc = v => Math.max(2, Math.min(6, Math.round(v * K))), single = up && dn && lf && rt;          // ô đứng riêng 1 viên: bo nhẹ (không thành hòn tròn)
     const rr = k => single ? 2 : sc(3 + (N(400 + k) < 0.5 ? 1 : 0) + (N(410 + k) < 0.25 ? 1 : 0));
     if (up && lf) corner(-1, -1, rr(0)); if (up && rt) corner(1, -1, rr(1)); if (dn && lf) corner(-1, 1, rr(2)); if (dn && rt) corner(1, 1, rr(3));
+    // MÉP PHỦ LỒI (Dan): rừng / tuyết — lớp cỏ / tuyết trên mặt trùm cong ra ngoài mép 1–2 px (như gối) thay vì bị cắt tròn cùng khối đất
+    if ((style === 'grass' || style === 'snow') && up && (lf || rt)) {
+        const snowy = style === 'snow', main = _gtint(th, snowy ? P.snow : P.grass[0]), hi = _gtint(th, snowy ? P.snow : P.grass[1]), sh = _gtint(th, snowy ? P.snowSh : P.grass[2]);
+        const off = snowy ? [0, 1, 2, 2, 2, 1] : [0, 1, 2, 2, 1];
+        const lip = (side, rad) => {
+            for (let dy = 0; dy < off.length; dy++) {
+                const last = dy === off.length - 1;
+                for (let a = -off[dy]; a <= rad; a++) {
+                    const px = side < 0 ? x + a : x + TILE - 1 - a, outer = a === -off[dy] && off[dy] > 0;
+                    _gpx(g, outer || last ? sh : (dy === 0 ? hi : main), px, y + dy, 1, 1);
+                }
+            }
+        };
+        if (lf) lip(-1, rr(0)); if (rt) lip(1, rr(1));
+    }
     // góc lõm: ô chéo trống, hai ô kề đặc → đắp fillet vào góc của ô trống (ô này chịu trách nhiệm góc đối diện)
     const fillet = (dx, dy, k) => {
         if (S(c + dx, r + dy) || !S(c + dx, r) || !S(c, r + dy)) return;
@@ -17753,7 +17768,7 @@ function dbgDrawOverview() {
       if (B.ign2 && B.ign2.get(e) > game.levelT) continue;          // quái bị bỏ hẳn (giằng co chiến đấu ↔ đi đường > 13 s): coi như không có
       if (!e.alive || !(e instanceof Enemy) || e.kind === 'shopkeeper' || e.holder || e.kind === 'ghost' && false) continue;
       if (e.frozenT > 0) continue;
-      if (game.demo && game.demo.f && !game.level.arena && !(game.demo.rt && game.demo.rt.phase === 'exit' && (game.killNeed || 0) > killsDone())) { const pp = game.player; if (e.cy < pp.cy - 24 && DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) < DEMO.floorOf(Math.floor((pp.y + pp.h - 0.5) / 16))) continue; }          // mù tầng trên: quái ở tầng trên không tồn tại với bot
+      if (game.demo && game.demo.f && !game.level.arena && !(game.demo.rt && game.demo.rt.phase === 'exit' && (game.killNeed || 0) > killsDone())) { const pp = game.player; if (DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) !== DEMO.floorOf(Math.floor((pp.y + pp.h - 0.5) / 16))) continue; }          // CHỈ BIẾT TẦNG ĐANG ĐỨNG (Dan): quái ở tầng trên / dưới không tồn tại với bot (trừ pha ra cửa mà còn thiếu quái)
       out.push(e);
     }
     return out;
@@ -17763,6 +17778,7 @@ function dbgDrawOverview() {
     for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; if (L.solidAt(x, y)) return false; }
     return true;
   }
+  B.losClear = losClear;
   B.pick = function (p) {
     const L = game.level, P = B.P[p.cls]; let best = null, bd = 1e9;
     for (const e of B.foes()) {
@@ -17840,6 +17856,8 @@ function dbgDrawOverview() {
       const bs = B.bs = B.bs || { n: 0, cd: 0 }, fr = game.demo ? game.demo.f : 0;
       if (bs.cd > fr) { /* nghỉ: dùng cách đánh thường bên dưới */ }
       else {
+        const bMin = (DEMO.bkv || { alch: 46, hunt: 44 })[p.cls] || 0;          // dơi sát quá thì đạn / bom lọt qua hoặc nổ sau lưng nó: lùi ra xa hơn 1 chút (tối đa 0,35 s / lần, nghỉ 1 s) rồi mới quay mặt bắn
+        if (bMin && !(DEMO.off && DEMO.off.batBack) && gap < bMin && p.onGround && !(bs.rcd > fr)) { bs.rn = (bs.rn | 0) + 1; if (bs.rn <= 21) { k[away] = true; return true; } bs.rn = 0; bs.rcd = fr + 60; }
         if (facing !== dir && Math.abs(dx) >= 10) { k[toward] = true; return true; }          // chạm hướng 1 khung: đổi mặt ngay, chưa kịp nhích (turnDelay)
         if (above) k.up = true;
         if (ready && (aligned || above) && (p.cls !== 'hunt' || !p.boom)) { k.attack = true; B.stats.atk++; bs.n = 0; }
@@ -17944,27 +17962,39 @@ DEMO.loot = function (D, p, L, f) {          // trả về phím (object) nếu 
     if (D.hk) { const hk = DEMO.hookRun(D, p, f, safe); if (hk) return hk; if (D.hk) return null; }
     // 1) đang cầm đồ: thấy quái thẳng hàng thì ném; cầm lâu không có quái thì ném đi (bình vỡ ra tiền)
     if (p.hold) {
-        D.holdT++; B.tgtOverride = null;
-        let gf = null, gd = 1e9; for (const q of foes) { if (DEMO.isFlyer(q)) continue; const d = Math.hypot(q.cx - p.cx, q.cy - p.cy); if (d < gd) { gd = d; gf = q; } }
-        for (const q of game.entities) { if (q.kind !== 'pot' || !q.alive || q.holder || q === p.hold) continue; const d = Math.hypot(q.cx - p.cx, q.cy - p.cy); if (d < gd) { gd = d; gf = q; } }          // bình gốm = quái đứng yên: ném vào được
-        let e = gf && Math.abs(gf.cy - p.cy) < 28 && Math.abs(gf.cx - p.cx) < 170 ? gf : null;
-        if (!e && D.thr && D.thr.alive && !D.thr.holder && f - D.thrF < 40 && Math.abs(D.thr.cy - p.cy) < 34 && Math.abs(D.thr.cx - p.cx) < 170) e = D.thr;          // giữ mục tiêu ném (không giật)
+        D.holdT++; if (!D.rowTgt) B.tgtOverride = null;
+        D.thBad = D.thBad || new Map();
+        let gf = null, gd = 1e9; for (const q of foes) { if (DEMO.isFlyer(q) || !DEMO.sameRow(p, q)) continue; const d = Math.hypot(q.cx - p.cx, q.cy - p.cy); if (d < gd) { gd = d; gf = q; } }
+        for (const q of game.entities) { if (q.kind !== 'pot' || !q.alive || q.holder || q === p.hold || !DEMO.sameRow(p, q)) continue; const d = Math.hypot(q.cx - p.cx, q.cy - p.cy); if (d < gd) { gd = d; gf = q; } }          // bình gốm = quái đứng yên: ném vào được
+        const okT = (q) => q && !(D.thBad.get(q) > f) && DEMO.sameRow(p, q) && Math.abs(q.cx - p.cx) < 170 && (Math.abs(q.cx - p.cx) < 36 || BOT.losClear(game.level, p.cx, p.cy, q.cx, q.cy));          // mục tiêu ném: cùng hàng + thấy thẳng (không vướng tường) + chưa bị đánh dấu «tiến mãi không tới»
+        let e = okT(gf) ? gf : null;          // CHỈ ném khi người và quái cùng 1 hàng ô (lệch hàng rất khó trúng)
+        if (!e && D.thr && D.thr.alive && !D.thr.holder && f - D.thrF < 40 && okT(D.thr)) e = D.thr;          // giữ mục tiêu ném (không giật)
+        if (!e && D.rowTgt && D.rowFoe && D.rowFoe.alive && f - D.rowF < 240 && B.tgtOverride && B.tgtOverride.c === D.rowTgt.c && B.tgtOverride.r === D.rowTgt.r) { const pn0 = B.nodeOf(p); if (!(pn0.c === D.rowTgt.c && pn0.r === D.rowTgt.r)) return null; D.thBad.set(D.rowFoe, f + 300); B.tgtOverride = null; BOT.state.path = null; D.rowTgt = null; D.rowTry = f + 120; }          // tới ô cùng hàng mà vẫn không ném được (vướng tường / quái lệch): bỏ con này, trả đích về đường chính (không đứng đơ ở ô đó)          // đang đi tới ô cùng hàng: giữ đích tới nơi (quái nhúc nhích cũng không đổi đích → không giật qua lại)
+        if (!e && !flyNear && (p.hold.kind === 'corpse' || p.hold.kind === 'rock') && !(D.rowTry > f)) {          // cầm xác mà quái ở HÀNG KHÁC: ưu tiên nhảy / đi tới vị trí cùng hàng rồi mới ném
+            let w = null, wd = 1e9; for (const q of foes) { if (DEMO.isFlyer(q) || q.kind === 'ghost' || q.kind === 'shopkeeper') continue; const dx = Math.abs(q.cx - p.cx), dy = Math.abs(q.cy - p.cy); if (dx < 240 && dy < 150 && dx + dy < wd && DEMO.reachable(p, q, 22)) { wd = dx + dy; w = q; } }
+            if (w) {
+                const qc = DEMO.cellOf(w), pn = B.nodeOf(p), sg = qc.c >= pn.c ? -1 : 1; let ok = false;
+                for (const kk of [4, 3, 5, 2, 6]) for (const sd of [sg, -sg]) { const c = qc.c + sd * kk; if (ok || c < 1 || c >= game.level.w - 1 || T_IS_SOLID[game.level.tile(c, qc.r)] || !T_IS_SOLID[game.level.tile(c, qc.r + 1)]) continue; if (DEMO.setTgt({ c, r: qc.r })) { ok = true; D.rowTgt = { c, r: qc.r }; D.rowFoe = w; D.rowF = f; } }
+                if (ok) return null; D.rowTry = f + 45;
+            } else D.rowTry = f + 45;
+        }
         if (e) { if (D.thr !== e) D.thr = e; D.thrF = D.thr === e && D.thrF && f - D.thrF < 40 ? D.thrF : f; }
         if (!e && flyNear && p.onGround && (p.hold.kind === 'corpse' || p.hold.kind === 'rock')) { k.down = true; k.attack = (f % 2 === 0); return k; }          // chỉ có quái bay: đặt đồ xuống
         if (e) {          // xa (>100) thì đi bộ tới; đủ gần thì đứng yên quay mặt rồi ném (trượt cũng được)
             const dir = e.cx > p.cx ? 1 : -1, fc = (p.facing >= 0 ? 1 : -1) === dir, ad = Math.abs(e.cx - p.cx);
-            if (D.thA && (ad >= 64 || f - D.thAF > 40)) { D.thA = false; if (f - D.thAF > 40) D.thForce = true; }          // lùi đủ xa (hoặc kẹt tường) thì thôi
-            if (!D.thA && !D.thForce && ad < 36) { D.thA = true; D.thAF = f; }
-            if (D.thA) { k[dir > 0 ? 'left' : 'right'] = true; return k; }          // quá gần: lùi lại
-            if (ad > 120) { k[dir > 0 ? 'right' : 'left'] = true; return k; }          // xa: tiến lên
+            if (ad > 110) {
+                D.apN = p.onGround && Math.abs(p.vx) < 8 && !(D.pause > f) && !(D.wig > f) ? (D.apN | 0) + 1 : (D.pause > f ? (D.apN | 0) : 0);          // bấm tiến mà đứng im > 0,4 s (vướng tường / bậc / hố): bỏ mục tiêu này 4 s, khỏi «định ném rồi dừng»
+                if (D.apN > 24) { D.thBad.set(e, f + 240); D.apN = 0; return null; }
+                k[dir > 0 ? 'right' : 'left'] = true; return k; }
+            D.apN = 0;          // xa: tiến lên (không lùi nữa: lùi–tiến liên tục khi quái đuổi là nguyên nhân giật)
             if (!fc) { k[dir > 0 ? 'right' : 'left'] = true; return k; }          // quay mặt
             k.attack = !CTL.held.has('attack'); return k;          // ném 1 lần (trượt cũng được)
         }
         if (p.hold.kind === 'pot' && D.holdT > 20 && p.onGround) { k.attack = (f % 2 === 0); return k; }          // bình gốm: ném ngay cho vỡ (ra tiền)
-        if (D.holdT > 60 * 3 && p.onGround) { k.attack = (f % 2 === 0); return k; }
+        if (D.holdT > 60 * 2 && p.onGround) { k.attack = (f % 2 === 0); return k; }
         return null;
     }
-    D.holdT = 0; D.thA = false; D.thForce = false;
+    D.holdT = 0; D.thA = false; D.thForce = false; if (D.rowTgt) { const o = B.tgtOverride; if (o && o.c === D.rowTgt.c && o.r === D.rowTgt.r) { B.tgtOverride = null; s.path = null; } D.rowTgt = null; }
     // 2) chọn đồ cần nhặt (vàng vừa nổ từ bom: ưu tiên cao nhất)
     D.prio = (D.prio || []).filter(e => e.alive && !e.holder && !D.skip.has(e) && f < D.prioT);
     if (D.prio.some(e => !(D.later && D.later.get(e) > f)) && D.loot && !D.lootPrio && !D.hk && nd > 55) { D.loot = null; B.tgtOverride = null; }          // đang đi nhặt đồ thường mà có vàng bom: đổi sang vàng bom
@@ -18037,7 +18067,7 @@ DEMO.goldNear = function (D, p, f, nd0) {          // vàng cách ≤1 ô (khôn
         if (e.kind !== 'gold' || !e.alive || e.holder || e.age < 0.25 || D.loot === e) continue;          // viên đã giao cho lớp nhặt đồ xa (đường đi có nhảy / treo): E không giành lại → hết E-D-E-D
         const dx = e.cx - p.cx, dy = e.cy - p.cy, ax = Math.abs(dx), ay = Math.abs(dy);
         if (ax > 16 && DEMO.behind(D, e.cx, p, 0.75)) continue;
-        if (dy < -24 && DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) < DEMO.floorOf(Math.floor((p.y + p.h - 0.5) / 16))) continue;          // vàng ở tầng trên: bỏ
+        if (DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) !== DEMO.floorOf(Math.floor((p.y + p.h - 0.5) / 16))) continue;          // vàng ở tầng khác (trên / dưới, kể cả vàng rơi xuống tầng dưới): coi như không biết
         let line = false;          // vàng nằm trên đường thẳng phẳng, thông suốt: đi thẳng tới nhặt (không bỏ dở rồi quay đi)
         if (nd0 > 80 && ay <= 20 && ax <= 112 && p.onGround) { line = true; const d = dx > 0 ? 1 : -1, r0 = Math.floor((p.y + p.h - 0.5) / 16); for (let c = Math.floor(p.cx / 16); c !== Math.floor(e.cx / 16) + d; c += d) { if (!(T_IS_SOLID[L.tile(c, r0 + 1)] || L.tile(c, r0 + 1) === T_ONEWAY) || T_IS_SOLID[L.tile(c, r0)] || T_IS_SOLID[L.tile(c, r0 - 1)]) { line = false; break; } } }
         const hy = D.goalK === 'gold' ? 16 : 0; const ok = (nd0 > 48 - hy && ax <= 24 && ay <= 24) || (nd0 > 80 - hy && ax <= 56 && ay <= 36) || line || (e === gc && nd0 > 64 - hy && ax <= 112 && ay <= 40);
@@ -18047,7 +18077,7 @@ DEMO.goldNear = function (D, p, f, nd0) {          // vàng cách ≤1 ô (khôn
     if (D.gc !== best) { D.gc = best; D.gcF = f; D.gx = p.cx; D.gy = p.cy; D.gN = 0; }          // cam kết với viên này tối đa 2 s
     const dx = best.cx - p.cx, dyb = best.cy - p.cy, k = {}, dd = dx >= 0 ? 1 : -1;
     if (Math.abs(p.cx - D.gx) < 2 && Math.abs(p.cy - D.gy) < 2) { if (++D.gN > 40) { (D.gBan = D.gBan || new Map()).set(best, f + 900); D.gc = null; return null; } } else { D.gx = p.cx; D.gy = p.cy; D.gN = 0; }          // áp sát 0,7 s mà không nhúc nhích: bỏ viên này 15 s
-    if (dyb < -20 || (Math.abs(dx) > 6 && game.level.solidAt(p.cx + dd * 10, p.y + p.h - 4))) {          // vàng ở bục cao / sau tường: không lao thẳng vào — giao cho đường đi (nhảy / treo / móc)
+    if (dyb < -20 || dyb > 24 || (Math.abs(dx) > 6 && game.level.solidAt(p.cx + dd * 10, p.y + p.h - 4))) {          // vàng ở bục cao / dưới hố thấp hơn (đi ngang chỉ lượn qua lại trên miệng hố = E–A–E–A): giao cho đường đi / sau tường: không lao thẳng vào — giao cho đường đi (nhảy / treo / móc)
         if (D.loot !== best && !D.skip.has(best)) DEMO.pickLoot(D, p, best, f, false); return null; }
     if (Math.abs(dx) > 3) k[dx > 0 ? 'right' : 'left'] = true;
     if (p.onGround && best.cy < p.cy - 14 && Math.abs(dx) < 22) k.jump = !CTL.held.has('jump');
@@ -18391,7 +18421,7 @@ DEMO.route = function (D, p, L, f) {
     if (f >= 60 * 55 && rt.phase !== 'exit') { rt.phase = 'exit'; rt.tgt = null; s.path = null; }          // quá 55 s: bỏ hết mục tiêu phụ, đi thẳng ra cửa
     if (f % 15 !== 0 || rt.phase === 'exit' && rt.fl === last) return;
     if (rt.phase === 'down' && f - rt.t2 > 60 * 20) { rt.phase = 'walk'; rt.t2 = 0; }
-    const rc = B.reach(n.c, n.r, Object.assign(B.abil(p.cls), { maxFall: 12, noUp: true, noLd: rt.turns < 2 }), null), w = rc.w;          // đã quay 2 lần mà chưa thấy đường xuống: cho phép dùng thang
+    const rc = B.reach(n.c, n.r, Object.assign(B.abil(p.cls), { maxFall: 12, noUp: true, noLd: rt.turns < 1 }), null), w = rc.w;          // đã quay 2 lần mà chưa thấy đường xuống: cho phép dùng thang
     const onFl = (i) => DEMO.floorOf((i / w) | 0) === fl;
     const set = (t, ph, ck) => { rt.tgt = t; if (ph) rt.phase = ph; if (ph === 'down') { rt.t2 = f; rt.ck = ck; } s.path = null; };
     if (rt.phase === 'down') {          // đích hố xuống mà không có đường tới (BFS cụt) quá ~1,2 s → bỏ hố này, đi tìm hố khác
@@ -18414,20 +18444,21 @@ DEMO.route = function (D, p, L, f) {
             for (let j = ds.length - 1; j >= 0; j--) {          // chỉ xuống chỗ mà từ đó còn đường tới cửa ra KHÔNG phải leo ngược lên (không nhảy vào hố cụt / ổ phải quay lại)
                 const d = ds[j]; let ok = rt.ok.get(d.key);
                 if (ok === undefined) { const rb = B.reach(d.lc, d.lr, Object.assign(B.abil(p.cls), { maxFall: 12, spikeOK: true, noUp: true }), null); ok = !!rb.seen[ex.r * rb.w + ex.c]; rt.ok.set(d.key, ok); }
-                if (!ok) ds.splice(j, 1);
+                if (!ok) { ds.splice(j, 1); }
             }
             ds.sort((a, b) => Math.abs(a.pc - n.c) - Math.abs(b.pc - n.c));
             const rxOf = (c) => Math.floor((c - 1) / LVL.roomW), cellAt = (e) => ({ c: Math.floor(e.cx / 16), r: Math.floor((e.y + e.h - 0.5) / 16) });
             const reachE = (e) => { const q = cellAt(e); if (DEMO.floorOf(q.r) !== fl) return false; for (let k = 0; k < 4; k++) if (rc.seen[(q.r + k) * w + q.c]) return true; return false; };
             const roomBusy = (d) => { const rk = DEMO.roomKey(d.pc, d.pr); for (const e of game.entities) { if (!e.alive || e.holder) continue; const q = cellAt(e); if (DEMO.roomKey(q.c, q.r) !== rk) continue; if (((e instanceof Enemy && e.creature && !e.harmless && e.kind !== 'ghost' && e.kind !== 'shopkeeper') || (DEMO.lootKind[e.kind] && !D.skip.has(e))) && reachE(e)) return true; } return false; };
-            const foesLeft = (d) => { if (!((game.killNeed || 0) > (typeof killsDone === 'function' ? killsDone() : 0)) || f - rt.t0 > 60 * 50) return false; const r0 = rxOf(d.pc); for (const e of game.entities) { if (!e.alive || e.holder || !(e instanceof Enemy) || !e.creature || e.harmless || e.kind === 'ghost' || e.kind === 'shopkeeper' || e.boss || e.isBoss) continue; const q = cellAt(e); if (Math.abs(rxOf(q.c) - r0) <= 1 && reachE(e) && !(BOT.ign && BOT.ign.get(e) > game.levelT)) return true; } return false; };
+            const foesLeft = (d) => { const need = game.killNeed || 0, kq = Math.ceil(need * (fl + 1) / (Math.max(1, last) + 1)); if (fl === 0 || !(kq > (typeof killsDone === 'function' ? killsDone() : 0)) || f - rt.t0 > 60 * 50) return false;          // chỉ tiêu kill theo tầng (tầng 0: xuống ngay; đủ chỉ tiêu: xuống ngay; thiếu: chỉ đánh quái ĐANG THẤY trong màn hình rồi xuống)
+ const r0 = rxOf(d.pc); for (const e of game.entities) { if (!e.alive || e.holder || !(e instanceof Enemy) || !e.creature || e.harmless || e.kind === 'ghost' || e.kind === 'shopkeeper' || e.boss || e.isBoss) continue; const q = cellAt(e); if (((fl >= last - 2) || (Math.abs(rxOf(q.c) - r0) <= 1 && DEMO.inViewX(e.cx, 8))) && reachE(e) && !(BOT.ign && BOT.ign.get(e) > game.levelT)) return e; } return null; };
             for (const d of ds) {
-                if (rt.dec.get(d.key) === 'skip') continue; if (!DEMO.inViewX(d.pc * 16 + 8, 8)) continue;          // chỉ xét hố xuống trong tầm nhìn (màn hình rộng ~4 phòng)
-                if (foesLeft(d)) continue;          // chưa đủ quái: ở lại dọn phòng này + phòng kề rồi mới xuống
+                if (rt.dec.get(d.key) === 'skip') continue;           // chỉ xét hố xuống trong tầm nhìn (màn hình rộng ~4 phòng)
+                { const fe = foesLeft(d); if (fe) { const q = cellAt(fe); let kk = 0; while (kk < 4 && !rc.seen[(q.r + kk) * w + q.c]) kk++; if (!rt.tgt || Math.abs(rt.tgt.c - q.c) > 3) set({ c: q.c, r: q.r + kk }); return; } }          // còn quái cần giết gần hố: đi THẲNG về phía quái đó (không quét ngược chiều), tới tầm nhìn thì lớp săn tự đánh          // chưa đủ quái: ở lại dọn phòng này + phòng kề rồi mới xuống
                 if (fl === 0) {          // tầng trên cùng: thấy hố xuống là tới đó xuống luôn; phòng còn mục tiêu thì đứng chờ ở mép hố tối đa 10 s cho các lớp nhặt / đánh làm xong
                     if (roomBusy(d) && (!rt.hold || f - rt.hold < 600)) { if (!rt.hold) rt.hold = f; if (!rt.tgt || rt.tgt.c !== d.pc || rt.tgt.r !== d.pr) set({ c: d.pc, r: d.pr }); return; }
                     set({ c: d.lc, r: d.lr }, 'down', d.key); return; }
-                if (!rt.dec.has(d.key)) { rt.dec.set(d.key, Math.random() < 0.5 ? 'down' : 'skip'); }
+                if (!rt.dec.has(d.key)) { rt.dec.set(d.key, 'down'); }          // thấy hố là xuống (Dan: bỏ ngẫu nhiên 50 % làm chạy tới cụt rồi ngược cả tầng): bỏ qua hố nhiều thì phải đi tới cụt rồi chạy ngược cả tầng = quãng đường thừa lớn nhất đo được
                 if (rt.dec.get(d.key) === 'down') { set({ c: d.lc, r: d.lr }, 'down', d.key); return; }
             }
             { const d0 = ds.find((d) => rt.dec.get(d.key) !== 'skip'); if (rt.turns >= 2 && d0) { set({ c: d0.lc, r: d0.lr }, 'down', d0.key); return; } }          // cả 2 đầu đều cụt: xuống ở chỗ gần nhất
@@ -18479,7 +18510,9 @@ DEMO.hookSpeed = function (D, p, f, nd) {
     if (!up) return null;
     if (f < (D.hsTry || 0)) return null; D.hsTry = f + 24;
     const ab = Object.assign(B.abil(p.cls), { maxFall: 6 });
+    let pd = 0; for (let j = s.idx + 1; j < Math.min(s.path.length, s.idx + 9); j++) { const q = s.path[j]; if (q.c !== n.c) { pd = Math.sign(q.c - n.c); break; } }          // hướng ngang đường đang đi: chỉ móc về phía đó (không móc ngược hướng rồi vòng lại)
     for (const dir of [p.facing >= 0 ? 1 : -1, p.facing >= 0 ? -1 : 1]) {
+        if (pd && dir !== pd) continue;
         const g = hookFindLedge(L, p, dir); if (!g) continue;
         const top = B.reach(g.c, g.r - 1, ab, null);          // từ đỉnh gờ đi tiếp tới được nút nào của đường (càng xa càng lợi)?
         for (let m = s.path.length - 1; m >= s.idx + 2; m--) {
@@ -18516,7 +18549,7 @@ DEMO.edgeStuck = function (D, p, a, b, f) {          // kẹt ở 1 cạnh đư�
     const B = BOT, s = B.state, L = game.level;
     if (b.r < a.r && (p.ropes > 0 || p.cls === 'hunt') && p.onGround && !p.hook) {
         const ab = Object.assign(B.abil(p.cls), { maxFall: 6 });
-        for (const dir of [b.c >= a.c ? 1 : -1, b.c >= a.c ? -1 : 1]) {
+        for (const dir of b.c === a.c ? [1, -1] : [b.c > a.c ? 1 : -1]) {          // cạnh đi ngang thì chỉ móc về phía đó
             const g = hookFindLedge(L, p, dir); if (!g) continue;
             const top = B.reach(g.c, g.r - 1, ab, null);
             for (let m = s.path.length - 1; m > s.idx; m--) { const q = s.path[m]; if (top.seen[q.r * top.w + q.c]) { D.hs = { stage: 'face', dir: g.ex > p.cx ? 1 : -1, t: f }; return 'hook'; } }
@@ -18575,7 +18608,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
         if (D.curFl === undefined) { D.curFl = fl; D.flK = KD(); D.bias = 0; }
         else if (fl > D.curFl && p.onGround) { D.bias = KD() === D.flK ? D.bias + 1 : Math.max(0, D.bias - 1); D.flK = KD(); D.curFl = fl; D.huntUntil = D.bias > 0 ? f + 60 * Math.min(25, 7 * D.bias) : 0; }
         else if (fl < D.curFl && p.onGround) D.curFl = fl; }
-    const locked = (L.arena && !L.arenaOpen) || ((game.killNeed || 0) > KD()); if (locked && f % 150 === 0) s.path = null; if (s.hunting && !locked) s.path = null;
+    const locked = (L.arena && !L.arenaOpen) || ((game.killNeed || 0) > KD()); if (locked && f % 150 === 0) s.path = null; if (s.hunting && !locked && (!s.path || f - (s.hpF || 0) >= 30)) { s.path = null; s.hpF = f; }          // săn quái di động: lập lại đường mỗi 0,5 s (mỗi khung thì đường nhảy qua lại giữa 2 phương án khi quái nhúc nhích → chạy đi chạy lại)
     if (!s.path || s.planT++ > 1200 || (game.levelT - s.lastIdxT > 6 && f > 30)) {
         if (s.path && game.levelT - s.lastIdxT > 6) { const a = s.path[s.idx], b = s.path[s.idx + 1]; if (a && b) s.banned.add(a.i + '>' + b.i); s.lastIdxT = game.levelT; if (s.ref) s.ref.t = game.levelT; }
         B.plan();
@@ -18601,7 +18634,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     // BỘ CHỐT MỤC TIÊU: các tầng nhặt đồ (đập / vàng gần / nhặt xa) chỉ được đề xuất; tầng đang thắng được giữ ≥ 1,5 s (trừ khi quái gần cùng tầng)
     let lk = null;
     if (D.bomb) lk = bk;
-    else if (f >= 60 * 55 && !p.hold) lk = null;          // quá 55 s: bỏ nhặt / đập, đi ra cửa
+    else if (f >= 60 * 55 && !p.hold) lk = (DEMO.off && DEMO.off.close) ? null : DEMO.close(D, p, f, nd0);          // quá 55 s: bỏ nhặt xa, đi ra cửa — nhưng đồ sát đường (< 2 ô) vẫn đập / mở vì gần như không tốn thời gian
     else if (D.hlock > f && !D.hk && !D.hs && !p.hook) lk = null;          // vừa móc xong: ~0,8 s chưa làm việc khác để leo hết lên bục
     else if (!D.hk && !D.hs && !p.hook) {
         const off = DEMO.off || {}, lay = { close: () => off.close ? null : DEMO.close(D, p, f, nd0), gold: () => off.gold ? null : DEMO.goldNear(D, p, f, nd0), loot: () => off.loot ? null : DEMO.loot(D, p, L, f) };
@@ -18644,6 +18677,15 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     if (lkU) act = D.goalK === 'close' ? 'F' : D.goalK === 'gold' ? 'E' : p.hold ? 'L' : 'D';
     if (D.bomb) act = 'G'; if (fight) act = fk; if (D.cl) act = 'J'; if (D.hs || D.hk || p.hook) act = 'I'; if (D.wig > f) act = 'P'; if (D.pause > f && nd0 > 48) act = 'M'; if (D.resetF === f) act = 'N';
     if (nd0 < 48 && !p.hook && !D.bomb && !p.hold && p.state !== 'stun' && DEMO.forceFight(p, B.keys)) act = 'O';          // quái trong 3 ô mà đang đứng đơ: đánh ngay
+    if (!lkU && !B.keys.attack && !D.bomb && !D.cl && !D.hs && !D.hk && !p.hook && !p.hold && p.onGround && nd0 > 56 && (B.keys.left || B.keys.right) && (p.atkCd || 0) <= 0 && !(p.whipT >= 0) && !CTL.held.has('attack')) {          // VỪA ĐI VỪA ĐẬP: bình / thùng dầu nằm sát phía trước trên đường (cùng hàng, trong tầm đánh) thì chém / bắn luôn, không dừng
+        const dr = B.keys.right ? 1 : -1, rch = Math.min(B.P[p.cls].reach, 30);
+        for (const e of game.entities) { const kd = e.kind; if (!e.alive || e.holder || !(kd === 'pot' || kd === 'barrel' || kd === 'waterbarrel')) continue;
+            const dx = (e.cx - p.cx) * dr; if (dx > 4 && dx < rch + 6 && DEMO.sameRow(p, e)) { B.keys.attack = true; break; } }
+    }
+    if (B.keys.attack && !CTL.held.has('attack') && nd0 < 70 && !p.hold && !p.hook) {          // CHÉM / BẮN VÔ ÍCH: > 10 nhát vào cùng 1 con trong 8 s mà máu nó không giảm (dơi treo thấp, quái lệch tầm, sau tường…) → bỏ con đó 30 s thay vì C–O–C–O mãi
+        let nf = null, nd = 1e9; for (const e of B.foes()) { if (e.kind === 'ghost') continue; const d = Math.hypot(e.cx - p.cx, e.cy - p.cy); if (d < nd) { nd = d; nf = e; } }
+        if (nf) { const x = D.fx; if (!x || x.e !== nf || f - x.t0 > 480 || (nf.hp || 0) < x.hp0) D.fx = { e: nf, n: 1, hp0: nf.hp || 0, t0: f }; else if (++x.n > 10) { (B.ign2 = B.ign2 || new Map()).set(nf, game.levelT + 30); (B.ign = B.ign || new Map()).set(nf, game.levelT + 30); D.fx = null; s.path = null; } }
+    }
     if (DEMO.duck(p, L)) { B.keys = { down: true }; act = 'K'; }
     else if (nd0 > 96 && p.onGround && !D.bomb && !D.hs && !D.hk && !D.cl && !p.hook && !B.keys.down && !B.keys.jump && (!s.path || !s.path[s.idx + 1] || s.path[s.idx + 1].et === 'walk')) {          // chỉ khi đang đi bộ thường (leo / nhảy cần quay đầu chính xác)          // không quái gần: đổi hướng đi chậm (≥ 0,5 s mới đảo chiều) cho khỏi giật qua lại
         const nk = B.keys.right ? 1 : B.keys.left ? -1 : 0;
