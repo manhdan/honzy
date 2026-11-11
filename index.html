@@ -18235,6 +18235,7 @@ function dbgDrawOverview() {
       for (const e of B.foes()) {
         if (e.kind === 'ghost' || e.kind === 'shopkeeper') continue; if (dm && dm.clr && dm.clr.size && !soft && !chainOn && !(dm.rt && dm.rt.phase === 'exit') && dm.clr.has(DEMO.roomKey(Math.floor(e.cx / 16), Math.floor((e.y + e.h - 0.5) / 16))) && DEMO.roomKey(n.c, n.r) !== DEMO.roomKey(Math.floor(e.cx / 16), Math.floor((e.y + e.h - 0.5) / 16))) continue; if (!soft && B.ign && B.ign.get(e) > game.levelT) continue;
         if (dm && dm.seen && !dm.seen.has(e)) continue;          // chỉ săn quái đã từng nhìn thấy trong màn hình
+        if (dm && dm.misFoes && dm.misFoes.size && !dm.misFoes.has(e) && !(killLocked() && dm.rt && dm.rt.phase === 'exit')) continue;          // v1.6-56: chỉ săn quái thuộc NHÓM đang tới của lộ trình (hết nhóm mới tính nhóm sau) — không chạy lung tung
         if (dm && !B.needHunt() && !chainOn && DEMO.behind(dm, e.cx, p, 1.5)) continue;          // kill tuỳ chọn mà ở sau lưng: bỏ
         if (Math.abs(e.vx || 0) < 8 && DEMO.ledgeInfo(p, game.level, e)) continue;          // quái đậu bục cao 1–2 ô: không leo lên, để lớp chém-nhảy-tại-chỗ lo
         let ec = Math.floor(e.cx / 16); let er = Math.floor((e.y + e.h - 0.5) / 16);
@@ -19097,7 +19098,56 @@ DEMO.mainDone = function (D, p, f) {          // mục tiêu CHÍNH của class 
     D.mdone = r; return r;
 };
 DEMO.pers = function (p) { return DEMO.PERS[p.cls] || DEMO.PERS.sword; };
+// ---- v1.6-56 (Dan) LỘ TRÌNH ĐỊNH SẴN: thay vì mỗi nhịp tự chọn việc (hay đổi ý, quay đi quay lại), bot tính TRƯỚC thứ tự các NHÓM QUÁI của tầng rồi mới tới hố xuống / cửa ra.
+//   Gom quái cách nhau ≤ 5 ô ngang / 3 ô dọc thành một nhóm · quái LẺ cách mọi nhóm khác > 9 ô thì bỏ hẳn (đi tới đó là đứt chuỗi KILL, mất thời gian)
+//   Đi tới nhóm xa (> 9 ô): CHẠY NHANH, bỏ mọi mục tiêu phụ (D.rush) · đang trong nhóm / nhóm kế bên: vẫn tranh thủ nhặt đồ gần như thường.
+DEMO.mission = function (D, p, f) {
+    if (DEMO.off && DEMO.off.mis) { D.mis = null; D.misFoes = null; D.rush = false; return; }
+    const B = BOT, n = B.nodeOf(p), fl = DEMO.floorOf(n.r);
+    let m = D.mis;
+    if (m && m.fl === fl) {
+        while (m.i < m.steps.length && !m.steps[m.i].foes.some(e => e.alive && !e.holder)) m.i++;          // nhóm đã sạch: sang nhóm sau
+        if (m.i >= m.steps.length && f - m.t > 60) m = null;          // hết nhóm: dựng lại (có thể có quái mới thấy)
+    } else m = null;
+    if (!m || f - m.t > 180) {          // dựng lại mỗi 3 s (quái di chuyển, thấy thêm quái mới)
+        const fo = [];
+        for (const e of game.entities) {
+            if (!e.alive || e.holder || !(e instanceof Enemy) || !e.creature || e.harmless || e.kind === 'ghost' || e.kind === 'shopkeeper' || e.boss || e.isBoss) continue;
+            if (B.ign2 && B.ign2.get(e) > game.levelT) continue;
+            const c = Math.floor(e.cx / 16), r = Math.floor((e.y + e.h - 0.5) / 16);
+            if (DEMO.floorOf(r) !== fl) continue;
+            fo.push({ e, c, r });
+        }
+        const par = fo.map((_, i) => i), find = (i) => { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
+        for (let i = 0; i < fo.length; i++) for (let j = i + 1; j < fo.length; j++) if (Math.abs(fo[i].c - fo[j].c) <= 5 && Math.abs(fo[i].r - fo[j].r) <= 3) { const a = find(i), b = find(j); if (a !== b) par[a] = b; }
+        const cl = new Map();
+        for (let i = 0; i < fo.length; i++) { const k = find(i); if (!cl.has(k)) cl.set(k, []); cl.get(k).push(fo[i]); }
+        let gs = [];
+        for (const g of cl.values()) { let c = 0, r = 0; for (const q of g) { c += q.c; r += q.r; } c = Math.round(c / g.length); r = Math.round(r / g.length); let bq = g[0], bd = 1e9; for (const q of g) { const d = Math.abs(q.c - c) + Math.abs(q.r - r); if (d < bd) { bd = d; bq = q; } } gs.push({ c: bq.c, r: bq.r, foes: g.map(q => q.e), n: g.length }); }
+        if (gs.length > 1) gs = gs.filter(g => g.n > 1 || gs.some(o => o !== g && Math.abs(o.c - g.c) + Math.abs(o.r - g.r) * 2 <= 9) || Math.abs(g.c - n.c) + Math.abs(g.r - n.r) * 2 <= 9);          // quái lẻ ở xa mọi nhóm: bỏ
+        const ex = (D.rt && D.rt.tgt) || game.level.exit || { c: n.c, r: n.r };          // đích cuối của tầng (hố xuống / cửa ra): xếp nhóm quái theo đường TỚI ĐÓ, không chỉ gần nhất (tránh đi ngược rồi quay lại)
+        const keep = D.mis && D.mis.steps && D.mis.steps[D.mis.i] ? D.mis.steps[D.mis.i].foes : null;
+        const steps = []; let cc = n.c, cr = n.r;
+        while (gs.length) {
+            let bi = 0, bd = 1e9;
+            for (let i = 0; i < gs.length; i++) {
+                const g = gs[i], d0 = Math.abs(g.c - cc) + Math.abs(g.r - cr) * 2, d1 = Math.abs(ex.c - g.c) + Math.abs(ex.r - g.r) * 2;
+                let d = d0 + d1 * 0.6;
+                if (keep && steps.length === 0 && g.foes.some(e => keep.indexOf(e) >= 0)) d -= 8;          // giữ nhóm đang đánh dở (khỏi đổi ý qua lại)
+                if (d < bd) { bd = d; bi = i; }
+            }
+            const g = gs.splice(bi, 1)[0]; steps.push(g); cc = g.c; cr = g.r;
+        }
+        m = D.mis = { fl, steps, i: 0, t: f };
+    }
+    const cur = m.steps[m.i], nx = m.steps[m.i + 1], fs = new Set();
+    if (cur) for (const e of cur.foes) fs.add(e);
+    if (nx && cur && Math.abs(nx.c - cur.c) + Math.abs(nx.r - cur.r) * 2 <= 9) for (const e of nx.foes) fs.add(e);          // nhóm kế ở sát: coi như cùng một đợt
+    D.misFoes = fs;
+    D.rush = !!(cur && p.cls !== 'hunt' && (Math.abs(cur.c - n.c) + Math.abs(cur.r - n.r) * 2) > 9 && f < 60 * DEMO.T_EXIT);
+};
 DEMO.persR = function (D, p, f, key) {          // bán kính mục tiêu phụ: theo tính cách, nới khi xong việc chính, thu hẹp dần khi gần mốc ra cửa
+    if (D.rush) return 0;          // v1.6-56: đang chạy tới nhóm quái xa → bỏ mục tiêu phụ
     const P = DEMO.pers(p), md = DEMO.mainDone(D, p, f), base = md ? P[key + 'D'] : P[key], t = f / 60;
     const k = t >= DEMO.T_EXIT ? 0 : t >= 40 ? 0.45 : t >= 30 ? 0.7 : 1;
     return base * k;
@@ -19122,8 +19172,11 @@ DEMO.knight = function (p, k) {
         if (e.kind === 'bat' || e.kind === 'flyer' || e.kind === 'ghost' || (ch.used.get(e) || 0) >= 3) continue;
         const dx = e.cx - p.cx, dy = e.cy - p.cy, gap = Math.abs(dx) - (p.w + e.w) / 2;
         if (Math.abs(dy) < 14 && gap >= 18 && gap <= 72) {
-            let blocked = false; for (let x = p.cx + f * 6; (x - e.cx) * Math.sign(dx) < 0; x += 4 * Math.sign(dx)) if (L.solidAt(x, p.cy)) { blocked = true; break; }
-            if (!best || gap < best.gap) best = { e, mode: 'side', gap, f: dx >= 0 ? 1 : -1, blocked };
+            const sg = Math.sign(dx) || 1; let blocked = false, hole = false;
+            for (let x = p.cx + f * 6; (x - e.cx) * sg < 0; x += 4 * sg) if (L.solidAt(x, p.cy)) { blocked = true; break; }
+            if (!blocked) { const fr = Math.floor((p.y + p.h + 2) / 16); for (let c = Math.floor(p.cx / 16) + sg; (c - Math.floor(e.cx / 16)) * sg < 0; c += sg) { const t = L.tile(c, fr); if (!T_IS_SOLID[t] && t !== T_ONEWAY && t !== T_LADDER) { hole = true; break; } } }          // v1.6-56 (Dan): giữa bot và quái có HỐ → nạp đòn (chạy vòng còn lâu hơn)
+            if (!blocked && !hole) continue;          // cùng hàng, đường thông: chạy tới chém THƯỜNG nhanh hơn nạp (ưu tiên thấp)
+            if (!best || gap < best.gap) best = { e, mode: 'side', gap, f: dx >= 0 ? 1 : -1, blocked: true };
         } else if (Math.abs(dx) <= 16 && dy < -22 && dy > -56 && Math.abs(e.vx || 0) < 20 && (e.vy || 0) < 40) {          // v1.6-55 (Dan): quái đứng trên bục ngay trên đầu → đứng dưới nạp đòn rồi thả; chỉ khi nó đứng yên / không lao xuống
             if (!best) best = { e, mode: 'up', gap: Math.abs(dx), f: dx >= 0 ? 1 : -1 };
         }
@@ -19499,6 +19552,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     else if (f - D.wf > 800 && !(D.bomb && D.bomb.stage === 'wait')) { D.wf = f; if (!((game.killNeed || 0) > KD())) for (const e of B.foes()) if (e.kind !== 'ghost' && Math.hypot(e.cx - p.cx, e.cy - p.cy) < 140) (B.ign2 = B.ign2 || new Map()).set(e, game.levelT + 40); DEMO.reset(D, f); }
     if ((f - D.af > 120 && !(D.bomb && D.bomb.stage === 'wait') && !(D.pause > f) && !(brawl && f - D.af < 240)) || (D.dt0 && f - D.dt0 > 1500)) { DEMO.reset(D, f); }
     let nd0 = 1e9; for (const e of B.foes()) { if (e.kind === 'ghost') continue; const d = Math.hypot(e.cx - p.cx, e.cy - p.cy); if (d < nd0) nd0 = d; }
+    DEMO.mission(D, p, f);
     DEMO.dither(D, p, f, nd0);
     if (!D.cl && p.onGround && !D.hs && !D.hk && !p.hook && nd0 > 60 && !(D.clCd > f) && s.path && DEMO.slowAt(p)) {          // đứng trong dầu / mạng / nước mà phải leo bục 1–2 ô: dùng kịch bản bám mép ngay
         const a = s.path[s.idx], b = s.path[s.idx + 1]; if (a && b && /^up/.test(String(b.et)) && b.c !== a.c) { D.cl = { dir: Math.sign(b.c - a.c), f0: f, slow: true }; D.clCd = f + 120; } }
@@ -19564,7 +19618,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
         }
     }
     if (D.pause > f && !p.hook && !D.hs && nd0 > 48) B.keys = {};          // dừng 1 s trước khi thử đường khác
-    if (chainFar && p.onGround && !p.hook && !D.hs && !D.hk && !D.cl && !fight && (B.keys.left || B.keys.right)) { B.keys.run = true; B.stats.chainRun = (B.stats.chainRun | 0) + 1; }
+    if ((chainFar || D.rush) && p.onGround && !p.hook && !D.hs && !D.hk && !D.cl && !fight && (B.keys.left || B.keys.right)) { B.keys.run = true; B.stats.chainRun = (B.stats.chainRun | 0) + 1; }
     if (D.wig > f && !p.hook) B.keys = { [D.wigDir > 0 ? 'right' : 'left']: true, run: true, jump: f % 24 < 12 };
     if (p.hook && !p.hook.auto && p.hook.ph === 'on' && !(D.hk && D.hk.stage === 'wait') && !(D.hs && D.hs.stage === 'wait')) B.keys = { jump: f % 6 < 3 };          // đang treo móc mà không có việc: nhả (nhảy) rồi đi tiếp
     if (p.cls === 'alch' && !p.onGround && p.vy > 0 && B.keys.jump && !p.hook && !(D.fall && D.fall.tot > 6 * 16) && !(s.path && s.path[s.idx + 1] && /^gap/.test(String(s.path[s.idx + 1].et)))) B.keys.jump = false;          // Wizard chỉ lượn khi rơi từ > 6 ô
