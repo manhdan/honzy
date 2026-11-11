@@ -2756,11 +2756,13 @@ const MUS_ZONES = {
     boss:     { root: 38, scale: [0, 1, 3, 6, 7], vol: 1.0, fade: 0.6, pad: { notes: [0, 6, 12], type: 'sawtooth', lp: 320, g: 0.08 }, noise: { type: 'bandpass', f: 380, q: 0.7, g: 0.03 },
                 ev: [{ k: 'pulse', gap: [0.6, 0.6] }, { k: 'stab', gap: [2.4, 2.4] }] }
 };
+// v1.6-41 (Dan): nền kéo dài (pad + nhiễu) của 4 vùng nhạc sinh ngẫu nhiên gây ù (Vực sâu to gấp ~6 lần, Thạch anh tím ~3 lần các vùng khác; đo RMS) → droneK nhân vào pad + nhiễu nền (tiếng điểm lâu lâu mới phát không đổi)
+MUS_ZONES.ruins.droneK = 0.5; MUS_ZONES.amethyst.droneK = 0.2; MUS_ZONES.deep.droneK = 0.08; MUS_ZONES.magma.droneK = 0.55;
 MUS_ZONES.mines = Object.assign({}, MUS_ZONES.cave, { pad: Object.assign({}, MUS_ZONES.cave.pad, { notes: [] }), ev: MUS_ZONES.cave.ev.map(e => e.k === 'tom' ? Object.assign({}, e, { v: 0.14 }) : e.k === 'flute' ? Object.assign({}, e, { v: 0.8 }) : e) });          // v1.07 (Dan, chỉnh bằng mines_music_lab): TẮT hẳn pad kéo dài + vang (hết ù), trống ×0,14, sáo ×0,8
 //          // v1.05 (Dan): bỏ nốt TRẦM NHẤT của lớp pad kéo dài (nốt gốc, ~220 Hz) — còn quãng 5 + quãng 8;          // Hầm mỏ chưa có nhạc riêng (trước đây rơi về 'cave' do mặc định): giữ BẢN SINH NGẪU NHIÊN cũ của Hang ngầm, kể cả khi 'cave' đã đổi sang phong cách CozyWorld (MUS_STYLE bên dưới)
 const MUS = { zone: null, bus: null, old: [], seed: 20261022, n: 0, danger: 0 };          // v1.18: danger 0..1 = độ căng thẳng (quái đuổi / boss / máu thấp) → nhạc «Hầm ấm» dày lên
 function musLevel() { return typeof SND.music === 'number' ? SND.music : 1; }
-function musVolOf(name) { const st = MUS_STYLE[name]; return st ? MUS_STYLE_DEF[st].vol : MUS_ZONES[name].vol; }          // vùng dùng phong cách CozyWorld: độ to theo MUS_STYLE_DEF
+function musVolOf(name) { const st = MUS_STYLE[name]; return (st ? MUS_STYLE_DEF[st].vol : MUS_ZONES[name].vol) * (MUS_ZONES[name].volK === undefined ? 1 : MUS_ZONES[name].volK); }          // vùng dùng phong cách CozyWorld: độ to theo MUS_STYLE_DEF
 function musApplyLevel() { if (MUS.bus && sndCtx) { MUS.bus.g.gain.cancelScheduledValues(sndCtx.currentTime); MUS.bus.g.gain.setTargetAtTime(musVolOf(MUS.zone) * MUS_VOL * musLevel(), sndCtx.currentTime, 0.05); } }
 // Quy tắc (lần 28): KHÔNG có âm nền kéo dài dưới ~100Hz (gây ù khó chịu) — mọi nốt bị nâng lên ≥ MIDI 45 (110Hz), bus nhạc có lọc cao 110Hz.
 function musFloor(m) { return m < 45 ? m + 12 * Math.ceil((45 - m) / 12) : m; }
@@ -2772,7 +2774,7 @@ const MUS_STYLE_VI = { cw: 'CozyWorld êm (cw)', retro: 'pad dài + chuông (ret
 function musLabel(name) { const z = MUS_ZONE_VI[name] || name, st = MUS_STYLE[name]; return st ? z + ' · ' + MUS_STYLE_VI[st] + ' · MUS_STYLE.' + name : z + ' · nhạc sinh ngẫu nhiên · MUS_ZONES.' + name; }
 function musRand() { let t = (MUS.seed += 0x6D2B79F5) >>> 0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
 function musZoneFor() {
-    if (typeof game !== 'undefined' && game.title) return 'mines';          // v1.2 (Dan): màn chào / menu tiêu đề dùng nhạc nền màn 1 (Hầm mỏ)
+    if (typeof game !== 'undefined' && game.title && (typeof slotScreenOn !== 'function' || slotScreenOn())) return 'mines';          // v1.2 (Dan): màn Welcome / chọn slot dùng nhạc nền màn 1 (Hầm mỏ); menu Esc giữa ván KHÔNG đổi nhạc (v1.6-41)
     const b = typeof game !== 'undefined' && game.boss;
     if (b && b.alive && b.st !== 'sleep') return 'boss';
     const th = game.room && (game.room.themeName || (game.room.def && game.room.def.theme));          // lần 49: dự phòng def.theme nếu Level không đặt themeName
@@ -2783,11 +2785,11 @@ function musZoneFor() {
 function musBuild(name) {
     if (MUS_STYLE[name]) return musStyleBuild(name);          // lần 49: phong cách CozyWorld
     const ac = sndCtx, Z = MUS_ZONES[name], now = ac.currentTime, stops = [];
-    const g = ac.createGain(), inp = ac.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(Z.vol * MUS_VOL * musLevel(), now + (Z.fade || 2.5)); const hp110 = ac.createBiquadFilter(); hp110.type = 'highpass'; hp110.frequency.value = 110; hp110.Q.value = 0.7; g.connect(hp110); hp110.connect(sndMaster);
+    const g = ac.createGain(), inp = ac.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(musVolOf(name) * MUS_VOL * musLevel(), now + (Z.fade || 2.5)); const hp110 = ac.createBiquadFilter(); hp110.type = 'highpass'; hp110.frequency.value = 110; hp110.Q.value = 0.7; g.connect(hp110); hp110.connect(sndMaster);
     const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Z.pad.lp; lp.Q.value = 0.7;
-    const pg = ac.createGain(); pg.gain.value = Z.pad.g; lp.connect(pg); pg.connect(g);
+    const dk = Z.droneK === undefined ? 1 : Z.droneK, pg = ac.createGain(); pg.gain.value = Z.pad.g * dk; lp.connect(pg); pg.connect(g);
     const brLfo = ac.createOscillator(), brG = ac.createGain(), pcG = ac.createGain();          // v0.34: nhịp thở chống ù — pad kéo dài lên xuống chậm (~14-20s/chu kỳ), cao độ lệch nhẹ
-    brLfo.frequency.value = 0.05 + musRand() * 0.04; brG.gain.value = Z.pad.g * 0.4; pcG.gain.value = 9; brLfo.connect(brG); brG.connect(pg.gain); brLfo.connect(pcG); brLfo.start(now); stops.push(brLfo);
+    brLfo.frequency.value = 0.05 + musRand() * 0.04; brG.gain.value = Z.pad.g * dk * 0.4; pcG.gain.value = 9; brLfo.connect(brG); brG.connect(pg.gain); brLfo.connect(pcG); brLfo.start(now); stops.push(brLfo);
     Z.pad.notes.forEach((n, i) => {
         const o = ac.createOscillator(); o.type = Z.pad.type; pcG.connect(o.detune); o.frequency.value = musMidi(musFloor(Z.root + n)); if (Z.pad.detune) o.detune.value = (i % 2 ? 1 : -1) * Z.pad.detune;
         o.connect(lp); o.start(now); stops.push(o);
@@ -2796,7 +2798,7 @@ function musBuild(name) {
     if (Z.noise) {
         const src = ac.createBufferSource(); src.buffer = sndNoiseBuf(ac); src.loop = true;
         const f = ac.createBiquadFilter(); f.type = Z.noise.type; f.frequency.value = Z.noise.f; f.Q.value = Z.noise.q || 0.7;      // lần 45: snow thiếu q → NaN → lỗi mỗi khung hình
-        const ng = ac.createGain(); ng.gain.value = Z.noise.g; src.connect(f); f.connect(ng); ng.connect(g); src.start(now); stops.push(src);
+        const ng = ac.createGain(); ng.gain.value = Z.noise.g * dk; src.connect(f); f.connect(ng); ng.connect(g); src.start(now); stops.push(src);
     }
     // lần 26 (học từ CW cw_audio.js): ngõ vào chung `inp` → khô + vang (reverb ồn trắng 3.2s, cắt trầm 240Hz cho hết "ù")
     inp.connect(g); const wet = ac.createGain(), hp = ac.createBiquadFilter(), rv = musReverb(ac), rg = ac.createGain();
@@ -2881,7 +2883,7 @@ const MUS_CW = {
 // Dựng bus một phong cách: trả về {name, g, inp, stops, nx, sty, …trạng thái lịch}. Đồ thị y như build() của CozyWorld; đầu ra vào g (không qua hp110) rồi sndMaster.
 function musStyleBuild(name) {
     const ac = sndCtx, sty = MUS_STYLE[name], D = MUS_STYLE_DEF[sty], now = ac.currentTime, stops = [];
-    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(D.vol * MUS_VOL * musLevel(), now + 2.5); g.connect(sndMaster);
+    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(musVolOf(name) * MUS_VOL * musLevel(), now + 2.5); g.connect(sndMaster);
     const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = D.bright; lp.connect(g);          // độ sáng chung (BRIGHT của CozyWorld)
     let out = lp;
     if (D.comp) { const pre = ac.createGain(), cp = ac.createDynamicsCompressor(); pre.gain.value = 0.8; cp.threshold.value = -14; cp.ratio.value = 4; pre.connect(cp); cp.connect(lp); out = pre; }          // lofi / kali qua bộ nén nhẹ
@@ -3207,7 +3209,7 @@ const AMB_PROF = {
     cave:     { wind: 0.35, drip: 1, rumble: 1 },
     crystal:  { wind: 0.20, drip: 0.8, waves: 0.4 },
     ruins:    { drip: 0.2 },          // v1.18zi (Dan): Tàn tích bỏ gió / hú / mưa (nhiễu trắng nghe nhức đầu) — chỉ còn giọt nước
-    snow:     { wind: 1, gust: 1 },
+    snow:     { wind: 1, gust: 1, windK: 0.25 },          // v1.6-41 (Dan): gió Núi tuyết to quá → còn 25% (windK nhân vào gió + hú)
     amethyst: { wind: 0.30, drip: 0.6 },
     deep:     { wind: 0.40, owl: 0.8, frogs: 0.6, crickets: 0.3, drip: 0.4, waves: 1, rumble: 1 },
     magma:    { wind: 0.35, rumble: 1 }
@@ -3347,7 +3349,7 @@ function ambStep() {
     if (AMB.lv !== L) { AMB.lv = L; AMB.env = ambEnvFor(L); AMB.sampleT = 0; AMB.rainT0 = now; }
     if (now >= AMB.sampleT) { AMB.sampleT = now + 0.5; const n = ambNear(L, game.player); AMB.wk = n.wk; AMB.lk = n.lk; AMB.ex = n.ex; AMB.dp = n.dp; }
     { const id = AMB.env.id, W = { mines: 0.16, cave: 0.2, crystal: 0.24, amethyst: 0.22, magma: 0.18, ruins: 0.14, deep: 0.22, snow: 0.06, forest: 0.03 }; sndEnvSet((W[id] === undefined ? 0.1 : W[id]) + 0.1 * (AMB.dp || 0), !!(game.player && typeof L.inWater === 'function' && L.inWater(game.player))); }          // v1.18: vang hang theo vùng, nghẹt khi nhân vật ở trong nước
-    const b = game.boss, E = AMB.env, vol = AMB.vol * (typeof SND.music === 'number' ? SND.music : 1);
+    const b = game.boss, E = AMB.env, vol = AMB.vol * (typeof SND.music === 'number' ? SND.music : 1) * (E.p.vol === undefined ? 1 : E.p.vol);          // p.vol: hệ số âm lượng riêng của vùng (chỉnh bằng công cụ review âm thanh)
     const rs = now - (AMB.rainT0 || 0), rainy = E.rainy * (rs < 45 ? 1 : Math.max(0, 1 - (rs - 45) / 15));          // v0.94 (Dan): mưa chỉ kéo dài tối đa 1 phút mỗi màn (45 s đầy, 15 s nhỏ dần rồi tạnh)
     ambTick(AMB.S, now, { p: E.p, rainy, wk: AMB.wk, lk: AMB.lk, ex: AMB.ex || 0, boss: !!(b && b.alive && b.st !== 'sleep'), vol, water: E.water, dark: E.dark });
 }
