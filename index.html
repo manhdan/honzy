@@ -8662,6 +8662,56 @@ function cosHeroStrip(cls) {
     return (_cosStrip[key] = cv);
 }
 
+// ---- v1.6-58 (Dan): sửa vài món nhìn chưa rõ + 4 BỘ ĐỒ chủ đề (phi hành gia · khủng long · thuyền trưởng cướp biển · ninja) ----
+COS_ART.antlers = { outline: false, pal: { b: '#8a5a30', B: '#c08a52', h: '#e8c898' }, parts: [{ x: 1, y: -9, rows: ['h....h', 'Bb..bB', '.Bb.bB', '..BbB.', '..bbb.', '...b..'] }, { x: 0, y: -4, rows: ['bB......Bb'] }] };
+COS_ART.groucho = { outline: false, pal: { k: '#17121f', t: '#e8b488', T: '#c08a60', h: '#55506a' }, parts: [{ x: 1, y: 2, rows: ['kkkkkkkkk'] }, { x: 1, y: 3, rows: ['khhk', '.kk.'] }, { x: 5, y: 3, rows: ['khhk', '.kk.'] }, { x: 4, y: 5, rows: ['tTt', 'ttt'] }, { x: 2, y: 7, rows: ['kkkkkk', '.kkkk.'] }] };
+COS_ART.sash = { outline: false, pal: { s: '#8a3a2a', S: '#c25a3a', y: '#f2c230', Y: '#b88a14' }, parts: [{ x: 0, y: 8, rows: ['Ss........', '.Ss.......', '..Ss......', '...Ss.....', '....Ss....', '.....Ss...', '......Ss..'] }, { x: 6, y: 14, rows: ['yYy', 'yyy'] }] };
+COS_ART.chain = { outline: false, pal: { c: '#e4e8f4', C: '#9aa0b8', g: '#6ae0ff', G: '#dffaff', o: '#0f0c1f' }, parts: [{ x: 1, y: 8, rows: ['cC......Cc', '.cC....Cc.', '..cC..Cc..'] }, { x: 3, y: 11, rows: ['oooo', 'oGgo', 'oggo', 'oooo'] }, { x: 4, y: 12, rows: ['G'] }] };
+COS_ART.pouch = { outline: false, pal: { p: '#8a5626', P: '#c08a46', q: '#5a3818', y: '#f2c230', k: '#3a2410' }, parts: [{ x: 5, y: 12, rows: ['.qqqq.'] }, { x: 5, y: 13, rows: ['PPPPPP', 'pPyypP', 'ppyypp', 'qppppq', '.qqqq.'] }] };
+COS_ART.sprout = { outline: false, pal: { g: '#4aa83a', G: '#8ce860', s: '#3a7a2c', h: '#d8ffc0' }, parts: [{ x: 1, y: -10, rows: ['Gh....hG', 'gGg..gGg', '.gGg.gGg', '..gGgGg.', '...sss..', '....s...', '....s...'] }] };
+
+COS_ART.astro_helm = { outline: false, pal: { w: '#eef2ff', W: '#aab6d4', h: '#ffffff', k: '#5a6480', y: '#f2c230' }, parts: [
+    { x: 4, y: -9, rows: ['y', 'y'] },
+    { x: 0, y: -7, rows: ['..wwwwww..', '.whwwwwWW.', 'wwwwwwwWWW'] },
+    { x: -1, y: -4, rows: ['Www', 'Www', 'ww.', 'ww.', 'ww.', 'Www', 'WWw'] },
+    { x: 8, y: -4, rows: ['wwW', 'wwW', '.WW', '.WW', '.WW', 'wwW', 'wWW'] },
+    { x: 1, y: 3, rows: ['k'] }, { x: 9, y: 3, rows: ['k'] }] };
+COS_ART.astro_visor = { outline: false, pal: { y: '#f4c43a', Y: '#a87a14', h: '#fff2b0', k: '#3a2a10' }, parts: [
+    { x: 0, y: 2, rows: ['kkkkkkkkkk', 'kyhyyyyyYk', 'kyyyyyyyYk', 'kYYYYYYYYk', '.kkkkkkkk.'] }] };
+COS_ART.astro_pack = { outline: false, pal: { w: '#dfe5f2', W: '#9aa4c0', r: '#e0485a', g: '#58c860', k: '#4a5068' }, parts: [{ x: 2, y: 8, rows: ['W....W', 'W....W'] }, { x: 2, y: 10, rows: ['wwwwww', 'wrkgkw', 'wWWWWw', 'kkkkkk'] }] };
+
+COS_ART.dino_hood = { outline: false, pal: { g: '#4a9a44', G: '#7fd45e', d: '#2f6a2c', y: '#f2e04a' }, parts: [
+    { x: 0, y: -8, rows: ['...y..y...', '..yyy.yyy.'] },
+    { x: 0, y: -6, rows: ['.gGGGGGGg.', 'gGGggggGGg', 'gggggggggg', 'dggggggggd'] },
+    { x: -1, y: -2, rows: ['dg', 'gg', 'gd'] }, { x: 9, y: -2, rows: ['gd', 'gg', 'dg'] }] };
+COS_ART.dino_collar = { outline: false, pal: { g: '#4a9a44', G: '#8ce860', d: '#2f6a2c' }, parts: [{ x: -1, y: 8, rows: ['gGgGgGgGgGg', 'dgdgdgdgdgd'] }, { x: 2, y: 10, rows: ['G.G.G', 'dGdGd'] }] };
+COS_ART.dino_claw = { outline: false, pal: { b: '#efe8d4', B: '#ffffff', k: '#8a7a5c', r: '#b0532f' }, parts: [
+    { x: 1, y: 8, rows: ['rr......rr', '.rr....rr.', '..rrrrrr..'] },
+    { x: 2, y: 11, rows: ['B.B.B', 'bkbkb', 'b.b.b'] }] };
+
+COS_ART.tricorn = { outline: false, pal: { k: '#3a3550', K: '#7a74a0', y: '#f2c230', Y: '#b88a14', w: '#f4f4f8' }, parts: [
+    { x: -1, y: -8, rows: ['....KKKK....', '..KkkkkkkK..', '.KkkkkkkkkK.', 'KkkyyyyyykkK', 'KkkkkkkkkkkK', '.KKKKKKKKKK.'] },
+    { x: 4, y: -7, rows: ['ww', 'w.'] }] };
+COS_ART.pirate_sash = { outline: false, pal: { r: '#c0303a', R: '#ef5a62', y: '#f2c230', Y: '#b88a14' }, parts: [{ x: 0, y: 12, rows: ['rRrRrRrRrR', 'RrRrRrRrRr', 'rrrrrrrrrr'] }, { x: 3, y: 12, rows: ['yYYy', 'yyyy', 'yYYy'] }] };
+COS_ART.parrot = { outline: false, pal: { g: '#2f9e42', G: '#6ee060', r: '#e0485a', R: '#ff8a92', y: '#f2c230', k: '#17121f', b: '#4a8af0' }, parts: [
+    { x: 9, y: 0, rows: ['.gg.', 'gGGk', 'gGGy', 'ggg.', 'rGg.', 'rRg.', '.gg.', '.bb.'] }] };
+
+COS_ART.ninja_hood = { outline: false, pal: { k: '#2b2a3c', K: '#464566', r: '#c03848', R: '#e8606e' }, parts: [
+    { x: 0, y: -6, rows: ['..kkkkkk..', '.kkKKKKkk.', 'kkkkkkkkkk', 'kkkkkkkkkk'] },
+    { x: -1, y: -2, rows: ['kk', 'kk', 'kk'] }, { x: 9, y: -2, rows: ['kk', 'kk', 'kk'] },
+    { x: 0, y: -2, rows: ['rrrrrrrrrr', 'RrrrrrrrrR'] },
+    { x: 10, y: 0, rows: ['rr', 'rR', '.r', '.r'] }] };
+COS_ART.ninja_mask = { outline: false, pal: { k: '#2b2a3c', K: '#43435c' }, parts: [{ x: 1, y: 6, rows: ['kkkkkkkk', 'kKKKKKKk', 'kkkkkkkk'] }, { x: 0, y: 9, rows: ['kk......kk'] }] };
+COS_ART.shuriken = { outline: false, pal: { s: '#cfd6e8', S: '#8a92ac', k: '#2b2a3c', b: '#4a4258' }, parts: [{ x: 5, y: 13, rows: ['bbbb', 'kkkk'] }, { x: 5, y: 10, rows: ['.s.', 'sSs', '.s.'] }, { x: 7, y: 11, rows: ['.s.', 'sSs', '.s.'] }] };
+
+for (const [id, nm, tier, art, slot] of [
+    ['astro_helm', 'Phi hành gia · Mũ', 'exclusive', 'astro_helm', 'headpiece'], ['astro_visor', 'Phi hành gia · Kính vàng', 'rare', 'astro_visor', 'eyewear'], ['astro_pack', 'Phi hành gia · Bình khí', 'rare', 'astro_pack', 'brooch'],
+    ['dino_hood', 'Khủng long · Mũ gai', 'exclusive', 'dino_hood', 'headpiece'], ['dino_collar', 'Khủng long · Khăn vảy', 'medium', 'dino_collar', 'scarf'], ['dino_claw', 'Khủng long · Vòng vuốt', 'medium', 'dino_claw', 'brooch'],
+    ['tricorn', 'Cướp biển · Mũ thuyền trưởng', 'exclusive', 'tricorn', 'headpiece'], ['pirate_sash', 'Cướp biển · Đai lưng', 'medium', 'pirate_sash', 'belt'], ['parrot', 'Cướp biển · Vẹt trên vai', 'exclusive', 'parrot', 'brooch'],
+    ['ninja_hood', 'Ninja · Khăn trùm', 'rare', 'ninja_hood', 'headpiece'], ['ninja_mask', 'Ninja · Khăn che mặt', 'medium', 'ninja_mask', 'scarf'], ['shuriken', 'Ninja · Túi phi tiêu', 'medium', 'shuriken', 'pouch']])
+    COS_ITEMS[id] = { slot, name: nm, paint: art, tier };
+COS_ITEMS.astro_visor.spark = [[2, 4], [7, 4]]; COS_ITEMS.parrot.spark = [[8, 4]];
+
 // 09m_cosface — SINH TỰ ĐỘNG bởi tools/gen_cos_layers.py (write_face_table): hộp khuôn mặt [x0,x1,y0,y1] (điểm ảnh sprite, gốc góc trên-trái khung) theo hoạt ảnh / khung; 0 = không thấy mặt
 const COS_FACE = {
     idle: [[16,25,11,18],[16,25,11,18],[16,25,12,19],[16,25,12,19]],
@@ -18447,14 +18497,11 @@ function dbgDrawOverview() {
     if ((p.cls === 'sword' || p.cls === 'alch') && !DEMO.isFlyer(e) && !air && e.cy < p.cy - 20 && e.cy > p.cy - 80 && Math.abs(e.cx - p.cx) < 70 && !(DEMO.off && DEMO.off.snakeUp)) {          // v1.6-49 (Dan): MỌI quái đi bộ (trừ bay) đứng trên bục cao 2–4 ô, chỉ Knight / Wizard → đứng DƯỚI nó (rắn không cắn xuống) và bắn / chém giữ hướng lên, không nhảy / móc lên cạnh nó
       const ss = B.su = B.su || { e: null, n: 0 }; if (ss.e !== e) { ss.e = e; ss.n = 0; } ss.n++;
       if (ss.n > 60 * 7) { (B.ign2 = B.ign2 || new Map()).set(e, game.levelT + 20); ss.n = 0; B.tgt = null; return false; }
-      const ddx = e.cx - p.cx, clear = !L.solidAt(p.cx, p.y - 6) && !L.solidAt(p.cx, (p.cy + e.cy) / 2), tw = ddx >= 0 ? 'right' : 'left';
-      if (Math.abs(ddx) > 5 && clear) { k[tw] = true; return true; }
-      k.up = true; if (!clear) { const dd = Math.abs(ddx); if (dd > 4) k[tw] = dd > 30 ? true : false; }
-      if ((p.facing >= 0 ? 1 : -1) !== (ddx >= 0 ? 1 : -1) && Math.abs(ddx) > 8) { k[tw] = true; return true; }
-      const chU = p.cls === 'sword' ? DEMO.chg : DEMO.wch;          // v1.6-55 (Dan): đứng ngay dưới quái trên bục → GIỮ nút chém ~1 s rồi NHẢ (đòn nạp tầm cao hơn, +1 sát thương); trước đây giữ mãi không nhả nên chỉ ra đòn thường
-      if (Math.abs(ddx) <= 10 && clear) {
-        if (chU.f < 66) { k.attack = true; chU.f++; } else { k.attack = false; chU.f = 0; chU.cd = 20; B.stats.atk++; B.stats.chargeUp = (B.stats.chargeUp | 0) + 1; }
-      } else if (p.cls !== 'hunt' || !p.boom) { k.attack = true; B.stats.atk++; }
+      const ddx = e.cx - p.cx, tw = ddx >= 0 ? 'right' : 'left', upDy = p.cy - e.cy;
+      if (Math.abs(ddx) > 5) { k[tw] = true; B.stats.snUp = (B.stats.snUp || 0) + 1; return true; }          // v1.6-58 (Dan): bước cho THẲNG HÀNG dưới nó — kể cả khi có bục chắn giữa (đòn nạp lên với tới ~44 px, xuyên qua bục dày 1 ô)
+      k.up = true;
+      if ((p.cls === 'sword' || p.cls === 'alch') && upDy <= 52) { const cu = p.cls === 'sword' ? DEMO.chg : DEMO.wch; if (cu.e !== e) { cu.e = e; cu.f = 0; } B.stats.upTry = (B.stats.upTry | 0) + 1; DEMO.chgHold(p, k, cu, 'chargeUp'); }          // trong tầm đòn nạp LÊN: giữ nút tới khi đầy rồi nhả
+      else if (p.cls !== 'hunt' || !p.boom) { k.attack = true; B.stats.atk++; }
       B.stats.snUp = (B.stats.snUp || 0) + 1; return true;
     }
     if (B.ct !== e) { B.ct = e; B.ctT = game.levelT; }
@@ -19164,6 +19211,14 @@ DEMO.persR = function (D, p, f, key) {          // bán kính mục tiêu phụ:
     const k = t >= DEMO.T_EXIT ? 0 : t >= 40 ? 0.45 : t >= 30 ? 0.7 : 1;
     return base * k;
 };
+DEMO.chgHold = function (p, k, ch, tag) {          // v1.6-58 (Dan): ĐÒN NẠP — giữ nút tới khi thanh nạp ĐẦY (p.chargeT ≥ WHIP.chargeT) rồi nhả đúng 1 nhịp.
+//   Trước đây đếm 66 khung rồi nhả: chỉ cần 1 khung bị lớp khác cướp phím (hoặc đòn thường bị chặn) là lệch pha → nhả khi chưa đầy = huỷ im lặng, nhìn như «toàn nhả ra».
+    const CT = (typeof WHIP !== 'undefined' && WHIP.chargeT) || 0.45;
+    if (p.chargeT >= 0 && p.chargeT >= CT - 0.02) { k.attack = false; ch.f = 0; ch.cd = 18; BOT.stats.atk++; BOT.stats[tag] = (BOT.stats[tag] | 0) + 1; return true; }          // đầy: NHẢ → đòn mạnh
+    if (++ch.f > 85) { ch.f = 0; ch.cd = 60; k.attack = false; return false; }          // 1,4 s chưa đầy (bị cắt liên tục): bỏ, nghỉ 1 s — đứng nạp lâu quá là ăn đòn
+    for (const o of BOT.foes()) { const dd = Math.hypot(o.cx - p.cx, o.cy - p.cy); if (o !== ch.e ? dd < 55 : dd < 26) { ch.f = 0; ch.cd = 30; k.attack = false; return false; } }          // có con khác áp sát: thôi nạp, đánh thường
+    k.attack = true; return false;
+};
 DEMO.chg = { f: 0, cd: 0, used: new WeakMap(), e: null };
 DEMO.knight = function (p, k) {
     const L = game.level, ch = DEMO.chg; if (ch.cd > 0) ch.cd--;
@@ -19205,7 +19260,8 @@ DEMO.knight = function (p, k) {
     k.left = k.right = k.up = false;
     if ((p.facing >= 0 ? 1 : -1) !== best.f && best.mode === 'side') { k[best.f > 0 ? 'right' : 'left'] = true; if (ch.f === 0) return true; }          // quay mặt trước khi nạp
     if (best.mode === 'up') k.up = true;
-    if (ch.f < 66) { k.attack = true; ch.f++; } else { k.attack = false; ch.f = 0; ch.cd = 20; BOT.stats.atk++; BOT.stats.charge = (BOT.stats.charge || 0) + 1; if (best.mode === 'up') BOT.stats.chargeUp = (BOT.stats.chargeUp | 0) + 1; ch.used.set(best.e, (ch.used.get(best.e) || 0) + 1); }
+    if (best.mode === 'up') BOT.stats.upTry2 = (BOT.stats.upTry2 | 0) + 1;
+    if (DEMO.chgHold(p, k, ch, best.mode === 'up' ? 'chargeUp' : 'charge')) ch.used.set(best.e, (ch.used.get(best.e) || 0) + 1);
     return true;
 };
 
@@ -19234,7 +19290,7 @@ DEMO.wizard = function (p, k) {
     k.left = k.right = k.up = false;
     if (facing !== best.dir && ch.f === 0) { k[best.dir > 0 ? 'right' : 'left'] = true; return true; }          // quay mặt trước
     if (best.mode === 'up') k.up = true; else if (best.mode === 'diag') { k.up = true; k[best.dir > 0 ? 'right' : 'left'] = true; }
-    if (ch.f < 40) { k.attack = true; ch.f++; } else { k.attack = false; ch.f = 0; ch.cd = 30; BOT.stats.atk++; BOT.stats.wcharge = (BOT.stats.wcharge || 0) + 1; ch.used.set(best.e, (ch.used.get(best.e) || 0) + 1); }
+    if (DEMO.chgHold(p, k, ch, 'wcharge')) ch.used.set(best.e, (ch.used.get(best.e) || 0) + 1);
     return true;
 };
 
