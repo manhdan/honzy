@@ -19102,49 +19102,61 @@ DEMO.pers = function (p) { return DEMO.PERS[p.cls] || DEMO.PERS.sword; };
 //   Gom quái cách nhau ≤ 5 ô ngang / 3 ô dọc thành một nhóm · quái LẺ cách mọi nhóm khác > 9 ô thì bỏ hẳn (đi tới đó là đứt chuỗi KILL, mất thời gian)
 //   Đi tới nhóm xa (> 9 ô): CHẠY NHANH, bỏ mọi mục tiêu phụ (D.rush) · đang trong nhóm / nhóm kế bên: vẫn tranh thủ nhặt đồ gần như thường.
 DEMO.mission = function (D, p, f) {
-    if (DEMO.off && DEMO.off.mis) { D.mis = null; D.misFoes = null; D.rush = false; return; }
-    const B = BOT, n = B.nodeOf(p), fl = DEMO.floorOf(n.r);
+    if (DEMO.off && DEMO.off.mis) { D.mis = null; D.misFoes = null; D.misTgt = null; D.rush = false; return; }
+    const B = BOT, n = B.nodeOf(p), fl = DEMO.floorOf(n.r), cls = p.cls;
+    const wantFoe = cls !== 'hunt' || (DEMO.off && DEMO.off.misLoot), wantLoot = cls !== 'alch' && !(DEMO.off && DEMO.off.misLoot);          // Wizard: lộ trình theo NHÓM QUÁI · Stryker: theo NHÓM ĐỒ (bình / thùng / vàng) · Knight: cả hai, ngang nhau
     let m = D.mis;
-    if (m && m.fl === fl) {
-        while (m.i < m.steps.length && !m.steps[m.i].foes.some(e => e.alive && !e.holder)) m.i++;          // nhóm đã sạch: sang nhóm sau
-        if (m.i >= m.steps.length && f - m.t > 60) m = null;          // hết nhóm: dựng lại (có thể có quái mới thấy)
+    const alive = (it) => it.foe ? (it.e.alive && !it.e.holder) : (it.e.alive && !it.e.holder && !D.skip.has(it.e));
+    if (m && m.fl === fl && m.cls === cls) {
+        while (m.i < m.steps.length && !m.steps[m.i].items.some(alive)) { m.i++; m.si = f; }
+        if (m.si === undefined) m.si = f;
+        if (m.i < m.steps.length && f - m.si > 60 * 8 && !m.steps[m.i].items.some(q => q.foe)) { for (const q of m.steps[m.i].items) D.skip.set(q.e, 1e9); m.i++; m.si = f; }          // chỉ bỏ nhóm ĐỒ làm mãi không xong (nhóm quái thì để lớp đánh lo, bỏ sớm hay hụt mạng)          // v1.6-57: nhóm làm mãi không xong 8 s → bỏ, đi tiếp (không đứng đơ)
+        if (m.i >= m.steps.length && f - m.t > 60) m = null;
     } else m = null;
-    if (!m || f - m.t > 180) {          // dựng lại mỗi 3 s (quái di chuyển, thấy thêm quái mới)
-        const fo = [];
+    if (!m || f - m.t > 180) {          // dựng lại mỗi 3 s (quái di chuyển, thấy thêm mục tiêu mới)
+        const list = [];
         for (const e of game.entities) {
-            if (!e.alive || e.holder || !(e instanceof Enemy) || !e.creature || e.harmless || e.kind === 'ghost' || e.kind === 'shopkeeper' || e.boss || e.isBoss) continue;
-            if (B.ign2 && B.ign2.get(e) > game.levelT) continue;
+            if (!e.alive || e.holder) continue;
             const c = Math.floor(e.cx / 16), r = Math.floor((e.y + e.h - 0.5) / 16);
             if (DEMO.floorOf(r) !== fl) continue;
-            fo.push({ e, c, r });
+            const isFoe = (e instanceof Enemy) && e.creature && !e.harmless && e.kind !== 'ghost' && e.kind !== 'shopkeeper' && !e.boss && !e.isBoss;
+            if (isFoe) { if (!wantFoe || (B.ign2 && B.ign2.get(e) > game.levelT)) continue; list.push({ e, c, r, foe: 1 }); continue; }
+            if (!wantLoot || D.skip.has(e)) continue;
+            const kd = e.kind, isLoot = kd === 'pot' || kd === 'barrel' || kd === 'waterbarrel' || (kd === 'crate' && e.openable) || (DEMO.lootKind[kd] && (kd !== 'gold' || e.age > 0.25));
+            if (isLoot) list.push({ e, c, r, foe: 0 });
         }
-        const par = fo.map((_, i) => i), find = (i) => { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
-        for (let i = 0; i < fo.length; i++) for (let j = i + 1; j < fo.length; j++) if (Math.abs(fo[i].c - fo[j].c) <= 5 && Math.abs(fo[i].r - fo[j].r) <= 3) { const a = find(i), b = find(j); if (a !== b) par[a] = b; }
+        const par = list.map((_, i2) => i2), find = (i2) => { while (par[i2] !== i2) i2 = par[i2] = par[par[i2]]; return i2; };
+        for (let a = 0; a < list.length; a++) for (let b = a + 1; b < list.length; b++) if (Math.abs(list[a].c - list[b].c) <= 5 && Math.abs(list[a].r - list[b].r) <= 3) { const x = find(a), y = find(b); if (x !== y) par[x] = y; }
         const cl = new Map();
-        for (let i = 0; i < fo.length; i++) { const k = find(i); if (!cl.has(k)) cl.set(k, []); cl.get(k).push(fo[i]); }
+        for (let a = 0; a < list.length; a++) { const k = find(a); if (!cl.has(k)) cl.set(k, []); cl.get(k).push(list[a]); }
         let gs = [];
-        for (const g of cl.values()) { let c = 0, r = 0; for (const q of g) { c += q.c; r += q.r; } c = Math.round(c / g.length); r = Math.round(r / g.length); let bq = g[0], bd = 1e9; for (const q of g) { const d = Math.abs(q.c - c) + Math.abs(q.r - r); if (d < bd) { bd = d; bq = q; } } gs.push({ c: bq.c, r: bq.r, foes: g.map(q => q.e), n: g.length }); }
-        if (gs.length > 1) gs = gs.filter(g => g.n > 1 || gs.some(o => o !== g && Math.abs(o.c - g.c) + Math.abs(o.r - g.r) * 2 <= 9) || Math.abs(g.c - n.c) + Math.abs(g.r - n.r) * 2 <= 9);          // quái lẻ ở xa mọi nhóm: bỏ
-        const ex = (D.rt && D.rt.tgt) || game.level.exit || { c: n.c, r: n.r };          // đích cuối của tầng (hố xuống / cửa ra): xếp nhóm quái theo đường TỚI ĐÓ, không chỉ gần nhất (tránh đi ngược rồi quay lại)
-        const keep = D.mis && D.mis.steps && D.mis.steps[D.mis.i] ? D.mis.steps[D.mis.i].foes : null;
+        for (const g of cl.values()) {
+            let c = 0, r = 0; for (const q of g) { c += q.c; r += q.r; } c = Math.round(c / g.length); r = Math.round(r / g.length);
+            let bq = g[0], bd = 1e9; for (const q of g) { const d = Math.abs(q.c - c) + Math.abs(q.r - r); if (d < bd) { bd = d; bq = q; } }
+            gs.push({ c: bq.c, r: bq.r, items: g, n: g.length, nf: g.filter(q => q.foe).length });
+        }
+        if (gs.length > 1) gs = gs.filter(g => g.n > 1 || gs.some(o => o !== g && Math.abs(o.c - g.c) + Math.abs(o.r - g.r) * 2 <= 9) || Math.abs(g.c - n.c) + Math.abs(g.r - n.r) * 2 <= 9);          // mục tiêu lẻ ở xa mọi nhóm: bỏ (đi tới đó là mất thời gian / đứt chuỗi)
+        const ex = (D.rt && D.rt.tgt) || game.level.exit || { c: n.c, r: n.r };          // xếp nhóm theo đường TỚI hố xuống / cửa ra, không chỉ gần nhất (tránh đi ngược rồi quay lại)
+        const keep = m && m.steps && m.steps[m.i] ? m.steps[m.i].items.map(q => q.e) : null;
         const steps = []; let cc = n.c, cr = n.r;
         while (gs.length) {
             let bi = 0, bd = 1e9;
-            for (let i = 0; i < gs.length; i++) {
-                const g = gs[i], d0 = Math.abs(g.c - cc) + Math.abs(g.r - cr) * 2, d1 = Math.abs(ex.c - g.c) + Math.abs(ex.r - g.r) * 2;
+            for (let a = 0; a < gs.length; a++) {
+                const g = gs[a], d0 = Math.abs(g.c - cc) + Math.abs(g.r - cr) * 2, d1 = Math.abs(ex.c - g.c) + Math.abs(ex.r - g.r) * 2;
                 let d = d0 + d1 * 0.6;
-                if (keep && steps.length === 0 && g.foes.some(e => keep.indexOf(e) >= 0)) d -= 8;          // giữ nhóm đang đánh dở (khỏi đổi ý qua lại)
-                if (d < bd) { bd = d; bi = i; }
+                if (keep && steps.length === 0 && g.items.some(q => keep.indexOf(q.e) >= 0)) d -= 8;
+                if (d < bd) { bd = d; bi = a; }
             }
             const g = gs.splice(bi, 1)[0]; steps.push(g); cc = g.c; cr = g.r;
         }
-        m = D.mis = { fl, steps, i: 0, t: f };
+        m = D.mis = { fl, cls, steps, i: 0, t: f };
     }
     const cur = m.steps[m.i], nx = m.steps[m.i + 1], fs = new Set();
-    if (cur) for (const e of cur.foes) fs.add(e);
-    if (nx && cur && Math.abs(nx.c - cur.c) + Math.abs(nx.r - cur.r) * 2 <= 9) for (const e of nx.foes) fs.add(e);          // nhóm kế ở sát: coi như cùng một đợt
+    if (cur) for (const q of cur.items) if (q.foe) fs.add(q.e);
+    if (nx && cur && Math.abs(nx.c - cur.c) + Math.abs(nx.r - cur.r) * 2 <= 9) for (const q of nx.items) if (q.foe) fs.add(q.e);
     D.misFoes = fs;
-    D.rush = !!(cur && p.cls !== 'hunt' && (Math.abs(cur.c - n.c) + Math.abs(cur.r - n.r) * 2) > 9 && f < 60 * DEMO.T_EXIT);
+    D.misTgt = cur && f < 60 * DEMO.T_EXIT ? { c: cur.c, r: cur.r } : null;
+    D.rush = !!(cur && (Math.abs(cur.c - n.c) + Math.abs(cur.r - n.r) * 2) > 9 && f < 60 * DEMO.T_EXIT);
 };
 DEMO.persR = function (D, p, f, key) {          // bán kính mục tiêu phụ: theo tính cách, nới khi xong việc chính, thu hẹp dần khi gần mốc ra cửa
     if (D.rush) return 0;          // v1.6-56: đang chạy tới nhóm quái xa → bỏ mục tiêu phụ
