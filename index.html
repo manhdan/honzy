@@ -170,8 +170,6 @@ const ITEM = {
     blastDmg: 10,           // SC: người chơi trúng nổ mất 10 (= chết khi còn ≤ 10 máu); quái mất 30
     blastKnockVx: 150,      // SC: văng ngang rand(4,6) px/khung
     blastKnockVy: -180,     // SC: −6 px/khung
-    ropeThrowVy: -360,      // SC: dây ném lên −12 px/khung, bám khi bắt đầu rơi hoặc chạm trần
-    ropeLen: 8,             // SC: 16 đoạn × 8px = 8 ô
     ropeDropT: 1 / 15,      // SC: mỗi khung thả thêm 8px => 1 ô (16px) mỗi 2 khung 30Hz = 1/15 s
     stompVy: -180,          // SC: đạp đầu quái nảy lên −6 px/khung (− 0.2 × vy)
     startBombs: 8, startRopes: 4, maxBombs: 99, maxRopes: 99, startHp: 10     // v0.40: 10 máu (SC: lifeStart / bombStart / ropeStart = "4"
@@ -180,8 +178,7 @@ const ITEM_DEFAULT = Object.assign({}, ITEM);
 const ITEM_META = [
     ['throwVx', 60, 480, 5, 'Ném: tốc ngang'], ['throwVy', -300, 0, 5, 'Ném: tốc lên'], ['itemGravity', 200, 1500, 10, 'Vật: trọng lực'],
     ['bounceY', 0, 0.9, 0.05, 'Vật: nảy dọc'], ['impactSpeed', 30, 400, 5, 'Vật: tốc tối thiểu gây sát thương'],
-    ['bombFuse', 0.5, 5, 0.1, 'Pháo: cháy chậm (s)'], ['bombFuse2', 0.2, 3, 0.1, 'Pháo: cháy nhanh (s)'], ['blastR', 12, 56, 1, 'Pháo: bán kính nổ (px)'],
-    ['ropeThrowVy', -600, -150, 10, 'Dây (cũ): tốc ném'], ['ropeLen', 3, 14, 1, 'Dây (cũ): dài (ô)']
+    ['bombFuse', 0.5, 5, 0.1, 'Pháo: cháy chậm (s)'], ['bombFuse2', 0.2, 3, 0.1, 'Pháo: cháy nhanh (s)'], ['blastR', 12, 56, 1, 'Pháo: bán kính nổ (px)']
 ];
 
 // Bẫy mũi tên (SC): tầm cảm biến tối đa 96px (6 ô) tính từ mặt bẫy, dừng ở ô đặc đầu tiên; mũi tên bay 8 px/khung; bắn MỘT lần.
@@ -541,7 +538,7 @@ const ENEMY_DEFS = {
     shooter: { hp: 2, w: 12, h: 14, windup: 0.4, cooldown: 1.4, sight: 160, sightY: 40, shotSpeed: 95, shotLife: 2, dmg: 1, elemental: true, col: '#3f8f9e' },
     mortar:  { hp: 2, w: 14, h: 12, sight: 170, minRange: 40, sightY: 110, windup: 0.8, cooldown: 2.4, lobGrav: 520, flightT: 0.9, boomT: 0.16, boomW: 24, boomH: 18, dmg: 1, elemental: true, col: '#d9894a' },
     // ---- v1.2 (Dan): QUÁI NÉM (11bn_throwers) — chỉ Thường / Khó / Hardcore. monkey = KHỈ HANG ném đá vòng cung (3-3 giới thiệu); imp = QUỶ LÙN có sừng ném bình hệ vùng (từ 6-3) ----
-    monkey:   { hp: 2, w: 12, h: 16, speed: 34, sight: 200, sightY: 120, windup: 0.5, cooldown: 2.0, keepMin: 64, keepMax: 118, dmg: 1, col: '#7a4e2c' },
+    monkey:   { hp: 2, w: 12, h: 16, speed: 34, sight: 150, sightY: 100, windup: 0.65, cooldown: 2.8, keepMin: 64, keepMax: 118, dmg: 1, col: '#7a4e2c' },
     imp:  { hp: 2, w: 12, h: 15, speed: 26, sight: 190, sightY: 120, windup: 0.8, cooldown: 3.0, keepMin: 72, keepMax: 124, lobGrav: 520, flightT: 0.95, boomT: 0.18, boomW: 30, boomH: 20, dmg: 1, col: '#c4402e' },
     spitter: { hp: 2, w: 12, h: 14, windup: 0.5, cooldown: 2.2, sight: 130, sightY: 30, dmg: 1, status: 'burn', resist: ['fire'], weak: ['ice'], col: '#d2502a' },
     // ---- Quái RIÊNG vùng 9 (Hang núi lửa; v0.35, ghép từ Spelunky lần 60). Chung: kháng lửa (`resist`, như spitter), gây cháy khi chạm (`status`), sợ nước (`waterHurt` = cứ mỗi ngần ấy giây ngập nước mất 1 máu, xử lý ở envStep 13p) ----
@@ -1577,7 +1574,7 @@ const ROOM_TPL_ALGO = { 0: [], 1: [], 2: [], 3: [], '2t': [] };
 // Tay cầm: 03a_gamepad.js (phát lại thành phím nên dùng chung lớp này). Cảm ứng: chưa làm.
 
 const INP_STORE = 'honzy_controls_v7';          // v7 (v0.78): thêm Móc ngay (D / L2) + Bom ngay (F / R2) — đọc lại bản v6 nhưng bỏ qua phím bom / móc cũ (đều trống)
-const INP_STORE_V6 = 'honzy_controls_v6';          // v6 (v0.44): bố trí mới — Shift chạy · E lướt · R dùng đồ phụ · Tab / lăn chuột đổi đồ phụ. (v5 cũ:   // v2: bố trí Q W E R 1 2 · v4 (H2): bố trí PlayStation Q=X W=Tròn E=Vuông R=Tam giác · v5 (v0.12): bỏ Shift / Space / C (đổi khoá để phím đã lưu ở v4 không mang Shift/Space/C trở lại)         // khoá riêng cho dự án này (không lẫn với phím của Metroidvania)
+const INP_STORE_V6 = 'honzy_controls_v6';          // v6 (v0.44): bố trí mới — Shift chạy · E lướt · R dùng đồ phụ · Tab / lăn chuột đổi đồ phụ. (v5 cũ:
 const INP_STORE_OLD = 'honzy_controls_v5';   // bản lưu trước v0.12: chỉ lấy lại các tuỳ chọn (autoRun, fit…), KHÔNG lấy phím và không lấy tay cầm (mặc định nay là bật)
 const INP_MAX_KEYS = 3;                       // số phím tối đa mỗi hành động
 
@@ -2484,6 +2481,11 @@ const SND_DEFS = {
         sndNoise(ac, o, t + 0.02, { type: 'lowpass', f: 600, f2: 200, dur: 0.1, vol: 0.1 });
     }, 0.12, 0.1, 0],
 };
+{          // v1.6-74 (Dan): hitMid = nhát GIỮA vào quái nhiều máu — trộn nửa tiếng nhát đầu (trầm hơn) + nửa tiếng nhát kết · summary = dòng TỔNG KẾT cuối bảng chuyển màn (hợp âm trầm ấm, khác tiếng tiền)
+    const mix = (ac, o, k) => { const g = ac.createGain(); g.gain.value = k; g.connect(o); return g; };
+    SND_DEFS.hitMid = [(ac, o, t, p) => { SND_DEFS.hitArmored[0](ac, mix(ac, o, 0.55), t, p * 0.88); SND_DEFS.hitHeavy[0](ac, mix(ac, o, 0.55), t, p); }, 0.36, 0.04, 0];
+    SND_DEFS.summary = [(ac, o, t, p) => { [[196, 0, 0.2], [294, 0.03, 0.16], [392, 0.06, 0.12]].forEach(([f, d, v]) => sndTone(ac, o, t + d, { f: f * p, f2: f * p * 0.98, dur: 0.5, vol: v })); sndNoise(ac, o, t, { type: 'lowpass', f: 500, f2: 150, dur: 0.12, vol: 0.06 }); }, 0.5, 0.05, 0];
+}
 const SND_NAMES = Object.keys(SND_DEFS);
 // ---------- chỉnh âm (bước 8; từ trang tools/sound_tuner.html, Dan chốt) ----------
 //   Mỗi tiếng có thể có: vol (âm lượng cả tiếng) · pitch (cao độ, nhân vào tần số các lớp tông) · dur (độ dài, nhân vào độ dài + độ trễ các lớp) · bright (độ sáng: nhân tần số lọc của nhiễu và lp của tông)
@@ -2498,7 +2500,7 @@ const SND_TUNE = {
     hit: { vol: 0.67, bright: 3, tone: 0.49, att: 2 },
     hitHeavy: { vol: 0.72, bright: 2.49, tone: 0.22, att: 1.79 },
     clang: { vol: 0.96, pitch: 1.28, bright: 0.3, tone: 0.38, att: 0.37 },
-    dash: { vol: 0.64, pitch: 1.21, dur: 1.43, bright: 0.3, tone: 0.49, noise: 1.25, att: 3.36 },
+    dash: { vol: 0.576, pitch: 1.08, dur: 1.43, bright: 0.24, tone: 0.65, noise: 1.1, att: 2.0 },          // v1.6-75: ấm hơn (thấp hơn, đầu tiếng mềm hơn), nhỏ 10 %
     jump: { vol: 0.8, pitch: 0.62, bright: 3, tone: 1.07, noise: 0.96, att: 0.84 },
     djump: { vol: 1.69, pitch: 0.4, dur: 1.77, bright: 1.82, tone: 0.33, noise: 0, att: 1.05 },
     land: { vol: 0.46, pitch: 0.83, bright: 3, tone: 0.18, noise: 0.4, att: 0.91 },
@@ -2607,8 +2609,8 @@ const SND_NOJIT = { keyPickup3: 1, betWin3: 1, betLose: 1, princessCall: 1, menu
 function sndEnvSet(wet, under) {          // v1.18: độ vang hang (0..~0.25) + nghẹt khi lặn nước
     if (!sndCtx) return; const key = (under ? 'u' : 'a') + Math.round(wet * 1000); if (key === sndEnvSet._k) return; sndEnvSet._k = key;          // v1.18l: chỉ đặt khi giá trị đổi (trước gọi mỗi khung hình → dồn hàng nghìn lệnh tự động hoá)
     const t = sndCtx.currentTime;
-    if (sndWet) sndWet.gain.setTargetAtTime(under ? 0.02 : wet, t, 0.4);
-    if (sndLp) sndLp.frequency.setTargetAtTime(under ? 900 : 20000, t, under ? 0.05 : 0.15);
+    if (sndWet) sndWet.gain.setTargetAtTime(under ? (wet + 0.02) / 2 : wet, t, 0.4);
+    if (sndLp) sndLp.frequency.setTargetAtTime(under ? 4200 : 20000, t, under ? 0.05 : 0.15);          // v1.6-74 (Dan): dưới nước nghẹt bằng NỬA trước (900 → 4200 Hz, trung bình nhân với 20 kHz)
 }
 function sndPlay(name, o) {
     const d = SND_DEFS[name]; if (!d || !sndOn()) return false;
@@ -2677,7 +2679,8 @@ function hitSoundFor(e, hp0) {
     const mx = e && e.maxHp; if (!(mx > 0) || !(hp0 > 0)) return 'hit';
     const heavy = !!(e.def && e.def.heavy);
     if (mx <= 2 && !heavy) return 'hit';
-    return e.alive && (hp0 >= mx || heavy) ? 'hitArmored' : 'hitHeavy';
+    if (e.alive && hp0 >= mx) return 'hitArmored';          // nhát đầu
+    return e.alive ? 'hitMid' : 'hitHeavy';          // v1.6-74: nhát giữa (còn sống) = trộn đầu + kết · nhát kết liễu = hitHeavy
 }
 const sndPitch = () => 0.94 + Math.random() * 0.12;      // biến thiên cao độ nhẹ cho đỡ lặp
 
@@ -3205,7 +3208,7 @@ const MT_C = { bpm: 78, steps: 8, name: 'C',
 //   Âm lượng đi theo thanh «Nhạc nền» (SND.music) và công tắc tắt tiếng; AMB.vol chỉnh chung. Phòng boss: nhỏ đi, không có sự kiện. Math.random chỉ dùng cho âm thanh, không đụng rng chơi.
 const AMB = { waves: false, lake: false, lava: false, vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
 const AMB_PROF = {
-    mines:    { wind: 0.85, gust: 0.9, drip: 1.3, windK: 0.1, crickets: 0.6, owl: 0.75 },          // v1.18m (Dan): gió / hú của Hầm mỏ to hơn nhạc nền → còn 10% (windK nhân vào âm lượng gió + hú)          // v1.17 (Dan): Hầm mỏ nghe lại gió hang, gió hú hẹp, giọt nước nhỏ (trước quá nhỏ nên như không có)
+    mines:    { wind: 0.85, gust: 0.9, drip: 1.3, windK: 0.1, crickets: 0.6, owl: 0.75 },          // v1.18m (Dan): gió / hú của Hầm mỏ to hơn nhạc nền → còn 10% (windK nhân vào âm lượng gió + hú)
     forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
     cave:     { wind: 0.35, drip: 1, rumble: 1 },
     crystal:  { wind: 0.20, drip: 0.45, waves: 0.4, crickets: 0.5 },
@@ -3609,7 +3612,7 @@ function paintTiles(g, level, c0, r0, c1, r1, ox, oy) {
         if (t === T_EMPTY) continue;
         const x = c * TILE - ox, y = r * TILE - oy;
         if (HIQ && (t === T_SPIKE || t === T_WEB || t === T_CRUSH || t === T_PUSH)) { HIQ.push([t, c, r, x, y]); continue; }          // v1.2: bẫy đè cũng vẽ nửa-pixel (không viền đen)
-        if (HIQ && (t === T_CRUMBLE || t === T_ARROW)) HIQ.push([t, c, r, x, y]);          // sàn vỡ: nền là chính ô đất, vết nứt vẽ thêm sau          // v1.11: vật nhỏ vẽ nửa-pixel SAU khi phóng 2× (hiPaint)
+        if (HIQ && (t === T_CRUMBLE || t === T_ARROW)) HIQ.push([t, c, r, x, y]);          // sàn vỡ: nền là chính ô đất, vết nứt vẽ thêm sau
         if (th.style === 'mines') { paintMinesTile(g, level, th, t, c, r, x, y); continue; }
         if (t === T_STONE) { paintMinesBlock(g, c, r, x, y); continue; }   // khối đá xám ở mọi vùng
         if (t === T_SOLID || t === T_GOLD || t === T_GOLDBIG || t === T_STONE || t === T_ARROW || t === T_PUSH || t === T_CRUSH || t === T_CRUMBLE) {   // (T_LAVA vẽ động ở 13i_lava)
@@ -3772,29 +3775,9 @@ function paintIce(g, level, c, r, x, y) {
     g.fillStyle = '#e8f6ff'; g.fillRect(x + 3 + h, y + 4, 1, 4);
     if (!level.isSolid(c, r - 1)) { g.fillStyle = '#e8f6ff'; g.fillRect(x, y, TILE, 2); g.fillStyle = '#ffffff'; g.fillRect(x + 2 + ((c * 3) & 7), y, 3, 1); }
 }
-function paintMinesCrumble(g, c, r, x, y) {
-    const h = ((c * 7 + r * 13) & 3);
-    const M = matOf('crumble') || { dark: '#2a2420', mid: '#8c8070', top: '#b4a890', low: '#5e5446', crack: '#1e1814' };
-    g.fillStyle = M.dark; g.fillRect(x, y, TILE, 10); g.fillRect(x + 1, y + 10, 4, 2); g.fillRect(x + 7, y + 10, 5, 3); g.fillRect(x + 13, y + 10, 2, 2);
-    g.fillStyle = M.mid; g.fillRect(x + 1, y + 1, TILE - 2, 8); g.fillRect(x + 2, y + 9, 2, 2); g.fillRect(x + 8, y + 9, 3, 3);
-    g.fillStyle = M.top; g.fillRect(x + 1, y + 1, TILE - 2, 2);                       // mặt trên sáng
-    g.fillStyle = M.low; g.fillRect(x + 1, y + 7, TILE - 2, 2);                       // mép dưới tối
-    g.fillStyle = M.crack;                                                           // vết nứt zig-zag xuyên phiến
-    g.fillRect(x + 4 + h, y + 1, 1, 3); g.fillRect(x + 5 + h, y + 3, 1, 3); g.fillRect(x + 4 + h, y + 5, 1, 4);
-    g.fillRect(x + 11 - h, y + 2, 1, 2); g.fillRect(x + 10 - h, y + 4, 1, 3); g.fillRect(x + 11 - h, y + 6, 2, 1);
-    g.fillStyle = '#6e6456'; g.fillRect(x + 3, y + 13, 2, 2); g.fillRect(x + 12, y + 14, 1, 1);   // vụn rơi lơ lửng
-}
 // Bẫy đè: khối sắt sẫm, đáy có răng nhọn
 function paintBlockGore(q, gl, y0) {          // vệt máu mặt dưới khối (v1.6-22): mảnh, nhạt; lần 2 mới thêm một giọt
     if (!gl) return; for (const g of gl) { const w = Math.max(2, g.x1 - g.x0 - 1), x0 = g.x0 + 1; q(x0, y0, w, 1, '#b8575c'); if (g.n >= 2) { q(x0 + 1, y0 + 1, Math.max(1, w - 2), 1, '#8a4048'); q(x0 + (w >> 1), y0 + 2, 1, 2, '#9a4a50'); } }
-}
-function paintMinesCrush(g, x, y) {
-    const M = matOf('crush') || { bg: '#17151c', body: '#4a4656', top: '#6f6a80', eye: '#c04848', teeth: '#9a96a8' };
-    g.fillStyle = M.bg; g.fillRect(x, y, TILE, TILE);
-    g.fillStyle = M.body; g.fillRect(x + 1, y + 1, TILE - 2, TILE - 6);
-    g.fillStyle = M.top; g.fillRect(x + 1, y + 1, TILE - 2, 1);
-    g.fillStyle = M.eye; g.fillRect(x + 6, y + 4, 4, 3);
-    g.fillStyle = M.teeth; for (let i = 0; i < 4; i++) { g.fillRect(x + 1 + i * 4, y + TILE - 5, 3, 3); g.fillRect(x + 2 + i * 4, y + TILE - 2, 1, 2); }
 }
 function paintMinesTrapFace(g, level, c, r, x, y, dirOv) {          // dirOv (v0.18, tuỳ chọn): như paintArrowTrap
     const tr = level.traps.find(t => t.c === c && t.r === r), dir = dirOv !== undefined ? dirOv : tr ? tr.dir : 1;
@@ -3831,13 +3814,6 @@ function oldLadderHi(q, c, r, top, th) {          // (tên giữ cho gọi cũ) 
     for (const rx of [3, 23]) { q(rx, 0, 6, 32, P.dark); q(rx + 1, 0, 4, 32, P.body); q(rx + 1, 0, 1, 32, P.light); q(rx + 4, 0, 1, 32, P.mid); }
     for (const k of [2, 10, 18, 26]) { q(9, k, 14, 4, P.dark); q(9, k, 14, 3, P.body); q(9, k, 14, 1, P.light); q(9, k + 3, 14, 1, P.mid); }
     if (top) { q(0, 0, 32, 7, P.dark); q(0, 0, 32, 6, P.mid); q(0, 0, 32, 2, P.rim); q(0, 5, 32, 1, P.dark); }
-}
-function oldLadderPx(g, c, r, x, y, top, th) {          // dự phòng lưới 1 px
-    const P = matOf('ladder') || LADDER_PAL;
-    g.fillStyle = P.dark; g.fillRect(x + 2, y, 3, TILE); g.fillRect(x + 11, y, 3, TILE);
-    g.fillStyle = P.body; g.fillRect(x + 2, y, 2, TILE); g.fillRect(x + 11, y, 2, TILE); g.fillStyle = P.light; g.fillRect(x + 2, y, 1, TILE); g.fillRect(x + 11, y, 1, TILE);
-    for (let k = 1; k < TILE; k += 5) { g.fillStyle = P.dark; g.fillRect(x + 4, y + k, 7, 2); g.fillStyle = P.body; g.fillRect(x + 4, y + k, 7, 1); }
-    if (top) { g.fillStyle = P.dark; g.fillRect(x, y, TILE, 3); g.fillStyle = P.mid; g.fillRect(x, y, TILE, 2); g.fillStyle = P.rim; g.fillRect(x, y, TILE, 1); }
 }
 function earthPlat(g, th, x, y) {          // bục một chiều cùng màu mặt đất: vành sáng trên, thân đất, bóng dưới, hai chân chống
     const P = earthPal(th);
@@ -3878,21 +3854,23 @@ function hiPaint(g, level, t, c, r, x, y, hi) {
         const top = level.isLadderTop(c, r);
         oldLadderHi(q, c, r, top, level.theme);          // v1.17 (Dan): thang gỗ cũ cho mọi môi trường (bỏ thang sắt bóng)
     } else if (t === T_SPIKE) {
-        const SP = matOf('spike'), lit = SP ? SP.lit : mines ? '#f6f2e8' : '#e4e9f5', shade = SP ? SP.shade : mines ? '#b4ae9e' : '#aab3c6', edge = SP ? SP.edge : mines ? '#5e584c' : '#6a7488', H = 15;          // v1.2 (Dan): gai thấp còn 75 %
+        const SP = matOf('spike'), stal = _matName === 'cave';          // v1.6-74 (Dan): gai Hang ngầm cùng màu + dáng nhọn như THẠCH NHŨ RƠI (06e drawStalactiteHp), nhỏ hơn
+        const lit = stal ? '#8a8fa8' : SP ? SP.lit : mines ? '#f6f2e8' : '#e4e9f5', shade = stal ? '#5a5f78' : SP ? SP.shade : mines ? '#b4ae9e' : '#aab3c6', edge = stal ? '#2a2e3e' : SP ? SP.edge : mines ? '#5e584c' : '#6a7488', H = 15;          // v1.2 (Dan): gai thấp còn 75 %
         // v1.6-61 (Dan): HÌNH gai theo vùng — forest = gai cây cong có ngạnh · cave = măng đá · crystal / amethyst = tinh thể vát mặt · snow = băng nhọn lấp lánh · deep = nanh cong · magma = đá đen mũi nung đỏ · còn lại = gai thẳng
         const nm = _matName, hh = (c * 7 + r * 13) & 3, CX = [4, 12, 20, 28];
         const sty = nm === 'forest' ? 'thorn' : nm === 'cave' ? 'stal' : (nm === 'crystal' || nm === 'amethyst') ? 'gem' : nm === 'snow' ? 'ice' : nm === 'deep' ? 'fang' : nm === 'magma' ? 'ember' : 'std';
-        const HS = { thorn: [17, 13, 19, 14], stal: [18, 11, 21, 14], gem: [22, 13, 18, 11], ice: [23, 17, 25, 15], fang: [17, 15, 18, 14] }[sty];
+        const HS = { thorn: [17, 13, 19, 14], stal: [14, 10, 16, 12], gem: [22, 13, 18, 11], ice: [23, 17, 25, 15], fang: [17, 15, 18, 14] }[sty];
         const LN = { thorn: [3, -3, 2, -3], gem: [-3, 2, 3, -2], fang: [4, 4, -4, -4] }[sty];
-        const geo = i => { const Hi = HS ? HS[(i + hh) & 3] : H, ln = LN ? LN[(i + hh) & 3] : 0, wm = sty === 'thorn' ? 4.6 : sty === 'ice' ? 5.2 : sty === 'stal' ? 8.5 : sty === 'gem' ? 7.4 : 6.9;
-            return { Hi, row: j => { const k = j / Hi, w = sty === 'ice' ? 1 + Math.floor(Math.max(0, k - 0.3) * wm * 1.45) : sty === 'stal' ? 1 + Math.floor(Math.sqrt(k) * wm) : sty === 'gem' ? 2 + Math.floor(k * wm * 0.8) : 1 + Math.floor(k * wm), sh = sty === 'gem' ? Math.round(ln * (1 - k)) : Math.round(ln * (1 - k) * (1 - k)); return { w, x0: CX[i] + sh - Math.floor(w / 2), yy: 28 - Hi + j }; } }; };
+        const geo = i => { const Hi = HS ? HS[(i + hh) & 3] : H, ln = LN ? LN[(i + hh) & 3] : 0, wm = sty === 'thorn' ? 4.6 : sty === 'ice' ? 5.2 : sty === 'stal' ? 5.4 : sty === 'gem' ? 7.4 : 6.9;
+            return { Hi, row: j => { const k = j / Hi, w = sty === 'ice' ? 1 + Math.floor(Math.max(0, k - 0.3) * wm * 1.45) : sty === 'stal' ? 1 + Math.floor(k * wm) : sty === 'gem' ? 2 + Math.floor(k * wm * 0.8) : 1 + Math.floor(k * wm), sh = sty === 'gem' ? Math.round(ln * (1 - k)) : Math.round(ln * (1 - k) * (1 - k)); return { w, x0: CX[i] + sh - Math.floor(w / 2), yy: 28 - Hi + j }; } }; };
         for (let i = 0; i < 4; i++) { const G = geo(i);
             for (let j = 0; j < G.Hi; j++) { const o = G.row(j), w = o.w, x0 = o.x0, yy = o.yy, wl = sty === 'gem' ? Math.max(1, Math.floor(w * 0.4)) : Math.ceil(w / 2);
                 q(x0 - 1, yy, 1, 1, edge); q(x0 + w, yy, 1, 1, edge);
-                const tip = sty === 'ember' ? (j < 2 ? '#fff2b0' : j < 5 ? '#ff9a3a' : null) : (j < 2 ? '#ffffff' : null);
+                const tip = sty === 'ember' ? (j < 2 ? '#fff2b0' : j < 5 ? '#ff9a3a' : null) : sty === 'stal' ? (j < 2 ? '#c4c9de' : null) : (j < 2 ? '#ffffff' : null);
                 q(x0, yy, wl, 1, tip || (sty === 'ember' ? shade : lit)); q(x0 + wl, yy, w - wl, 1, tip && sty === 'ember' ? '#ff7a2a' : sty === 'ember' ? edge : shade);
                 if (sty === 'gem' && j > 2) q(x0, yy, 1, 1, '#ffffff');          // cạnh sáng của tinh thể
-                if (sty === 'stal' && j > 3 && (j + i) % 4 === 0) q(x0, yy, w, 1, shade);          // vân ngang măng đá
+                if (sty === 'stal' && j > 2 && (j + i) % 7 > 4) q(x0, yy, wl, 1, '#6a6f88');          // vân ngang như thạch nhũ
+                if (sty === 'stal' && j > 2 && j < G.Hi - 2) q(x0, yy, 1, 1, '#c4c9de');          // cạnh sáng
                 if (sty === 'thorn' && (j === Math.floor(G.Hi * 0.45) || j === Math.floor(G.Hi * 0.7))) { const sd = (j + i) & 1 ? 1 : -1; q(sd > 0 ? x0 + w : x0 - 2, yy - 1, 2, 1, lit); q(sd > 0 ? x0 + w + 1 : x0 - 2, yy - 2, 1, 1, '#ffffff'); }          // ngạnh nhỏ
             }
             if (sty === 'ice') { const o = G.row(0), sx = o.x0 + ((i + hh) & 1 ? 3 : -3), sy = Math.max(1, o.yy - 2 + ((i * 3 + hh) & 3)); q(sx, sy, 1, 1, '#ffffff'); if ((i + hh) & 1) { q(sx - 1, sy, 3, 1, '#ffffff'); q(sx, sy - 1, 1, 3, '#ffffff'); } }          // lấp lánh
@@ -4074,6 +4052,7 @@ function drawExit(level) {
     if (level.entry) drawDoor(level.entry.c * TILE, level.entry.r * TILE, false);
     const e = level.exit; if (!e) return;
     drawDoor(e.c * TILE, e.r * TILE, true);
+    const X2 = level.def.exit2; if (X2) drawDoor((X2[0] + LVL.border) * TILE, (X2[1] + LVL.border) * TILE, true);          // phòng tập: cửa «Hướng dẫn nâng cao»
 }
 function drawDoor(x, y, isExit) {
     if (ITEM_HP) return drawDoorHp(x, y, isExit);
@@ -4987,10 +4966,6 @@ function drawSalmonHp(e, ctx, a) {          // bước 5: cá hồi nằm ngang 
     q(12, 3, 1, 6, '#c8503a'); q(15, 4, 3, 1, '#f8a888'); q(14, 4, 2, 2, '#ffffff'); q(15, 5, 1, 1, '#1a1220');          // mang · mõm · mắt
     q(7, 4, 1, 1, '#c8503a'); q(9, 5, 1, 1, '#c8503a'); q(10, 3, 1, 1, '#c8503a');          // đốm
     if (tw) q(9, 3, 2, 1, '#ffffff');
-}
-function drawRopeThrowHp(e, ctx, a) {
-    const { q, U } = hpPen(ctx, e.drawX(a), e.drawY(a), e.w, 1);
-    U([[1, 0, 6, 6]], '#c9a46a'); q(2, 1, 4, 1, '#e8cc90'); q(2, 3, 4, 1, '#8a6a3a'); q(2, 5, 4, 1, '#8a6a3a'); q(3, 7, 2, 12, '#8a6a3a'); q(3, 7, 1, 12, '#c9a46a');
 }
 function drawPelletHp(e, ctx, a) { const { q, P } = hpPen(ctx, e.drawX(a), e.drawY(a), e.w, 1); P(1, 1, 6, 6, '#ffe08a', '#a8742a'); q(2, 2, 2, 2, '#ffffff'); }
 function drawBarrelHp(e, ctx, a) {
@@ -6300,7 +6275,7 @@ function roomMotifs(R, cells, RW, RH, zone, accept) {          // v1.18n: accept
             const r = R.int(3, 4), w = R.int(2, 4), c0 = R.int(1, RW - 1 - w), oneway = R.chance(0.4);
             for (let c = c0; c < c0 + w; c++) put(c, r, oneway ? '=' : '1');
             const lc = R.chance(0.5) ? c0 - 1 : c0 + w;          // v1.15 (Dan): thang bắc lên MÉP bục (cột cạnh đầu bục, đỉnh thang ngang mặt bục), không bắc vào gầm bục
-            if (lc >= 1 && lc <= RW - 2 && cells[r][lc] === '0' && cells[r][(lc < c0 ? c0 : c0 + w - 1)] !== '0') { let len = 0; for (let rr = r; rr <= RH - 2; rr++) { if (cells[rr][lc] === '0') { cells[rr][lc] = 'L'; len++; } else break; } ladOK = len >= 2; for (let rr = r; rr < r + len; rr++) if (cells[rr][lc - 1] === 'L' || cells[rr][lc + 1] === 'L') ladOK = false; }          // không đặt hai thang sát nhau (trông như thang đôi)          // v1.18n: thang ≥ 3 ô → v1.18s (Dan): nới còn ≥ 2 ô (không để mẩu thang 1 ô)
+            if (lc >= 1 && lc <= RW - 2 && cells[r][lc] === '0' && cells[r][(lc < c0 ? c0 : c0 + w - 1)] !== '0') { let len = 0; for (let rr = r; rr <= RH - 2; rr++) { if (cells[rr][lc] === '0') { cells[rr][lc] = 'L'; len++; } else break; } ladOK = len >= 2; for (let rr = r; rr < r + len; rr++) if (cells[rr][lc - 1] === 'L' || cells[rr][lc + 1] === 'L') ladOK = false; }          // không đặt hai thang sát nhau (trông như thang đôi)
         }
         else if (k === 'corner') { const left = R.chance(0.5), w = R.int(1, 2), h = R.int(1, 3); for (let r = 0; r < h; r++) for (let j = 0; j < w; j++) put(left ? 1 + j : RW - 2 - j, r, '1'); }
         else if (k === 'steps') { const left = R.chance(0.5), len = R.int(2, 3); for (let j = 0; j < len; j++) { const c = left ? 2 + j : RW - 3 - j; for (let h = 0; h <= j && h < 2; h++) put(c, RH - 2 - h, '1'); } }
@@ -6493,7 +6468,7 @@ function genTiles(R, path, zone, levelIdx) {
     for (let ry = 0; ry < LVL.roomsY; ry++) for (let rx = 0; rx < LVL.roomsX; rx++) {
         const t = path.type[rx][ry], list = ROOM_TPL[t].concat(ROOM_TPL_ALGO[t] || []), n1 = ROOM_N1[t], n2 = ROOM_TPL[t].length, grpOf = i => i < n1 ? 0 : i < n2 ? 1 : 2;          // v1.18v: 3 nhóm — 0 Honzy-native · 1 Spelunky (+ G200 hazard tay) · 2 thuật toán (ROOM_TPL_ALGO)
         const raw = list.map(tp => (levelIdx % ZONE_LEN === 0 && tp.some(s => s.indexOf('V') >= 0)) ? 0 : tplWeight(tp, zone) * (tp.some(s => s.indexOf('W') >= 0) ? GEN.hzMul.W : 1) * (tp.some(s => s.indexOf('V') >= 0) ? GEN.hzMul.V : 1)), gs = [0, 0, 0]; raw.forEach((w, i) => { gs[grpOf(i)] += w; });
-        const ws = raw.map((w, i) => { const gi = grpOf(i); return gs[gi] > 0 ? w * GEN.groupW[gi] / gs[gi] : 0; }); let tot = 0; for (const x of ws) tot += x;          // mỗi nhóm chiếm đúng GEN.groupW[nhóm] / tổng, không phụ thuộc số mẫu trong nhóm          // v0.77 (Dan): màn x-1 (ws = 0 cho mẫu có dung nham 'V') chưa có dung nham
+        const ws = raw.map((w, i) => { const gi = grpOf(i); return gs[gi] > 0 ? w * GEN.groupW[gi] / gs[gi] : 0; }); let tot = 0; for (const x of ws) tot += x;          // mỗi nhóm chiếm đúng GEN.groupW[nhóm] / tổng, không phụ thuộc số mẫu trong nhóm
         let ti = 0, flip = false, cells = null, haz = '';
         // v1.18n: chọn mẫu + rải khối ngẫu nhiên, KIỂM phòng (genRoomOK); hỏng thì chọn lại (tối đa GEN.roomTries lần — không thì lấy lần cuối, cổng kiểm cả màn sẽ lo)
         for (let tryN = 0; tryN < GEN.roomTries; tryN++) {
@@ -8278,7 +8253,7 @@ function playerWhipStep(level) {
         const hp0 = e.hp;
         if (e.hurt({ kind: DMG.WHIP, dmg: (p.weapon === 'machete' ? WPN.macheteDmg : WHIP.dmg) + (p.whipPower ? WHIP.chargeDmgAdd : 0), x: p.cx, y: p.cy, by: p })) {
             const kb = p.whipPower ? WHIP.chargeKbMul : 1;
-            if (p.whipPower && p.blade === 'fire' && e.alive && e.creature && !e.boss && !(e.wetT > 0) && !level.inWater(e)) { const res = affinityOf(e, 'fire') === 'resist'; e.burnT = FIRE.burnT * (res ? ELEM.resMul : 1); e.burnRes = res; e.burnTick = FIRE.burnTick; e.burnDmg = BLADE.fireBurn; }          // v0.79: quái kháng lửa cháy nửa thời gian          // v0.75: kiếm lửa = cháy LỚN (4 máu); quái trong lưỡi chém bắt lửa (13n_fire.fireStep lo nhịp cháy + châm dầu)
+            if (p.whipPower && p.blade === 'fire' && e.alive && e.creature && !e.boss && !(e.wetT > 0) && !level.inWater(e)) { const res = affinityOf(e, 'fire') === 'resist'; e.burnT = FIRE.burnT * (res ? ELEM.resMul : 1); e.burnRes = res; e.burnTick = FIRE.burnTick; e.burnDmg = BLADE.fireBurn; }          // v0.79: quái kháng lửa cháy nửa thời gian
             if (p.whipPower && p.blade) bladeHit(level, p, e);          // v0.45: kiếm hệ băng / sét / độc (13s_blade); lửa ở dòng trên
             if (!(e.def && e.def.heavy)) { if (b.diag) { e.vx += p.facing * 45 * kb; e.vy += (b.diag === 2 ? -50 : 50) * kb; } else if (b.up) e.vy -= 80 * kb; else e.vx += p.facing * 60 * kb; }          // chém lên hất lên, chém ngang hất ra (v0.88: bọ đá nặng không bị hất)
             sndPlay(hitSoundFor(e, hp0), { x: e.cx });          // v0.92: nhỏ / giáp / to
@@ -8318,13 +8293,14 @@ function abilityGrant(id, announce) {
     if (game.abilities[id]) return false;
     game.abilities[id] = true;
     if (announce) {
-        game.learn = { id, t: 0, trial: !(id === 'doubleJump' || id === 'shadowDash' || id === 'dash') ? null : { act: id === 'doubleJump' ? 'jump' : 'dash', need: id === 'doubleJump' ? 2 : 1, got: 0, last: -9, done: false, doneT: 0, fx: [] } };          // v0.91: đứng hình + bắn pháo hoa vàng, bấm thử đúng mới chơi tiếp
-        sndPlay('victory'); if (game.learn.trial) trialFirework(game.learn.trial, 0);
+        const trial = (id === 'doubleJump' || id === 'shadowDash' || id === 'dash') ? { act: id === 'doubleJump' ? 'jump' : 'dash', need: id === 'doubleJump' ? 2 : 1, got: 0, last: -9, done: false, doneT: 0, fx: [] } : null;
+        if (trial) { game.learn = { id, t: 0, trial }; sndPlay('victory'); trialFirework(trial, 0); }          // nhảy đôi / lướt: đứng hình, bấm thử đúng mới chơi tiếp
+        rewardFxAdd(id === 'flaskFast' ? { k: 'flask' } : { k: 'abil', id, after: !!trial });          // hoạt cảnh thưởng (rewardFxDraw)
     }
     return true;
 }
 // Hạ boss ở level levelIdx => nhận năng lực tương ứng (nếu có)
-function abilityReward(levelIdx) { const t = ABILITY_REWARD[clsOf(game.cls)], id = t && t[BOSS_LEVELS[levelIdx]]; if (!id) return; const ids = [].concat(id); ids.forEach((a, i) => abilityGrant(a, i === ids.length - 1)); }          // v1.2: một boss có thể cho nhiều năng lực (bảng ĐÃ HỌC hiện cái cuối)
+function abilityReward(levelIdx) { const t = ABILITY_REWARD[clsOf(game.cls)], id = t && t[BOSS_LEVELS[levelIdx]]; if (!id) return; const ids = [].concat(id); ids.forEach(a => abilityGrant(a, true)); }          // v1.2: một boss có thể cho nhiều năng lực (bảng ĐÃ HỌC hiện cái cuối)
 
 // ---- Nhảy đôi ----
 // Gọi trong Player.stepMove NGAY SAU khối nhảy thường: phím nhảy còn nhớ (bufferT > 0) mà không có đất / coyote để nhảy thường => dùng nhảy đôi.
@@ -8462,6 +8438,76 @@ function abilityIconDraw(id, x, y, ok, shadow) {
     if (id === 'dash') { ctx.fillStyle = shadow ? '#d8f4ff' : '#5d94b0'; ctx.fillRect(x, y + 2, 4, 2); ctx.fillRect(x + 4, y, 2, 6); ctx.fillRect(x + 6, y + 1, 2, 4); ctx.fillRect(x + 8, y + 2, 2, 2); ctx.fillRect(x, y + 5, 5, 1); }
     else { ctx.fillStyle = '#ffe08a'; for (const dy of [0, 4]) { ctx.fillRect(x + 4, y + dy, 2, 1); ctx.fillRect(x + 2, y + dy + 1, 2, 1); ctx.fillRect(x + 6, y + dy + 1, 2, 1); ctx.fillRect(x, y + dy + 2, 2, 1); ctx.fillRect(x + 8, y + dy + 2, 2, 1); } }
     ctx.globalAlpha = 1;
+}
+// ---- v1.6-74 (Dan): HOẠT CẢNH THƯỞNG BOSS — vật thưởng hiện TO giữa màn hình kèm chữ, rồi BAY về đúng chỗ trên HUD và nhấp nháy:
+//   heart: +1 tim tối đa → trái tim to bay về ô tim mới (nhấp nháy) · flask: Túi bình lớn → bình to bay về ô bình, số bình ĐẾM DẦN lên sức chứa mới, mỗi bình một tiếng «ting».
+//   Hàng đợi chạy lần lượt, chờ bảng chọn ngọc (game.pick) và màn thử năng lực đóng xong.
+const RFX = { show: 0.9, showAbil: 2.4, fly: 0.5, blink: 1.2, step: 0.08 };
+// biểu tượng năng lực (lưới điểm; '.' = trống) — dùng cho hoạt cảnh thưởng
+const ABIL_ICON = {
+    pogoAuto: { pal: { a: '#ffd24a', b: '#c8ccd8', c: '#6a6f88' }, rows: ['....a....', '...aaa...', '..aaaaa..', '....a....', '....a....', '.........', '.b..b..b.', 'bbbbbbbbb', 'ccccccccc'] },
+    parry: { pal: { o: '#2a2e3e', l: '#ffffff', s: '#b8c4dc', g: '#ffd24a' }, rows: ['ooooooooooo', 'olllsssssso', 'olsssgsssso', 'olssgggssso', 'olsssgsssso', '.olsssssso.', '.olsssssso.', '..olsssso..', '...olsso...', '....oso....', '.....o.....'] },
+    reflect2: { pal: { y: '#ffe08a', w: '#ffffff', b: '#c8d8f0', l: '#6a7a98' }, rows: ['y.........w', '.y.......ww', '..y.....y..', '...y...y...', '....y.y....', '.....y.....', '...........', 'bbbbbbbbbbb', 'lllllllllll'] },
+    teleport: { pal: { p: '#b06aff', l: '#e0c0ff', w: '#ffffff' }, rows: ['...ppppp...', '.pp.....pp.', '.p..lll...p', 'p..l...l..p', 'p..l.w..l.p', 'p..l..ll..p', 'p...l....p.', '.p...lll.p.', '.pp.....p..', '...ppppp...'] },
+    hookDiag: { pal: { m: '#d8dce8', r: '#b07840' }, rows: ['.....mmmmm', '........mm', '.......m.m', '......r..m', '.....r....', '....r.....', '...r......', '..r.......', '.r........', 'r.........'] }
+};
+function rfxAbilIcon(id, x, y, sc) {
+    const I = ABIL_ICON[id];
+    if (!I) { ctx.save(); ctx.translate(Math.round(x - 5 * sc), Math.round(y - 4 * sc)); ctx.scale(sc, sc); abilityIconDraw(id === 'doubleJump' ? 'doubleJump' : 'dash', 0, 0, true, id === 'shadowDash'); ctx.restore(); return; }
+    const w = I.rows[0].length, h = I.rows.length;
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) { const ch = I.rows[r][c], col = I.pal[ch]; if (!col) continue; ctx.fillStyle = col; ctx.fillRect(Math.round(x + (c - w / 2) * sc), Math.round(y + (r - h / 2) * sc), sc, sc); }
+}
+function rewardFxAdd(o) { (game.rfx || (game.rfx = [])).push(Object.assign({ t: 0 }, o)); }
+function rewardFxDraw() {
+    const Q = game.rfx, p = game.player; if (!Q || !Q.length || !p) return;
+    if (game.pick || (game.learn && game.learn.trial)) return;
+    const f = Q[0]; f.t += 1 / 60; const t = f.t, cx = VIEW_W / 2, cy = 140;
+    if (f.k === 'abil') { rfxAbil(f, Q, p, cx, 96); return; }
+    let tx, ty, big;
+    if (f.k === 'heart') { const n = Math.ceil(maxHpOf(p) / HP_UNIT); tx = 6 + (n - 1) * 9 + 3; ty = 9; }
+    else { const h = game.subHud || { x: 60, y: 18 }; tx = h.x; ty = h.y; if (f.n0 === undefined) { f.n0 = p.sub ? p.sub.n : 0; f.cap = subCap(); } }
+    const flyEnd = RFX.show + RFX.fly;
+    if (t < flyEnd) {
+        const u = t < RFX.show ? 0 : (t - RFX.show) / RFX.fly, e = u * u * (3 - 2 * u), x = cx + (tx - cx) * e, y = cy + (ty - cy) * e, sc = Math.round(4 - 3 * e) || 1;
+        const a = Math.min(1, t * 5); ctx.globalAlpha = a;
+        if (t < RFX.show) { ctx.globalAlpha = 0.35 * a; ctx.fillStyle = f.k === 'heart' ? '#ff6b86' : '#9ad8ff'; ctx.beginPath(); ctx.arc(x, y, 18 + Math.sin(t * 12) * 2, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = a; }
+        if (f.k === 'heart') { for (let r = 0; r < HEART.length; r++) for (let c = 0; c < 7; c++) if (HEART[r][c] === '#') { ctx.fillStyle = r < 2 ? '#ff6b86' : '#e23a5c'; ctx.fillRect(Math.round(x + (c - 3.5) * sc), Math.round(y + (r - 3) * sc), sc, sc); } }
+        else { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.scale(sc, sc); hudIcon('sub', -4, -4, p.sub ? p.sub.id : null); ctx.restore(); }
+        if (t < RFX.show) drawText(f.k === 'heart' ? '+1 TIM TỐI ĐA' : 'TÚI BÌNH LỚN — mang ' + subCap() + ' bình', cx, cy + 22, '#ffe9a8', 'center');
+        ctx.globalAlpha = 1;
+        if (!f.snd && t >= RFX.show) { f.snd = 1; sndPlay('swing', { p: 1.4, vol: 0.5 }); }
+        return;
+    }
+    const k = t - flyEnd;
+    if (f.k === 'heart') {
+        if (!f.landed) { f.landed = 1; sndPlay('keyPickup3', { vol: 0.8 }); }
+        if (Math.floor(k * 8) % 2 === 0) { ctx.globalAlpha = 0.85; ctx.fillStyle = '#ffffff'; for (let r = 0; r < HEART.length; r++) for (let c = 0; c < 7; c++) if (HEART[r][c] === '#') ctx.fillRect(tx - 3 + c, ty - 3 + r, 1, 1); ctx.globalAlpha = 1; }
+        if (k > RFX.blink) Q.shift();
+        return;
+    }
+    if (p.sub && p.sub.n < f.cap) { f.acc = (f.acc || 0) + 1 / 60; while (f.acc >= RFX.step && p.sub.n < f.cap) { f.acc -= RFX.step; p.sub.n++; sndPlay('coin', { p: 0.9 + (p.sub.n - f.n0) / Math.max(1, f.cap - f.n0) * 0.8, vol: 0.45 }); } f.endT = k; }
+    if (Math.floor(k * 8) % 2 === 0) { ctx.globalAlpha = 0.6; ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 5, ty - 6, 26, 12); ctx.globalAlpha = 1; }
+    if (k - (f.endT || 0) > RFX.blink * 0.6) Q.shift();
+}
+// năng lực mới (boss thưởng): biểu tượng to + tên + mô tả giữa màn → bay vào người nhân vật → vòng sáng + lấp lánh quanh người
+function rfxAbil(f, Q, p, cx, cy) {
+    const d = ABILITY_DEFS[f.id] || { name: '', text: '' }, show = f.after ? RFX.show : RFX.showAbil, t = f.t, flyEnd = show + RFX.fly;
+    const tx = p.cx - Math.round(cam.x), ty = p.cy - Math.round(cam.y);
+    if (t < flyEnd) {
+        const u = t < show ? 0 : (t - show) / RFX.fly, e = u * u * (3 - 2 * u), x = cx + (tx - cx) * e, y = cy + (ty - cy) * e, sc = Math.max(1, Math.round(4 - 3 * e)), a = Math.min(1, t * 5);
+        if (t < show) { const k = 0.5 + 0.5 * Math.sin(t * 6); ctx.globalAlpha = (0.25 + 0.12 * k) * a; ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.arc(x, y, 24 + 3 * k, 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha = a; rfxAbilIcon(f.id, x, y, sc);
+        if (t < show) { drawText('NĂNG LỰC MỚI: ' + d.name, cx, cy + 30, '#ffd24a', 'center'); if (!f.after) drawText(inp.fill(d.text), cx, cy + 42, '#cfe3ff', 'center'); }
+        ctx.globalAlpha = 1;
+        if (!f.snd && t >= show) { f.snd = 1; sndPlay('swing', { p: 1.4, vol: 0.5 }); }
+        return;
+    }
+    const k = t - flyEnd;
+    if (!f.landed) { f.landed = 1; sndPlay('keyPickup3', { vol: 0.8 }); sndPlay('orb', { p: 1.2, vol: 0.6 }); }
+    const r = 6 + k * 40; ctx.globalAlpha = Math.max(0, 1 - k / 0.5); ctx.strokeStyle = '#ffe9a8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(tx, ty, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = Math.max(0, 1 - k / RFX.blink); ctx.fillStyle = '#fff3b0';
+    for (let i = 0; i < 8; i++) { const an = i / 8 * Math.PI * 2 + k * 2, rr = 9 + Math.sin(k * 9 + i) * 3; if ((Math.floor(k * 10) + i) % 3) ctx.fillRect(Math.round(tx + Math.cos(an) * rr), Math.round(ty + Math.sin(an) * rr * 1.2), 1, 1); }
+    ctx.globalAlpha = 1; if (k > RFX.blink) Q.shift();
 }
 // ---- v0.91 (Dan): màn MỞ KHOÁ năng lực (nhảy đôi / lướt bóng) ----
 // Sau khi hạ boss: thế giới đứng yên (stepGame gọi abilityTrialStep), pháo hoa vàng, biểu tượng giữa màn + chữ "Bạn đã mở khoá…". Người chơi phải bấm thử:
@@ -8677,7 +8723,7 @@ function cosLoad(slot) {
     const out = {}; if (o && typeof o === 'object') for (const c in COS_DEFAULT) { const q = o[c]; if (!q || typeof q !== 'object') continue; const m = {}; for (const sl of COS_SLOTS) { const it = COS_ITEMS[q[sl]]; if (it && it.slot === sl && (!it.classes || it.classes.indexOf(c) >= 0)) m[sl] = q[sl]; } out[c] = m; }
     return (_cosMem[key] = out);
 }
-function cosGet(slot, cls) { const a = cosLoad(slot), m = a[cls]; return m ? m : (COS_DEFAULT[cls] || {}); }          // lớp chưa từng mua gì = đồ mặc định
+function cosGet(slot, cls) { const a = cosLoad(slot), m = a[cls]; if (m) for (const k in m) if (m[k] !== '-' && !COS_ITEMS[m[k]]) delete m[k]; return m ? m : (COS_DEFAULT[cls] || {}); }          // món đã bị bỏ khỏi danh mục thì coi như không mặc          // lớp chưa từng mua gì = đồ mặc định
 function cosSet(slot, cls, map) {          // ghi bộ đồ của (slot, lớp); chỉ nhận món hợp lệ
     const key = slotKey(COS_STORE, slot); if (!key) return false;
     const a = cosLoad(slot), m = {}; for (const sl of COS_SLOTS) { const it = COS_ITEMS[map[sl]]; if (it && it.slot === sl && (!it.classes || it.classes.indexOf(cls) >= 0)) m[sl] = map[sl]; }
@@ -8704,9 +8750,14 @@ function cosDraw(p, ctx, fr, A, white, dw, dh) {
 const COS_CLOAK = {          // id: [tên, hue 0..1, nhân độ bão hoà, nhân độ sáng]
     cloak_orange: ['Áo cam', 0.06, 1, 1.15], cloak_gold: ['Áo vàng', 0.12, 0.95, 1.2], cloak_green: ['Áo xanh lá', 0.33, 0.9, 0.95], cloak_teal: ['Áo ngọc lam', 0.47, 0.9, 1],
     cloak_blue: ['Áo xanh dương', 0.60, 1, 1], cloak_indigo: ['Áo chàm', 0.70, 0.95, 1], cloak_purple: ['Áo tím', 0.79, 0.9, 1], cloak_pink: ['Áo hồng', 0.90, 0.6, 1.4],
-    cloak_white: ['Áo trắng', 0.60, 0.12, 1.75], cloak_black: ['Áo đen', 0.70, 0.2, 0.5], cloak_red: ['Áo đỏ', 0.0, 0.95, 1.5], cloak_mint: ['Áo bạc hà', 0.45, 0.45, 1.5], cloak_lavender: ['Áo oải hương', 0.75, 0.4, 1.5]
+    cloak_white: ['Áo trắng', 0.60, 0.12, 1.75], cloak_black: ['Áo đen', 0.70, 0.2, 0.5], cloak_red: ['Áo đỏ', 0.0, 0.95, 1.5], cloak_mint: ['Áo bạc hà', 0.45, 0.45, 1.5], cloak_lavender: ['Áo oải hương', 0.75, 0.4, 1.5],
+    cloak_mummy: ['Áo băng quấn', 0, 0, 1, 'mummy']
 };
-for (const id in COS_CLOAK) COS_ITEMS[id] = { slot: 'cloak', name: COS_CLOAK[id][0], cloak: COS_CLOAK[id], tier: 'recolor' };
+// Áo «hoa văn» cho bộ đồ toàn thân: thay hẳn điểm áo bằng chất liệu của bộ (giữ khối sáng / tối của áo gốc qua v), để bộ không bị lệch với áo choàng
+const COS_CLOAK_PAT = {
+    mummy: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2, band = (y * 2 + x) % 7 === 0, C = [[232, 224, 200], [196, 186, 156], [140, 128, 100]][Math.min(2, t + (band ? 1 : 0))]; return (x * 7 + y * 3) % 23 === 0 ? [250, 246, 230] : C; },
+};
+for (const id in COS_CLOAK) COS_ITEMS[id] = { slot: 'cloak', name: COS_CLOAK[id][0], cloak: COS_CLOAK[id], tier: COS_CLOAK[id][4] ? 'medium' : 'recolor' };
 const COS_CLOAK_SRC = { sword: h => (h > 0.90 || h < 0.05), alch: h => Math.abs(h - 0.70) < 0.03, hunt: h => Math.abs(h - 0.33) < 0.03 };          // sắc áo gốc của từng lớp (khớp tools/gen_class_sprites.recolor)
 const _cloakCache = new WeakMap();
 function _rgb2hsv(r, g, b) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d + 6) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h /= 6; } return [h, mx ? d / mx : 0, mx]; }
@@ -8718,10 +8769,11 @@ function cosCloakImg(p, img) {
     let out = img;
     try {
         const c = makeCanvas(img.width, img.height), g = c.getContext('2d'); g.drawImage(img, 0, 0);
-        const d = g.getImageData(0, 0, img.width, img.height), a = d.data, isC = COS_CLOAK_SRC[p.cls], [, hue, sm, vm] = it.cloak;
+        const d = g.getImageData(0, 0, img.width, img.height), a = d.data, isC = COS_CLOAK_SRC[p.cls], [, hue, sm, vm, pk] = it.cloak, pat = pk && COS_CLOAK_PAT[pk];
         for (let i = 0; i < a.length; i += 4) {
             if (a[i + 3] < 200) continue; const [h, s, v] = _rgb2hsv(a[i] / 255, a[i + 1] / 255, a[i + 2] / 255);
             if (s < 0.3 || v < 0.12 || !isC(h)) continue;
+            if (pat) { const q = i >> 2, c = pat(q % img.width, (q / img.width) | 0, v); a[i] = c[0]; a[i + 1] = c[1]; a[i + 2] = c[2]; continue; }
             const [r, gg, b] = _hsv2rgb(hue, Math.min(1, s * sm), Math.min(1, v * vm)); a[i] = Math.round(r * 255); a[i + 1] = Math.round(gg * 255); a[i + 2] = Math.round(b * 255);
         }
         g.putImageData(d, 0, 0); out = c;
@@ -8837,7 +8889,7 @@ function heroBackFrame(p, i) {
 }
 
 // ================= v1.6-66 (Dan) =================
-// ---- 3 BỘ ĐỒ VUI: Xác ướp · Robot · Quả chuối (+ sừng, đuôi quỷ để ghép với cánh dơi) ----
+// ---- BỘ ĐỒ VUI: Lính trắng · Robot (+ sừng, đuôi quỷ để ghép với cánh dơi) ----
 COS_ART.mummy_wrap = { outline: false, pal: { w: '#e8e0c8', W: '#b8ac8a', d: '#8a7e60' }, parts: [
     { x: 0, y: -6, rows: ['.wwwwwwww.', 'wWwwwWwwww', 'wwwWwwwwWw', 'WwwwwwWwww'] }, { x: -1, y: -2, rows: ['ww', 'Ww', 'ww'] }, { x: 9, y: -2, rows: ['ww', 'wW', 'ww'] },
     { x: 10, y: 1, rows: ['w.', 'ww', '.w', '.W', '.w'] }] };
@@ -8848,29 +8900,25 @@ COS_ART.robo_head = { outline: false, pal: { s: '#aab4c8', S: '#e6ecf6', k: '#4a
     { x: -2, y: -1, rows: ['kk', 'yk', 'kk'] }, { x: 10, y: -1, rows: ['kk', 'ky', 'kk'] }] };
 COS_ART.robo_visor = { outline: false, pal: { k: '#20263a', c: '#5ae6ff', C: '#d8fbff' }, parts: [{ x: 0, y: 2, rows: ['kkkkkkkkkk', 'kcCckkcCck', 'kcCckkcCck', 'kkkkkkkkkk'] }] };
 COS_ART.robo_core = { outline: false, pal: { s: '#aab4c8', S: '#e6ecf6', k: '#4a5268', c: '#5ae6ff', y: '#ffd24a', r: '#ff5a4a' }, parts: [{ x: 2, y: 9, rows: ['kkkkkk', 'kcSyrk', 'kSSSSk', 'kkkkkk'] }, { x: 1, y: 13, rows: ['s.s..s.s'] }] };
-COS_ART.banana_hat = { outline: false, pal: { y: '#ffe14a', Y: '#fff6a8', d: '#c89a1a', b: '#6a4a1c' }, parts: [
-    { x: 4, y: -10, rows: ['bb', 'db'] }, { x: 0, y: -8, rows: ['...yyyy...', '..yYYYYy..', '.yYYyyyYy.', 'yYYyyyyyYy', 'yyyyyyyyyd', 'dyyyyyyydd'] },
-    { x: -2, y: -3, rows: ['yy.', 'Yyy', '.yd', '.dd'] }, { x: 9, y: -3, rows: ['.yy', 'yyY', 'dy.', 'dd.'] }] };
-COS_ART.banana_peel = { outline: false, pal: { y: '#ffe14a', Y: '#fff6a8', d: '#c89a1a' }, parts: [{ x: -1, y: 8, rows: ['yYyyYyyYyyY', 'dy.dy.dy.dy', '.d..d..d..d'] }] };
-COS_ART.banana_bunch = { outline: false, pal: { y: '#ffe14a', Y: '#fff6a8', d: '#c89a1a', b: '#6a4a1c' }, parts: [{ x: 5, y: 10, rows: ['.bb.', 'yYyY', 'yyyy', 'dydy', '.d.d'] }] };
 COS_ART.devil_horns = { outline: false, pal: { r: '#c8283a', R: '#ff6a70', d: '#7a1424' }, parts: [{ x: -1, y: -9, rows: ['R..........R', 'rR........Rr', 'rr........rr', '.rd......dr.', '..d......d..'] }] };
 COS_ART.devil_tail = { outline: false, pal: { r: '#c8283a', R: '#ff6a70', d: '#7a1424' }, parts: [{ x: -5, y: 9, rows: ['.R.', 'RrR', 'drd', '.r.', '.r.', '.rr', '..r', '..rr'] }] };
 (function (L) { for (const q of L) COS_ITEMS[q[0]] = Object.assign({ slot: q[4], name: q[1], paint: q[3], tier: q[2] }, q[5] || {}); })([
-    ['mummy_wrap', 'Xác ướp · Băng quấn đầu', 'rare', 'mummy_wrap', 'headpiece'], ['mummy_eyes', 'Xác ướp · Băng che mặt', 'medium', 'mummy_eyes', 'eyewear'], ['mummy_body', 'Xác ướp · Băng quấn người', 'medium', 'mummy_body', 'scarf'],
+    ['mummy_wrap', 'Lính trắng · Băng quấn đầu', 'rare', 'mummy_wrap', 'headpiece'], ['mummy_eyes', 'Lính trắng · Băng che mặt', 'medium', 'mummy_eyes', 'eyewear'], ['mummy_body', 'Lính trắng · Băng quấn người', 'medium', 'mummy_body', 'scarf'],
     ['robo_head', 'Robot · Mũ sắt ăng-ten', 'exclusive', 'robo_head', 'headpiece'], ['robo_visor', 'Robot · Kính đèn LED', 'rare', 'robo_visor', 'eyewear', { glow: [4.5, 3.5, 7, '90,230,255'] }], ['robo_core', 'Robot · Bảng mạch ngực', 'medium', 'robo_core', 'brooch'],
-    ['banana_hat', 'Quả chuối · Mũ vỏ chuối', 'exclusive', 'banana_hat', 'headpiece'], ['banana_peel', 'Quả chuối · Cổ áo vỏ chuối', 'medium', 'banana_peel', 'scarf'], ['banana_bunch', 'Quả chuối · Nải chuối', 'medium', 'banana_bunch', 'pouch'],
     ['devil_horns', 'Quỷ nhỏ · Cặp sừng', 'rare', 'devil_horns', 'headpiece'], ['devil_tail', 'Quỷ nhỏ · Đuôi mũi tên', 'medium', 'devil_tail', 'pouch']]);
 // ---- CÁNH SAU LƯNG (ô đồ mới `wings`): vẽ bằng công thức SAU thân nhân vật, hai cánh xoè hai bên; góc cánh theo trạng thái — đứng: vẫy nhẹ · chạy: cụp ra sau, rung nhanh · nhảy lên: đập mạnh · rơi: giương cao, rung như dù · lượn / bám tường: xoè ngang.
 const WING_DEF = {          // id: [tên, kiểu, màu chính, màu sáng, màu tối, độ dài px, hạng]
-    wings_angel: ['Cánh thiên thần', 'feather', '#f4f6ff', '#ffffff', '#b4c0dc', 9, 'exclusive'], wings_devil: ['Cánh quỷ', 'bat', '#8a1c2c', '#d84a52', '#4a0c18', 9, 'exclusive'],
+    wings_angel: ['Cánh thiên thần', 'feather', '#f4f6ff', '#ffffff', '#b4c0dc', 9, 'rare'], wings_devil: ['Cánh quỷ', 'bat', '#8a1c2c', '#d84a52', '#4a0c18', 9, 'exclusive'],
     wings_bat: ['Cánh dơi', 'bat', '#4a3a6a', '#8a6ac4', '#221a36', 8, 'rare'], wings_fairy: ['Cánh tiên', 'fairy', '#9ae8ff', '#eaffff', '#5aa8e0', 8, 'rare'],
     wings_butterfly: ['Cánh bướm', 'fairy', '#ff9ad0', '#ffe0f2', '#c8508a', 8, 'rare'], wings_dragon: ['Cánh rồng', 'bat', '#3a9a52', '#8ce878', '#1c5a30', 10, 'exclusive'],
-    wings_gold: ['Cánh phượng hoàng', 'feather', '#ffb62a', '#fff0a0', '#d0601a', 10, 'exclusive']
+    wings_gold: ['Cánh phượng hoàng', 'feather', '#ffb62a', '#fff0a0', '#d0601a', 10, 'exclusive'],
+    wings_crow: ['Cánh quạ', 'feather', '#3e3a56', '#8e88b0', '#16141e', 9, 'medium'], wings_bee: ['Cánh ong', 'fairy', '#fff2b0', '#ffffff', '#c8a030', 6, 'medium'],
+    wings_ice: ['Cánh pha lê băng', 'crystal', '#9ad8ff', '#f0fcff', '#3a7ac8', 9, 'rare'], wings_flame: ['Cánh lửa', 'flame', '#ff7a1a', '#ffe14a', '#c02a10', 9, 'rare']
 };
 for (const k in WING_DEF) COS_ITEMS[k] = { slot: 'wings', name: WING_DEF[k][0], wing: WING_DEF[k], tier: WING_DEF[k][6] };
 COS_ITEMS.wings_none = { slot: 'wings', name: 'Không đeo cánh', wing: null, tier: 'recolor', none2: true };
 COS_SLOTS.push('wings');
-COS_SETS.push(['Xác ướp', ['mummy_wrap', 'mummy_eyes', 'mummy_body', 'cloak_white', 'rib_white']], ['Robot', ['robo_head', 'robo_visor', 'robo_core', 'cloak_blue', 'rib_cyan']], ['Quả chuối', ['banana_hat', 'banana_peel', 'banana_bunch', 'cloak_gold', 'rib_yellow']],
+COS_SETS.push(['Lính trắng', ['mummy_wrap', 'mummy_eyes', 'mummy_body', 'cloak_mummy', 'rib_white']], ['Robot', ['robo_head', 'robo_visor', 'robo_core', 'cloak_blue', 'rib_cyan']],
     ['Quỷ nhỏ', ['devil_horns', 'devil_tail', 'wings_devil', 'cloak_red', 'rib_black']]);
 { const a = COS_SETS.find(q => q[0] === 'Thiên thần'); if (a && a[1].indexOf('wings_angel') < 0) a[1].push('wings_angel'); }
 function wingsDraw(p, g, alpha) {
@@ -8887,13 +8935,15 @@ function wingsDraw(p, g, alpha) {
     else if (st === 'duck') { base = -0.45; amp = 0.05; }
     const a = base + Math.sin(t * sp) * amp, f = p.facing >= 0 ? 1 : -1, low = st === 'duck' ? 5 : 0;
     const rx = p.drawX(alpha) + p.w / 2 - f * 1.5, ry = p.drawY(alpha) + 7 + low, len = D[5], H = v => Math.round(v * 2) / 2, q = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(H(x), H(y), w, h); };
-    const og = g.globalAlpha; if (D[1] === 'fairy') g.globalAlpha = og * 0.78;
+    const og = g.globalAlpha; if (D[1] === 'fairy' || D[1] === 'crystal') g.globalAlpha = og * (D[1] === 'fairy' ? 0.78 : 0.9);
     for (const s of [-1, 1]) {
         const back = s === -f, L = len * (back ? 1 : 0.92), aa = a + (back ? 0.08 : -0.05), N = Math.round(L * 2), r0 = back ? 2 : 4;
         for (let i = 0; i <= N; i++) {
             const u = i / N, x = rx + s * (r0 + u * L * Math.cos(aa * (0.55 + 0.45 * u))), yTop = ry - u * L * Math.sin(aa) - Math.sin(u * Math.PI) * 1.6;
             if (D[1] === 'feather') { const fl = 1.5 + Math.sin(Math.min(1, u * 1.25) * Math.PI) * 4.2 * (1 - u * 0.35); q(x, yTop, 0.5, fl, D[2]); q(x, yTop, 0.5, 1, D[3]); q(x, yTop + fl - 0.5, 0.5, 0.5, i % 3 === 0 ? D[4] : D[2]); if (i % 3 === 0) q(x, yTop + fl, 0.5, 1, D[4]); }
             else if (D[1] === 'bat') { const sc = Math.abs(Math.sin(u * Math.PI * 2.5)), fl = 1 + (1 - u * 0.5) * (2.2 + sc * 3); q(x, yTop, 0.5, fl, D[2]); q(x, yTop, 0.5, 1, D[4]); if (i % 4 === 0) q(x, yTop, 0.5, fl, D[4]); else if (i % 4 === 2) q(x, yTop + 1, 0.5, 1, D[3]); if (i === N) q(x, yTop - 1, 0.5, 1.5, D[4]); }
+            else if (D[1] === 'crystal') { const k = Math.floor(i / 3), j = i % 3, Ls = (2.5 + (k * 7 % 4)) * (1 - u * 0.4), fl = Math.max(1, Ls * (j === 1 ? 1 : 0.55)); q(x, yTop, 0.5, fl, D[2]); if (j === 0) q(x, yTop, 0.5, fl - 0.5, D[3]); q(x, yTop + fl - 0.5, 0.5, 0.5, D[4]); if ((k + Math.floor(t * 3)) % 5 === 0 && j === 1) q(x, yTop + 1, 0.5, 0.5, '#ffffff'); }
+            else if (D[1] === 'flame') { const fk = Math.sin(t * 13 + i * 1.3) * 1.1, up = 1 + Math.sin(u * Math.PI) * 1.5 + Math.max(0, fk), fl = 1.5 + Math.sin(Math.min(1, u * 1.3) * Math.PI) * 3.5 * (1 - u * 0.3); q(x, yTop - up, 0.5, up + fl, D[2]); q(x, yTop - up, 0.5, 1, D[4]); q(x, yTop - up * 0.3, 0.5, Math.max(0.5, fl * 0.5), D[3]); q(x, yTop + fl - 0.5, 0.5, 0.5, D[4]); }
             else { const up = Math.sin(u * Math.PI) * 5.5 * (1 - u * 0.2), dn = Math.sin(Math.min(1, u * 1.6) * Math.PI) * 4; q(x, yTop - up * 0.45, 0.5, up * 0.45 + 1, D[2]); q(x, yTop + 1.5, 0.5, dn, D[2]); q(x, yTop - up * 0.45, 0.5, 0.5, D[4]); q(x, yTop + 1.5 + dn - 0.5, 0.5, 0.5, D[4]); if (i > 2 && i % 3 === 0) q(x, yTop - up * 0.2, 0.5, 1, D[3]); }
         }
     }
@@ -9016,7 +9066,7 @@ function dmgImpacts(level) {
             const hp0 = t.hp;
             if (t.hurt({ kind, dmg: p.impactDmg, x: p.cx, y: p.cy, vx: p.vx, by: p })) {
                 t.vx += p.vx * 0.3; if (t === game.player && !t.dead) t.stun(1);
-                { const stone = p.kind !== 'arrow' && !(p instanceof Corpse) && t.creature && t !== game.player; sndPlay(stone ? (t.alive ? 'hitBigHigh1' : hitSoundFor(t, hp0)) : 'hit', { x: t.cx }); }          // v0.94: đá giết quái = đúng tiếng chém giết quái          // v0.94: vật bay (viên đá…) trúng quái = hitBigHigh1
+                { const stone = p.kind !== 'arrow' && !(p instanceof Corpse) && t.creature && t !== game.player; sndPlay(stone ? (t.alive ? 'hitBigHigh1' : hitSoundFor(t, hp0)) : 'hit', { x: t.cx }); }          // v0.94: đá giết quái = đúng tiếng chém giết quái
                 level.spawnBurst(t.cx, t.cy, 4, t.creature ? '#d23a3a' : t.col, 80);
                 p.vx *= -0.3; p.vy = Math.min(p.vy, -60);
                 if (p.onHitTarget) p.onHitTarget(level, t);
@@ -9489,7 +9539,7 @@ function freezeFoe(e, t) {
 function dmgElement(kind) { return kind === DMG.FIRE ? 'fire' : kind === DMG.SHOCK ? 'shock' : kind === DMG.ICE ? 'ice' : kind === DMG.POISON ? 'poison' : null; }          // nguồn sát thương -> nguyên tố (H9 thêm băng / sét ở đây)
 function affinityOf(e, el) {
     if (!el || !(e instanceof Enemy) || e.kind === 'shopkeeper') return null;
-    if (e.boss || e.isBoss) { const own = e.def && e.def.resist && e.def.resist[0]; return own === el ? 'resist' : own && ELEM_COUNTER[own] === el ? 'weak' : null; }          // v0.79 (Dan): boss kháng hệ mình, YẾU hệ khắc nó (vòng Lửa > Độc > Sét > Băng > Lửa) — tác dụng nhẹ hơn quái thường (Boss.hurt)          // v0.39 (E7): boss chỉ có kháng hệ của chính nó (không yếu, không theo vùng)
+    if (e.boss || e.isBoss) { const own = e.def && e.def.resist && e.def.resist[0]; return own === el ? 'resist' : own && ELEM_COUNTER[own] === el ? 'weak' : null; }          // v0.79 (Dan): boss kháng hệ mình, YẾU hệ khắc nó (vòng Lửa > Độc > Sét > Băng > Lửa) — tác dụng nhẹ hơn quái thường (Boss.hurt)
     const d = e.def || {}, z = zoneOf(game.levelIdx) || {};
     if (d.resist && d.resist.indexOf(el) >= 0) return 'resist';
     if (d.weak && d.weak.indexOf(el) >= 0) return 'weak';
@@ -10360,6 +10410,7 @@ Object.assign(FOES, { frog: Frog, listener: Listener, geode: Geode, necro: Necro
 const THROW = {
     monkeyX: 0, gap: 0.6,          // gap = giãn cách tối thiểu giữa hai lần ném của các monkey trong cùng màn
     lead: 30,                     // monkey thứ hai ngắm lệch tới đây px về hướng người chơi chạy
+    err: 40,                      // độ lệch ngẫu nhiên tối đa (±err/2 px) mỗi viên
     hopV: -230, backV: -190, backVx: 120,
     chanceLate: 0.6,              // vùng sau 3-x: xác suất mỗi màn x-3 / x-4 / x-5 có monkey
     impChance: 0.6,
@@ -10483,9 +10534,8 @@ class Monkey extends Thrower {
         if (!p || p.dead) return;
         const d = this.def, L = game.level, g = THROW.arcG, f = this.facing, sx = this.cx + f * 5, sy = this.y + 5, ad = Math.abs(p.cx - this.cx);
         const T0 = Math.min(1.15, Math.max(0.8, 0.75 + ad / 420));
-        let lead = (p.vx || 0) * T0 * 0.6;
+        let lead = (p.vx || 0) * T0 * 0.3 + (game.rngPlay.next() - 0.5) * THROW.err;          // v1.6-74 (Dan: «khỉ ném xa và chính xác quá»): đoán đường chạy ít hơn + lệch ngẫu nhiên
         if (this.role === 1 || k === 1) lead = (Math.sign(p.vx || p.facing || 1)) * THROW.lead;          // monkey thứ hai (hoặc viên đá thứ hai): chặn đường người chơi chạy tới
-        lead = Math.max(-45, Math.min(45, lead));
         lead = Math.max(-45, Math.min(45, lead));
         const tx = p.cx + lead, ty = p.cy, a = this.arc(L, tx, ty, g, sx, sy, [T0, 0.7, 0.55, 0.42]) || this.arc(L, p.cx, ty, g, sx, sy, [T0, 0.7, 0.55, 0.42]);
         if (!a) return false;
@@ -11337,7 +11387,7 @@ function stoneDraw(p, ctx, alpha) {
 //     nàng vô hại, nhưng kéo người chơi vào quái khác / gai. Bị đánh thì ngừng hát.
 const SLUG = { mul: 0.5, t: 3, windup: 0.5, cooldown: 2.6 };
 const FROSTY = { t: 1.0, range: 64, windup: 0.6, blowT: 0.5, cooldown: 3, keep: 54, speed: 34, mash: 0.15 };
-const SIREN = { t: 3, r: 240, pull: 34, pullWater: 56, windup: 0.5, cooldown: 2.6, near: 12 };
+const SIREN = { t: 3, r: 480, pull: 34, pullWater: 56, windup: 0.5, cooldown: 2.6, near: 12 };
 Object.assign(ENEMY_DEFS, {
     slug:  { hp: 2, w: 14, h: 9, speed: 10, sight: 120, sightY: 48, windup: SLUG.windup, cooldown: SLUG.cooldown, dmg: 0, col: '#9fe4c6' },
     frost: { hp: 2, w: 13, h: 13, speed: FROSTY.speed, sight: 140, sightY: 90, windup: FROSTY.windup, cooldown: FROSTY.cooldown, dmg: 0, col: '#d6eaf8' },
@@ -11955,7 +12005,7 @@ class Boss extends Enemy {
         if (!this.vulnerable()) { sndPlay('clang', { x: this.cx, p: 0.8 }); level.spawnBurst(this.cx, this.cy, 4, '#dfe8ff', 90); return false; }
         if (this.hitCd > 0) return false;
         let dmg = k === DMG.EXPLOSION ? 4 : k === DMG.STOMP ? 2 : 1;
-        const pb = src.by, el = k === DMG.WHIP && pb && pb === game.player && ((pb.whipPower && pb.blade) || src.el);          // v1.13 (Dan): đạn gậy / boomerang hệ (src.el) cũng tính hệ lên boss như đòn kiếm nạp          // v0.79 (Dan): đòn kiếm NẠP có hệ: boss yếu hệ khắc ×1,5 · kháng hệ mình ×0,5
+        const pb = src.by, el = k === DMG.WHIP && pb && pb === game.player && ((pb.whipPower && pb.blade) || src.el);          // v1.13 (Dan): đạn gậy / boomerang hệ (src.el) cũng tính hệ lên boss như đòn kiếm nạp
         const af = el ? affinityOf(this, el) : null;
         if (el) { if (af === 'weak') { dmg *= ELEM.bossWeak; level.spawnBurst(this.cx, this.cy, 10, BLADE[el].col, 140); } else if (af === 'resist') dmg *= ELEM.resMul; }
         this.hp -= dmg; if (af) dmgPop(this, dmg, af, el); this.flashT = 0.12; this.hitCd = k === DMG.EXPLOSION ? 0.8 : 0.25; this.lastHurt = src;
@@ -12856,7 +12906,6 @@ function drawFinaleFloorHp(ctx, F, L) {
 // 13a_items — vật cầm được + bom + dây + vàng. Mỗi món chỉ khai báo thuộc tính Thing (08a_thing); va chạm/sát thương do 10a_damage lo.
 //   Đá (SC oRock 8×8): ném trúng sinh vật −1. Bình (SC oJar): vỡ khi đâm tường > 3 px/khung hoặc rơi > 3 px/khung, bị roi/nổ; vỡ ra đồ ngẫu nhiên (dòng lối chơi).
 //   Bom (SC oBomb 8×8): ngòi 80 + 40 khung (4 s) rồi nổ (explode). Nhặt lên ném tiếp được. Trúng nổ khác thì nổ theo sau 0,1 s.
-//   Dây (SC oRopeThrow): ném thẳng lên −12 px/khung; bắt đầu rơi hoặc chạm trần thì bám vào cột ô đó, thả dài xuống tối đa 8 ô hoặc tới đất.
 //     ↓ + dây: thả từ mép trước mặt xuống (đứng sát mép vực).
 //   Vàng: chạm là nhặt (cộng vào player.gold).
 
@@ -12902,7 +12951,7 @@ class Pot extends Thing {
 // ---- BÌNH ĐIỆN (v0.39, Roadmap bước 12 / F2; ký tự `p`): cầm / ném được như bình thường. Vỡ (rơi mạnh, ném trúng, đánh) thì phóng điện:
 //   đang ở trong nước => giật cả khối nước liền (shockWater); trên cạn => giật sinh vật trong bán kính FLASK_SHOCK.r. Không có vàng. Quái / người chơi kháng Sét thì miễn.
 // v1.17 (Dan): khoảng lan của bình hệ +1 ô (sét 2→3, băng 1→2, độc 2→3)
-const FLASK_SHOCK = { r: 40, dmg: 1, stun: 1, gap: 3 * TILE, chainDmg: 1, chainStun: 0.5 };          // v0.76: bình = một nửa kiếm (1 máu + choáng 1 s; lan 1 máu + 0,5 s) nhưng tầm rộng hơn (r 40) · lan ≤ 2 ô như sét · lớp nước mỏng dẫn điện          // v0.75: 2 máu + choáng 2 s; lan khi hai quái cách ≤ 1 ô; trong nước thì lan cả khối nước
+const FLASK_SHOCK = { r: 40, dmg: 1, stun: 1, gap: 3 * TILE, chainDmg: 1, chainStun: 0.5 };          // v0.76: bình = một nửa kiếm (1 máu + choáng 1 s; lan 1 máu + 0,5 s) nhưng tầm rộng hơn (r 40) · lan ≤ 2 ô như sét · lớp nước mỏng dẫn điện
 class ShockFlask extends Thing {
     constructor(x, y) { super(x, y, 10, 11, { kind: 'shockflask', carryable: true, hurtsOnImpact: true, impactDmg: 1, breakOnImpact: true, hp: 1, mass: 1, col: '#4aa8d8' }); }
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
@@ -12920,7 +12969,7 @@ class ShockFlask extends Thing {
         }
         if (seeds.length) shockChain(L, seeds, FLASK_SHOCK.gap, FLASK_SHOCK.chainDmg * (this.dmgMul || 1), FLASK_SHOCK.chainStun, this, BLADE.chainMax);
         puddleShock(L, this, this, FLASK_SHOCK.dmg * (this.dmgMul || 1), FLASK_SHOCK.stun);
-        shockIgnite(L, this, FLASK_SHOCK.gap);          // v0.76: tia sét bình điện cũng châm thùng dầu / vũng dầu gần đó          // v0.76: bình vỡ trên lớp nước mỏng → giật cả lớp nước
+        shockIgnite(L, this, FLASK_SHOCK.gap);          // v0.76: tia sét bình điện cũng châm thùng dầu / vũng dầu gần đó
         if (p && !p.dead && Math.hypot(p.cx - x, p.cy - y) <= FLASK_SHOCK.r) { shockBolt(x, y, p.cx, p.cy); if (p.hurt({ kind: DMG.SHOCK, dmg: 1, x, y, by: this })) statusApply(p, 'shock'); }
     }
     draw(ctx, alpha) { drawFlaskWorld(this, ctx, alpha, 'shock'); }          // v0.74: bình có biểu tượng riêng (06d.drawFlaskHp)
@@ -13162,53 +13211,7 @@ class Salmon extends Thing {
     draw(ctx, alpha) { drawSalmonHp(this, ctx, alpha); }
 }
 
-// ---- Dây ----
-// Vật "dây đang bay" (không cầm được); bám rồi thả dài thì biến thành ô dây trong level.rope
-class RopeThrow extends Thing {
-    constructor(x, y) { super(x, y, 4, 4, { kind: 'rope', mass: 0, triggersTraps: false, dmgFrom: [], gravity: PHYS.gravity * 0.6 }); this.anchor = null; this.n = 0; this.t = 0; }
-    update(level, dt) {
-        if (this.anchor) {          // đang thả dài xuống (SC: 8 px/khung)
-            this.t += dt;
-            while (this.t >= ITEM.ropeDropT && this.anchor) {
-                this.t -= ITEM.ropeDropT;
-                const { c } = this.anchor, r = this.anchor.r + this.n;
-                if (this.n >= ITEM.ropeLen || level.isSolid(c, r)) { this.alive = false; this.anchor = null; break; }
-                level.rope[r * level.w + c] = 1; level.version++; this.n++;
-            }
-            return;
-        }
-        this.vy = Math.min(this.vy + this.gravity * dt, 400);
-        physMove(level, this, dt);
-        if (this.vy >= 0 || this.hitU) this.attach(level);
-    }
-    attach(level) {
-        const c = Math.floor(this.cx / TILE); let r = Math.floor(this.cy / TILE);
-        if (level.isSolid(c, r)) r++;
-        this.anchor = { c, r }; this.vx = this.vy = 0;
-        this.teleport(c * TILE + TILE / 2 - 2, r * TILE);
-        sndPlay('step', { x: this.cx, p: 0.7 });
-    }
-    draw(ctx, alpha) {
-        if (this.anchor) return;
-        if (ITEM_HP) { drawRopeThrowHp(this, ctx, alpha); return; }
-        if (this.anchor) return;
-        const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha));
-        ctx.fillStyle = '#c9a46a'; ctx.fillRect(x, y, 4, 4); ctx.fillStyle = '#8a6a3a'; ctx.fillRect(x + 1, y + 4, 2, 6);
-    }
-}
 // Người chơi bấm nút dây. down = thả từ mép trước mặt. Trả về true nếu đã dùng 1 dây.
-function ropeThrow(level, p, down) {
-    if (down && p.onGround) {
-        const c = Math.floor((p.cx + p.facing * TILE * 0.75) / TILE), r = Math.floor(p.cy / TILE);
-        if (level.isSolid(c, r)) return false;
-        const rt = entAdd(new RopeThrow(c * TILE + 6, r * TILE)); rt.anchor = { c, r }; sndPlay('step', { x: p.cx, p: 0.7 });
-        return true;
-    }
-    if (level.solidAt(p.cx, p.y - 2)) return false;          // SC: sát trần thì không ném lên được
-    const rt = entAdd(new RopeThrow(p.cx - 2, p.y));
-    rt.vy = ITEM.ropeThrowVy; sndPlay('swing', { x: p.cx, p: 0.8 });
-    return true;
-}
 
 // Xác quái (lần 18): nhấc lên ném như vật nặng (trúng quái khác gây 1 sát thương), tan sau 25 giây
 // v1.18zh (Dan): xác màu vàng (tia lửa điện, bọ hổ phách…) dễ nhầm với cục vàng nhặt được → đổi sang vàng chanh (xanh hơn) cho khác hẳn
@@ -14248,7 +14251,7 @@ function drawWater(ctx, L, cx, cy) {
 //   Ô tính là T_WATER/T_LAVA (bơi được / chết) khi lượng ≥ FLOW.thr (hạ xuống dưới FLOW.thrOff mới bỏ — tránh nhấp nháy); mỏng hơn chỉ là màng nước vẽ ra, không cản người.
 //   Lượng < FLOW.dry bốc hơi (nên mỗi vũng dừng lan được). Dung nham nhớt hơn: nhịp chậm, lan 1/2 lượng. Nước gặp dung nham: dung nham hoá đá (T_STONE), nước mất 0.5.
 // v0.82 (Dan): DẦU là loại chất lỏng thứ 3 (`amtT` = 3) — NẶNG và NHỚT: nhịp chậm (OIL.dt), dàn ngang chậm + dày hơn nước, KHÔNG bốc hơi dễ, luôn CHÌM dưới nước (dầu lọt vào ô nước thành `L.oilU` — lớp dầu ở đáy ô nước, rơi qua cột nước xuống đáy rồi dàn ngang trên đáy; nước không bị đẩy trào lên; nước cạn thì dầu lộ ra lại), không cản người (ô dầu nổi vẫn T_EMPTY). Cháy / dính dầu / nguồn dầu: 13n_fire (oilSpill, oilIgniteCell, oilFireStep, oilTouch). `L.oilSet` = tập ô có dầu, `L.oilB` = 1 nếu là dầu «lớn» (thùng / bình).
-const OIL = { dt: 0.22, side: 0.4, minDiff: 0.1, minFilm: 0.25, dry: 0.04, pool: 0.26, vis: 0.1 };          // pool: lượng dầu của MỘT «vũng» cũ (22×3 px ≈ 0,26 ô); vis: lượng tối thiểu để tính là «có dầu» (dính dầu, vẽ)          // v1.18zh (Dan): dt 0,11 → 0,22 = dầu chảy chậm gấp 2
+const OIL = { dt: 0.22, side: 0.4, minDiff: 0.1, minFilm: 0.25, dry: 0.04, pool: 0.26, vis: 0.1 };          // pool: lượng dầu của MỘT «vũng» cũ (22×3 px ≈ 0,26 ô); vis: lượng tối thiểu để tính là «có dầu» (dính dầu, vẽ)
 const FLOW = { dt: 0.05, iters: 2, lavaDt: 0.22, thr: 0.6, thrOff: 0.5, dry: 0.06, minDiff: 0.03, side: 0.5, lavaSide: 0.3, minFilm: 0.35 };
 function flowInitLevel(L) {
     L.flowInit = true; L.amt = new Float32Array(L.w * L.h); L.amtT = new Uint8Array(L.w * L.h); L.flowQ = new Set(); L.oilSet = new Set(); L.oilB = new Uint8Array(L.w * L.h); L.oilU = new Float32Array(L.w * L.h); L.oilUSet = new Set();          // oilU: dầu CHÌM nằm đáy ô nước (cùng ô với nước, không chiếm chỗ của nước)
@@ -14894,14 +14897,7 @@ function ankhRestart() {
 // HUD: biểu tượng đồ (Ankh / bùa)
 function gearDrawHud() {
     const p = game.player; if (!p || !p.items || p.dead) return;
-    let x = VIEW_W - 6 - 9;
-    for (const id of GEAR_LIST) {
-        if (!p.items[id]) continue;
-        const d = GEAR_DEFS[id];
-        ctx.fillStyle = '#000'; ctx.fillRect(x - 1, 25, 11, 11); ctx.fillStyle = d.col; ctx.fillRect(x, 26, 9, 9);
-        drawText(d.ch, x + 2, 25, '#101018');
-        x -= 12;
-    }
+    let x = VIEW_W - 6 - 9;          // v1.6-74 (Dan): bỏ ô chữ cái Ankh / ngọc kháng ở góc phải (khó hiểu) — nhận đồ đã có thông báo riêng
     if (p.weapon) { ctx.fillStyle = '#000'; ctx.fillRect(x - 1, 25, 11, 11); ctx.fillStyle = p.weapon === 'shotgun' ? '#9a9aaa' : '#c8d0e0'; ctx.fillRect(x, 26, 9, 9); drawText(p.weapon === 'shotgun' ? String(p.ammo) : p.weapon === 'boomerang' ? 'B' : 'R', x + 2, 25, '#101018'); x -= 12; }
 }
 
@@ -15037,7 +15033,7 @@ function pogoDraw(ctx, alpha) {
 // ---- v1.2 (Dan): GIẢ KIM hạ boss đầu (Vệ binh đá) → +1 tim tối đa VĨNH VIỄN và chọn 1 trong 4 ngọc kháng hệ (không đổi được) ----
 function wizardBossReward() {
     const p = game.player; if (!p || p.dead || game.cls !== 'alch' || BOSS_LEVELS[game.levelIdx] !== 'warden') return;
-    p.hpUp = (p.hpUp | 0) + HP_UNIT; p.bossUp = (p.bossUp | 0) + HP_UNIT; p.hp += HP_UNIT; if (game.stats) game.stats.wizHeart = 1;          // bossUp: tính vào máu tối đa (hpUp) nhưng KHÔNG ăn vào ngân sách mảnh tim
+    p.hpUp = (p.hpUp | 0) + HP_UNIT; p.bossUp = (p.bossUp | 0) + HP_UNIT; p.hp += HP_UNIT; if (game.stats) game.stats.wizHeart = 1; rewardFxAdd({ k: 'heart' });          // bossUp: tính vào máu tối đa (hpUp) nhưng KHÔNG ăn vào ngân sách mảnh tim
     const opts = ['ward_fire', 'ward_ice', 'ward_shock', 'ward_poison'].filter(id => !p.items[id]);
     if (opts.length) game.pick = { t: 0, sel: 0, opts };
 }
@@ -15956,7 +15952,7 @@ function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ S�
     const hMax = hookHorizTiles(p) * TILE, vMax = HOOK.vertTiles * TILE;          // v1.02 (Dan): tầm móc = ≤ 10 ô theo CHIỀU CAO và ≤ 3 ô theo chiều NGANG (tính từ mép gờ tới người chơi); Thợ Săn sau boss vùng 2: ngang ≤ 8 ô
     for (let r = r0 - HOOK.vertTiles; r <= r0 + 1; r++) for (let c = c0 - Math.ceil(hMax / TILE) - 1; c <= c0 + Math.ceil(hMax / TILE) + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
         if (!level.inside(c, r) || !hookSolid(level, c, r)) continue;
-        { const tt = level.tile(c, r); if (tt !== T_SOLID && tt !== T_HARD && tt !== T_ONEWAY && tt !== T_GOLD && tt !== T_GOLDBIG && tt !== T_STONE && tt !== T_ICE && tt !== T_CRUMBLE) continue; }          // v1.6-73 (Dan: «có lúc không móc được mà không biết vì sao»): gờ có quặng vàng / đá / băng / sàn vỡ cũng móc được (trước bị loại)          // v1.6: chỉ gờ đá / bục thường (khối vàng, đá đẩy, bẫy… làm tự kéo trượt)
+        { const tt = level.tile(c, r); if (tt !== T_SOLID && tt !== T_HARD && tt !== T_ONEWAY && tt !== T_GOLD && tt !== T_GOLDBIG && tt !== T_STONE && tt !== T_ICE && tt !== T_CRUMBLE) continue; }          // v1.6-73 (Dan: «có lúc không móc được mà không biết vì sao»): gờ có quặng vàng / đá / băng / sàn vỡ cũng móc được (trước bị loại)
         const topY = r * TILE; if (topY > p.y + p.h - 24) continue;          // v1.12 (Dan): gờ chỉ cao hơn chân ≤ ~1 ô thì bỏ qua (tự nhảy lên được)                                  // chỉ gờ CAO hơn chân ít nhất 10 px
         let room = true; for (let k = 1; k <= need + 1; k++) if (level.isSolid(c, r - k)) { room = false; break; } if (!room) continue;          // chỗ đứng phía trên + 1 hàng chừa (v1.6: tự kéo trồi cao hơn mặt gờ vài px, trần thấp sẽ chặn ngang → treo lơ lửng rồi rơi)
         for (const dir of [1, -1]) {
@@ -15977,13 +15973,8 @@ function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ S�
     return best;
 }
 // hướng ném (vector đơn vị) từ phím đang giữ
-function hookAim(ax, up) {
-    if (up && ax !== 0) return { x: ax * 0.5, y: -0.866 };
-    if (ax !== 0) return { x: ax * 0.7071, y: -0.7071 };
-    return { x: 0, y: -1 };
-}
 function hookHorizTiles(p) { return p.cls === 'hunt' && abilityHas('hookDiag') ? HOOK.horizFar : HOOK.horiz; }
-function hookReach(p) { return HOOK.range; }          // v1.01: mọi lớp cùng tầm ~8 ô (Dan: Thợ Săn đứng cách gờ ~7 ô mà móc không lên)          // v0.95: Thợ Săn cơ bản chỉ tự tìm gờ ≤ ~3 ô (+ trần); thưởng boss vùng 2 = móc chéo ~8 ô, chọn hướng
+function hookReach(p) { return HOOK.range; }          // v1.01: mọi lớp cùng tầm ~8 ô (Dan: Thợ Săn đứng cách gờ ~7 ô mà móc không lên)
 function hookThrow(level, p, ax, up) {
     if (p.hook) { hookRelease(p, true); return true; }          // bấm lần nữa = thu móc
     if ((p.ropes <= 0 && p.cls !== 'hunt') || p.dead) return false;          // v0.95: Thợ Săn móc KHÔNG giới hạn
@@ -16734,7 +16725,6 @@ function paBraz(g, x, y, lit, near, T) {
 //   Dòng ngẫu nhiên: game.rngFx (không ảnh hưởng ván chơi). critStep(L, dt) gọi ở stepGame, critDraw(c, alpha) gọi trong renderFrame (toạ độ thế giới).
 const CRIT = { cap: 3, every: 1.5, margin: 48, life: 30, fleeR: 56, ratV: 26, ratFlee: 70, roachV: 34, roachFlee: 90 };
 const CRIT_TH = { mines: ['rat', 'roach', 'spider', 'ant', 'fish'], cave: ['rat', 'roach', 'spider', 'fish', 'fish', 'ant'], ruins: ['roach', 'rat', 'spider', 'ant', 'bird', 'fish'], forest: ['butterfly', 'butterfly', 'leaf', 'roach', 'bird', 'bird', 'ant', 'fish'], crystal: ['moth', 'fish'], amethyst: ['moth', 'fish'], deep: ['spider', 'roach', 'fish', 'fish'], snow: ['hare', 'hare', 'owlet', 'bird', 'fish'], magma: ['newt', 'ember'] };          // snow: thỏ tuyết nhảy · cú con đậu nhấp nháy mắt (chim nhỏ bay lượn) · magma: kỳ nhông lửa bò trên sàn · đom đóm lửa phát sáng
-function critSolid(L, x, y) { return L.solidAt(x, y); }
 function critWater(L, x, y) { const c = Math.floor(x / TILE), r = Math.floor(y / TILE); if (!L.inside(c, r)) return false; if (L.tile(c, r) === T_WATER) return true; return !!(L.amt && L.amtT[r * L.w + c] === 1 && L.amt[r * L.w + c] >= FLOW.thr); }
 // v1.2 (Dan): chuột / gián KHÔNG chạy lung tung — chỉ ló ra từ mép tường trên một dải sàn Ở TRÊN và XA người chơi, chạy ra một đoạn rồi chạy vào tường và biến mất (hoặc khi có bom nổ: ló ra ở chỗ cao trong phòng đó, sợ nên chạy ra chạy vào nhanh hơn)
 function critRunSpawn(L, kind, scared, bx, by) {
@@ -17202,8 +17192,8 @@ function drawLights(L, cx, cy) {
 const PROF_STORE = 'honzy_profile_v1', PROF_VER = 1;
 const PROF = {};
 const TUT_VER = 3;
-const DEV_STORE = 'honzy_device_v1', DEV_KEYS = ['tutDone', 'tutIds', 'hintItem', 'hintPrin', 'hintThrow', 'tutV', 'hintKeys'];          // v1.18zq (Dan): hướng dẫn + số lần nhắc lưu theo MÁY (không theo slot): chơi slot mới không phải làm lại          // v1.18zm: phiên bản hướng dẫn lần đầu — hồ sơ có tutV nhỏ hơn thì coi như CHƯA làm hướng dẫn (các lần trước chưa hoàn chỉnh)
-function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER, hintKeys: 0 }; }
+const DEV_STORE = 'honzy_device_v1', DEV_KEYS = ['tutDone', 'tutIds', 'hintItem', 'hintPrin', 'hintThrow', 'tutV', 'hintKeys'];          // v1.18zq (Dan): hướng dẫn + số lần nhắc lưu theo MÁY (không theo slot): chơi slot mới không phải làm lại
+function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER, hintKeys: 0, seen: '' }; }
 function profMigrate(o) {
     if (!o || typeof o !== 'object') return profBlank();
     const b = profBlank();
@@ -17344,7 +17334,7 @@ function clearRun(slot) { try { const key = slotKey(RUN_STORE, slot); if (key) l
 //   Thắng: sau cửa ra của level RUN_LEVELS (bản vertical slice chỉ có vùng Hầm mỏ).
 
 // ---- MENU ESC (lần 24). Mở game là vào chơi ngay; Esc = menu (thế giới đứng yên, HUD vẫn hiện phía sau). Tên `title*` giữ cho tương thích (game.title = menu đang mở). ----
-//   Trang: main (Tiếp tục · Ván mới · Chơi lại cùng seed · Nhập seed… · Tuỳ chọn · Đổi phím · Hồ sơ · Hướng dẫn) · seed · opts · keys · prof · help.
+//   Trang: main (Tiếp tục · Thoát · Thống kê · Tuỳ chọn · Đổi phím · Hướng dẫn = vào phòng tập) · seed · opts · keys · awards / best / prof (3 tab của Thống kê).
 //   Điều khiển: ↑↓ chọn · Enter/Space/←→ bấm · Esc quay lại / đóng. Seed KHÔNG hiện ngoài trang seed (mặc định luôn ngẫu nhiên).
 // ---- SLOT CHƠI (v0.60) ----
 //   Mở game: Welcome (page 'welcome') → bấm phím bất kỳ → chọn slot (page 'slots') → vào chơi. Mỗi slot có ván đang chơi + hồ sơ riêng (khoá theo slotKey). Trống = ván mới · có ván = chơi tiếp.
@@ -17380,10 +17370,6 @@ function slotsOpen() {          // từ menu Esc: lưu ván đang chơi rồi sa
     const t = game.title; t.page = 'slots'; t.sel = Math.max(0, (SLOT.cur || slotLast()) - 1); t.msg = '';
 }
 function slotScreenOn() { const t = game.title; return !!t && (t.page === 'welcome' || t.page === 'slots' || t.page === 'del'); }          // màn Welcome / chọn slot phủ kín: ẩn HUD ván
-function bigText(str, x, y, size, col) {
-    const f = g => { g.font = 'bold ' + size + 'px monospace'; g.textBaseline = 'top'; g.textAlign = 'center'; g.fillStyle = '#000'; g.fillText(str, x + 2, y + 2); g.fillStyle = col; g.fillText(str, x, y); };
-    if (hudCtx) hudDraw(f); else f(ctx);
-}
 function titleOpen(page) {
     game.title = { page: page || 'main', sel: 0, seed: '', t: 0, cap: null, msg: '' }; game.screen = 'title';
     inp.lock(true); sndPlay('menuOpen');
@@ -17398,7 +17384,8 @@ const OSK_CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_. ', OSK_ACT = ['CASE', 'B
 function oskOn() { return (typeof TOUCH !== 'undefined' && TOUCH.on) || (typeof GPAD !== 'undefined' && GPAD.on); }
 function oskKey(r, c) { return r < 4 ? OSK_CH[r * 10 + c] : OSK_ACT[Math.min(c, OSK_ACT.length - 1)]; }
 function oskLabel(k, t) { return OSK_LAB[k] || (k === ' ' ? '␣' : t && t.lc ? k.toLowerCase() : k); }
-function oskDone(t) { game.heroName = (t.nm || '').trim(); t.page = 'diff'; t.sel = (PROF && PROF.wins > 0) ? 1 : 0; t.msg = ''; t._oskInit = false; }
+function heroNameOf(nm) { return (nm || '').trim() || 'Hero ' + SLOT.cur; }          // tên để trống → «Hero <số slot>»
+function oskDone(t) { game.heroName = heroNameOf(t.nm); t.page = 'diff'; t.sel = (PROF && PROF.wins > 0) ? 1 : 0; t.msg = ''; t._oskInit = false; }
 function oskPress(t, k) {
     t.nm = t.nm || '';
     if (k === 'BS') t.nm = t.nm.slice(0, -1); else if (k === 'CLR') t.nm = ''; else if (k === 'CASE') t.lc = !t.lc;
@@ -17418,8 +17405,8 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
         const it = [];
         if (menuCanResume()) it.push({ text: 'Tiếp tục', act: titleClose });
         // v1.3 (Dan): bỏ «Ván mới» (quá dễ xoá nhầm slot) — ván mới chỉ bắt đầu từ slot trống ở «Đổi người chơi»
-        it.push({ text: 'Đổi người chơi (Slot ' + SLOT.cur + ')', act: slotsOpen });
-        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hồ sơ', act: go('prof') }, { text: 'Award', act: go('awards') }, { text: 'Hướng dẫn', act: () => { tutSeen(); go('help')(); } });
+        it.push({ text: 'Thoát', act: slotsOpen }, { text: 'Thống kê', act: go('awards') });          // Thoát = đổi người chơi · Thống kê = 3 tab Award / Sổ tay / Hồ sơ
+        it.push({ text: 'Tuỳ chọn', act: go('opts') }, { text: 'Đổi phím', act: go('keys') }, { text: 'Hướng dẫn', act: tutFromMenu });
         return it;
     }
     if (t.page === 'opts') return [sliderS, sliderM, mute, tog('shake', 'Rung màn hình'), tog('fit', 'Phóng vừa khung'), back]          // v1.3 (Dan): ẩn Hỗ trợ nhảy / Tối nền theo vùng / Tay cầm / Độ khó thích ứng (luôn BẬT) và Chế độ Debug (F8 bật / tắt);
@@ -17435,7 +17422,7 @@ function menuItems(t) {          // v0.78: kind 'btn' / 'tog' / 'slider' / 'key'
         it.push({ text: '← Quay lại', act: () => { if (menuCanResume() && !t.fromSlots) go('main')(); else { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; } } });
         return it;
     }
-    if (t.page === 'name') return [{ text: 'Tiếp tục', act: () => { game.heroName = (t.nm || '').trim(); t.page = 'diff'; t.sel = (PROF && PROF.wins > 0) ? 1 : 0; t.msg = ''; } }, { text: '← Quay lại', act: () => { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; } }];          // v1.2 (Dan): đặt tên nhân vật
+    if (t.page === 'name') return [{ text: 'Tiếp tục', act: () => { game.heroName = heroNameOf(t.nm); t.page = 'diff'; t.sel = (PROF && PROF.wins > 0) ? 1 : 0; t.msg = ''; } }, { text: '← Quay lại', act: () => { t.page = 'class'; t.sel = Math.max(0, CLASS_LIST.indexOf(clsOf(game.cls))); t.msg = ''; } }];          // v1.2 (Dan): đặt tên nhân vật
     if (t.page === 'diff') {          // v1.18zm: con trỏ mặc định «Dễ», đã phá đảo (hiện Hardcore) mới mặc định «Thường» · v0.80 (Dan): chọn độ khó cho ván mới; Hardcore chỉ hiện khi slot đã phá đảo
         const l = DIFF_LIST.filter(k => k !== 'hardcore' || anyWins());
         const it = l.map(k => ({ text: DIFF[k].name, diff: k, act: () => { game.diff = k; titleClose(); newRun(); } }));
@@ -17505,6 +17492,8 @@ function titleKey(e) {
     if (e.code === 'Escape' && t.page === 'diff') { t.page = 'name'; t.sel = 0; t.msg = ''; return true; }
     if (e.code === 'Escape' && t.page === 'class' && t.fromSlots) { t.fromSlots = false; t.page = 'slots'; t.sel = Math.max(0, SLOT.cur - 1); t.msg = ''; return true; }          // v0.90: Esc ở bảng độ khó (mở từ màn slot) → về màn slot
     if (e.code === 'Escape') { if (t.page === 'main') { if (menuCanResume()) titleClose(); } else { t.page = 'main'; t.sel = 0; t.msg = ''; } return true; }
+    if (t.page === 'best' && bestKey(t, e.code)) return true;          // Sổ tay: ←↑↓→ chọn ô, ra mép trái / phải = đổi tab
+    if ((t.page === 'prof' || t.page === 'awards') && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { t.page = t.page === 'awards' ? (e.code === 'ArrowRight' ? 'best' : 'awards') : (e.code === 'ArrowLeft' ? 'best' : 'prof'); t.sel = 0; return true; }          // ← → đổi tab Thống kê
     if (t.page === 'awards') {          // v1.2: ↑↓ cuộn danh sách danh hiệu
         if (e.code === 'ArrowUp' || e.code === 'ArrowDown') { t.awScroll = clamp((t.awScroll | 0) + (e.code === 'ArrowDown' ? 1 : -1), 0, awMaxScroll()); return true; }
     }
@@ -17529,7 +17518,7 @@ function drawTitle() {
     const overSlots = (t.page === 'diff' || t.page === 'class') && !!t.fromSlots;          // v0.90 (Dan): chọn độ khó từ màn chọn slot → nền vẫn là màn chọn slot, bảng độ khó đè lên
     if (overSlots) { const bg = t.slotBg || (t.slotBg = {}); Object.assign(bg, t, { page: 'slots', sel: Math.max(0, SLOT.cur - 1), hit: null }); drawSlotScreens(bg); ctx.globalAlpha = 0.65; ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     muiDrawMenu(t, overSlots ? sceneTheme(t) : undefined);          // v0.91: bảng độ khó dùng bảng màu của màn chọn nhân vật
-    // xoá hàng chữ (chữ HUD / chữ slot) — lớp chữ nằm TRÊN mọi hình nên chữ nền sẽ đè lên bảng          // v0.78: menu pixel + chuột (15d_menuui)
+    // xoá hàng chữ (chữ HUD / chữ slot) — lớp chữ nằm TRÊN mọi hình nên chữ nền sẽ đè lên bảng
 }
 // Panel nền tối + các dòng chữ ở giữa màn hình
 function drawPanel(lines, title, titleCol, frac, lay) {          // lay (tuỳ chọn): { ys: [y mỗi dòng], h } — bố cục tự đặt
@@ -17838,7 +17827,7 @@ function drawSlotScreens(t) {
 //   Mục (menuItems, 15b_screens): kind 'btn' (nút giữa) · 'tog' (nhãn + công tắc, get()) · 'slider' (nhãn + 10 khối, get(), muted(), set(v)) · 'key' (nhãn + phím, action).
 //   Chuột ở màn khác: Welcome bấm = vào chọn slot · chọn slot: rê = chọn, bấm = vào chơi · xoá slot: nút Xoá / Giữ lại · bảng qua màn / chết / thắng: bấm = như bấm phím.
 const MUI = {
-    rowH: { class: 18, diff: 16, main: 20, opts: 16, keys: 11, seed: 20, help: 20, prof: 20 },
+    rowH: { class: 18, diff: 16, main: 20, opts: 16, keys: 11, seed: 20, prof: 20 },
     mouse: { x: -1, y: -1, moved: false }
 };
 // BẢNG MÀU = màu ô đất của màn người chơi đang ở (THEMES[theme]): top = mép sáng nơi người chơi đứng · solid[0] = đất · edge = tối nhất. Đặt lại mỗi khung (muiPalSet)
@@ -17890,54 +17879,21 @@ function muiKeycap(x, y, label) {          // phím pixel; trả độ rộng
     return w;
 }
 // ngắt chữ theo chiều rộng px (đo bằng đúng font HUD)
-function muiWrap(text, w) {
-    ctx.font = 'bold ' + TEXT.size + 'px ' + TEXT.font; const out = []; let cur = '';
-    for (const word of text.split(' ')) { const t = cur ? cur + ' ' + word : word; if (cur && ctx.measureText(t).width > w) { out.push(cur); cur = word; } else cur = t; }
-    if (cur) out.push(cur); return out;
-}
 // v0.99: chữ hướng dẫn theo LỚP đang chơi (game.cls)
-function clsHelpText(k) {
-    const c = clsOf(game.cls), who = { sword: 'Knight', alch: 'Wizard', hunt: 'Stryker' }[c];
-    const jump = { sword: 'Nhảy · bấm lần 2 trên không = nhảy đôi', alch: 'Nhảy · giữ khi đang rơi = lượn', hunt: 'Nhảy' }[c];
-    const atk = { sword: 'Chém (giữ = chém nạp) · ↑ + ' + k('attack') + ' chém lên · trên không ↓ + ' + k('attack') + ' chém xuống · đang cầm đồ = ném',
-        alch: 'Bắn gậy phép (↑ + ' + k('attack') + ' bắn lên · giữ rồi thả = đạn hệ 3 tia) · đang cầm đồ = ném',
-        hunt: 'Ném boomerang (gần, 1 mục tiêu · giữ rồi thả = boomerang hệ xa, xuyên ≤ 3 quái) · đang cầm đồ = ném' }[c];
-    const dash = { sword: 'GIỮ = giơ kiếm ĐỠ đòn phía trước và phía trên (không mất máu, bị hất nhẹ tuỳ cỡ quái; đi chậm, không chém / nhảy; không chặn nổ, gai, lửa lan, độc) · hạ Thợ săn tuyết: đỡ đúng lúc = Parry, rồi chém phản đòn', alch: 'Đứng yên: BẤM = hiện vòng chọn bình ngay (↑ dầu · → sét · ↓ băng · ← độc), bấm mũi tên để chọn và đóng, phím khác = hủy · Đang đi / trên không: BẤM = Dịch chuyển 3 ô (mở sau khi hạ Thợ săn tuyết)',
-        hunt: 'Lướt (bất tử ngắn; hạ Thợ săn tuyết → Lướt Bóng)' }[c];
-    const rope = c === 'hunt' ? 'Móc KHÔNG giới hạn: tự móc mép gờ / trần rồi kéo lên (hạ Vệ binh đá → móc chéo xa, giữ ← → chọn hướng)' : 'Móc ngay (tốn 1 móc): tự móc mép gờ / trần rồi kéo lên';
-    const swap = 'Dùng đồ phụ đang chọn (súng, bình) · ' + k('swap') + ' đổi đồ phụ';
-    return { who, jump, atk, dash, rope, swap };
-}
-function muiHelpRows(dw) {          // [{k, lines}] — cột trái = phím (theo phím đang gán / nút PS), cột phải = mô tả tự ngắt dòng
-    const k = a => inp.label(a, 1), H = clsHelpText(k), R = [
-        ['Lớp', H.who],
-        ['← →', 'Đi trái / phải'],
-        [k('jump'), H.jump],
-        [k('run'), 'Giữ = chạy nhanh (Luôn chạy BẬT: giữ = đi chậm)'],
-        [k('attack'), H.atk],
-        ['↓ + ' + k('attack'), 'Nhặt / đặt / mở thùng'],
-        [k('dash'), H.dash],
-        [k('rope'), H.rope],
-        [k('bomb'), 'Bom ngay: ↓ đặt dưới chân · ↑ hoặc ← → sát đất = gắn bom · còn lại ném'],
-        [k('item'), H.swap],
-        ['↑', 'Leo thang · vào cửa · cứu công chúa / thú cưng (+1 máu)'],
-        ['Cửa hàng', 'Đủ vàng thì nhặt hàng · trộm hàng = bị truy nã']
-    ];
-    if (SETTINGS.debug) R.push(['Debug', 'G tinh chỉnh · J xem cả level']);
-    return R.map(r => ({ k: r[0], lines: muiWrap(r[1], dw) }));
-}
 // vẽ trang menu (mọi trang trừ welcome / slots / del) — gọi từ drawTitle
 function muiDrawMenu(t, themeName) {
     muiPalSet(themeName); TEXT.q.length = 0;          // menu che hết chữ HUD / gợi ý của màn đang chơi (đã xếp hàng trước trong khung này)
-    const cx = VIEW_W / 2, name = { class: 'CHỌN LỚP NHÂN VẬT', diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', awards: 'AWARD', help: 'HƯỚNG DẪN' }[t.page] || '';
-    const items = menuItems(t), rh = t.page === 'help' ? 16 : (MUI.rowH[t.page] || 16), blink = Math.floor(t.t * 3) % 2;
-    const pw = t.page === 'class' ? 270 : t.page === 'main' || t.page === 'diff' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
-        t.page === 'help' ? 304 : 292, KW = 64, dw = pw - 20 - KW - 6;
-    const rows = t.page === 'help' ? muiHelpRows(dw) : null, LH = 9.5;
-    let gap = 3, info = t.page === 'prof' ? 8 * 12 : t.page === 'awards' ? VIEW_H - 18 - 48 : t.page === 'seed' ? 36 : t.page === 'name' ? (oskOn() ? 112 : 36) : t.page === 'class' ? 86 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
-    if (rows) { const lines = rows.reduce((a, r) => a + r.lines.length, 0); info = lines * LH + rows.length * gap + 4; if (info + rh + 34 > VIEW_H - 18) { gap = 1; info = lines * LH + rows.length * gap + 4; } }
+    const cx = VIEW_W / 2, name = { class: 'CHỌN LỚP NHÂN VẬT', diff: 'CHỌN ĐỘ KHÓ', main: 'TẠM DỪNG', seed: 'VÁN MỚI VỚI SEED', opts: 'TUỲ CHỌN', keys: 'ĐỔI PHÍM', prof: 'HỒ SƠ', awards: 'AWARD' }[t.page] || '';
+    const items = menuItems(t), rh = MUI.rowH[t.page] || 16, blink = Math.floor(t.t * 3) % 2;
+    const pw = t.page === 'best' ? 308 : t.page === 'class' ? 270 : t.page === 'main' || t.page === 'diff' ? 200 :          // v0.90: bảng độ khó rộng bằng bảng Tạm dừng
+        292;
+    let info = t.page === 'prof' ? 8 * 12 : t.page === 'awards' || t.page === 'best' ? VIEW_H - 18 - 48 : t.page === 'seed' ? 36 : t.page === 'name' ? (oskOn() ? 112 : 36) : t.page === 'class' ? 86 : t.page === 'diff' ? (anyWins() ? 0 : 12) : 0;
     const nRows = t.page === 'class' ? items.length - CLASS_LIST.length : items.length, ph = Math.min(VIEW_H - 18, info + nRows * rh + 32), px = Math.round(cx - pw / 2), py = Math.max(6, Math.round((VIEW_H - 12 - ph) / 2));
-    muiPanel(px, py, pw, ph); muiTitle(name, cx, py + 7); t.hit = [];
+    muiPanel(px, py, pw, ph); t.hit = [];
+    if (t.page === 'prof' || t.page === 'awards' || t.page === 'best') {          // THỐNG KÊ: 3 tab (← → hoặc chuột)
+        [['awards', 'AWARD'], ['best', 'SỔ TAY'], ['prof', 'HỒ SƠ']].forEach((q, i) => { const on = t.page === q[0], tx = cx + (i - 1) * 64; drawText(q[1], tx, py + 7, on ? MUI.gold2 : MUI.dim2, 'center'); if (on) muiRect(tx - 28, py + 18, 56, 1, MUI.bdHi); t.hit.push({ x: tx - 30, y: py + 4, w: 60, h: 16, i: -1, sub: 'tab', pg: q[0] }); });
+        drawText('◀', cx - 106, py + 7, MUI.dim2, 'center'); drawText('▶', cx + 106, py + 7, MUI.dim2, 'center');
+    } else muiTitle(name, cx, py + 7);
     const line = (txt, y, col) => drawText(txt, cx, y, col || MUI.txt, 'center');
     let y = py + 24;
     if (t.page === 'class') {
@@ -17963,7 +17919,7 @@ function muiDrawMenu(t, themeName) {
     } else if (t.page === 'name') {
         line(oskOn() ? 'Đặt tên nhân vật (tối đa 14 ký tự).' : 'Đặt tên nhân vật (gõ phím, Enter = tiếp tục).', y, MUI.dim);
         const sx = px + 30; muiRect(sx, y + 14, pw - 60, 13, MUI.ink); muiFrame(sx, y + 14, pw - 60, 13, MUI.bd, 1);
-        line(((t.nm || '') === '' ? '(NGƯỜI CHƠI ' + SLOT.cur + ')' : t.nm) + (Math.floor(t.t * 2) % 2 ? '_' : ' '), y + 16, (t.nm || '') === '' ? MUI.dim2 : '#ffffff');
+        line((t.nm || '') + (Math.floor(t.t * 2) % 2 ? '_' : ' '), y + 16, '#ffffff');
         if (oskOn()) {          // v1.4 (Dan): bàn phím ảo — tay cầm / cảm ứng
             if (!t._oskInit) { t._oskInit = true; t.sel = -1; t.kr = 0; t.kc = 0; }
             const kw = 28, kh = 12, gx = Math.round(cx - (10 * kw) / 2), gy = y + 32, mx = MUI.mouse;
@@ -17983,15 +17939,8 @@ function muiDrawMenu(t, themeName) {
         }
     } else if (t.page === 'awards') {          // v1.2 (Dan): bảng Award — 25 mục theo nhân vật (15e_awards)
         awDrawPage(t, px, py, pw, y - 2);
-    } else if (rows) {
-        let yy = y - 4;
-        rows.forEach((r, ri) => {
-            drawText(r.k, px + 10, yy, MUI.gold);
-            r.lines.forEach((l, li) => drawText(l, px + 10 + KW + 6, yy + li * LH, MUI.txt));
-            yy += r.lines.length * LH + gap; if (ri < rows.length - 1) muiRect(px + 10, yy - gap / 2 - 0.5, pw - 20, 1, MUI.rowFill);
-        });
-    }
-    y += info + (t.page === 'help' ? -4 : 0); if (t.page === 'seed') y += 0;
+    } else if (t.page === 'best') bestDraw(t, px, py, pw, y - 2);
+    y += info;
     const hit = t.hit;          // (trang lớp: các ảnh nhân vật đã đẩy ô bấm vào hit ở trên)
     items.forEach((it, i) => {
         if (t.page === 'class' && i < CLASS_LIST.length) return;          // lớp chọn bằng ảnh, không có nút dọc
@@ -18037,7 +17986,7 @@ function muiMove(e) {
     if (!t || t.cap) return;
     if (t.mx0 !== undefined) { if (t.page === t.page0 && Math.hypot(p.x - t.mx0, p.y - t.my0) < 10) return; t.mx0 = undefined; }          // v1.18zo: vừa bấm chuyển trang → chuột rung nhẹ không được đổi con trỏ mặc định (vd. «Dễ» bị nhảy sang «Thường»)
     if (t.page === 'slots') { const i = muiSlotAt(p); if (i >= 0 && i !== t.sel) { t.sel = i; t.msg = ''; } return; }
-    const b = muiFind(t, p); if (b && b.sub !== 'osk' && t.sel !== b.i) t.sel = b.i;
+    const b = muiFind(t, p); if (b && b.sub === 'best') t.bi = b.bi; else if (b && b.sub !== 'osk' && b.sub !== 'tab' && t.sel !== b.i) t.sel = b.i;
 }
 function muiClick(e) {
     if (e.button !== undefined && e.button !== 0) return;
@@ -18053,6 +18002,8 @@ function muiClick(e) {
     if (t.page === 'del') { const b = muiFind(t, p); if (b && b.sub === 'yes') { slotWipe(t.del); t.page = 'slots'; t.msg = 'Đã xoá Slot ' + t.del; } else if (b && b.sub === 'no') { t.page = 'slots'; t.msg = ''; } return; }
     if (t.cap) { t.cap = null; t.msg = 'Huỷ'; return; }
     const b = muiFind(t, p); if (!b) return;
+    if (b.sub === 'tab') { t.page = b.pg; t.sel = 0; return; }
+    if (b.sub === 'best') { t.bi = b.bi; return; }
     if (b.sub === 'osk') { t.sel = -1; t.kr = b.r; t.kc = b.c; oskPress(t, b.k); return; }          // v1.4: chạm phím ảo
     const items = menuItems(t), it = items[b.i]; if (!it) return;
     t.sel = b.i;
@@ -18448,6 +18399,122 @@ function chalDraw() {          // HUD (v1.3, Dan): 7 s đầu màn (mờ dần 2
 awLoad();
 if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('pagehide', () => { try { awSync(); awSave(); } catch (e) { } });
 
+// 15h_bestiary — SỔ TAY QUÁI (v1.6-76, Dan): tab giữa của «Thống kê» (Award · Sổ tay · Hồ sơ). Lưới mọi loài quái thường (không có boss) theo thứ tự gặp trong game;
+//   ô quái đã gặp có ảnh, chưa gặp là «?». Con trỏ (←↑↓→ / chuột) đứng ở ô nào thì khung phải hiện thông tin: tên, máu, sát thương, hệ, kháng / yếu, vùng xuất hiện, đặc tính.
+//   «Đã gặp» = quái từng hiện trong khung nhìn (bestStep, không tính bot demo); lưu theo slot ở PROF.seen (chuỗi id cách nhau dấu phẩy).
+const BEST_INFO = {          // id: [tên, đặc tính]
+    snake: ['Rắn', 'Bò qua lại trên sàn, chạm là mất máu. Một đòn là chết.'],
+    bat: ['Dơi', 'Treo dưới trần, thấy người chơi thì bay lượn đuổi theo.'],
+    bomber: ['Thợ mìn yêu tinh', 'Giữ khoảng cách, châm ngòi rồi ném pháo thật. Pháo nhặt ném ngược lại được.'],
+    walker: ['Bọ đá', 'Đi tuần chậm, khá trâu (3 máu).'],
+    spider: ['Nhện', 'Treo dưới trần, người chơi đi ngay dưới thì thả mình rơi xuống.'],
+    crow: ['Quạ phi công', 'Thấy người chơi thì nhắm rồi lao thẳng. Nhảy hoặc cúi để né; đâm tường thì choáng.'],
+    hopper: ['Bọ nhảy', 'Thấy người chơi thì ngồi lấy đà rồi nhảy vồng tới.'],
+    chaser: ['Quái đuổi', 'Thấy người chơi thì báo rồi đuổi theo.'],
+    rusher: ['Quái húc', 'Thấy người chơi thì báo rồi lao húc một đường.'],
+    guard: ['Lính khiên', 'Khiên chặn đòn và tên phía trước. Đánh sau lưng hoặc đạp đầu.'],
+    shooter: ['Xạ thủ', 'Đứng yên, báo rồi bắn đạn thẳng.'],
+    mortar: ['Pháo thủ', 'Vòng đỏ báo chỗ rơi rồi ném đạn pháo vòng cung, nổ nhỏ.'],
+    flyer: ['Quái bay', 'Lượn trên không, nhích dần về phía người chơi.'],
+    diver: ['Quái lao', 'Thấy người chơi thì báo rồi lao thẳng một đường, nghỉ rồi bay về.'],
+    monkey: ['Khỉ hang', 'Giữ khoảng cách, ném đá vòng cung. Nhiều con thì thay nhau ném.'],
+    imp: ['Quỷ lùn', 'Ném bình nguyên tố của vùng theo vòng cung.'],
+    spitter: ['Quái phun lửa', 'Đứng yên, báo rồi phun 3 cầu lửa xoè quạt. Nhảy hoặc ngồi để né.'],
+    magmite: ['Sên magma', 'Bò rất chậm, trâu; thân nóng, chạm là cháy, trườn qua dầu thì châm lửa. Sợ nước.'],
+    vent: ['Miệng phun lửa', 'Đứng yên; người chơi lại gần thì phun chùm cầu lửa lên trời rơi xuống quanh nó.'],
+    wisp: ['Hồn lửa', 'Bay lờ đờ về phía người chơi, châm dầu. Chạm nước là tắt.'],
+    eel: ['Cá điện', 'Bơi trong nước; người chơi lội nước gần đó thì nó phóng điện khắp khối nước.'],
+    spark: ['Tia lửa điện', 'Bay về phía người chơi như hồn lửa, chạm thì bị giật.'],
+    frostling: ['Yêu tuyết', 'Đi tuần, để lại vệt băng trơn dưới chân; chạm thì bị chậm.'],
+    icebat: ['Dơi băng', 'Bay như dơi; chạm thì bị chậm, chết thì vỡ vụn.'],
+    venomling: ['Yêu độc', 'Bị chém thì phụt đám độc, chết để lại vũng độc. Nên đánh từ xa.'],
+    gnat: ['Muỗi độc', 'Nhỏ, bay đuổi theo; chết thì toả một đám độc.'],
+    mushroom: ['Nấm bào tử', 'Đứng yên, phun bào tử độc ra xung quanh.'],
+    frog: ['Ếch', 'Ngồi rình, thấy người chơi phía trước thì thè lưỡi dài gây độc.'],
+    listener: ['Kẻ lắng nghe', 'Mù nhưng thính tai: chạy, chém, nhảy là nó lao tới chỗ có tiếng. Đi khẽ để lách qua.'],
+    geode: ['Tinh thể vỡ', 'Bò chậm, trâu; chết thì vỡ ra mảnh văng khắp nơi. Đánh xong lùi lại ngay.'],
+    necro: ['Thầy chiêu hồn', 'Giữ khoảng cách, gọi tia lửa điện bay tới. Giết thầy thì lũ hồn tan hết.'],
+    mimic: ['Hộp giả', 'Trông y hệt thùng gỗ; lại gần là nó nhảy ra cắn. Rơi nhiều vàng.'],
+    slug: ['Ốc nhớt', 'Bò chậm, nhả cục nhớt vòng cung; trúng thì bị chậm.'],
+    siren: ['Nàng tiên cá', 'Không đánh ai, nhưng hát ru kéo người chơi lại gần (dưới nước kéo mạnh hơn).'],
+    medusa: ['Medusa', 'Trừng mắt: đang nhìn về phía nó là hoá đá, rồi bị bê đi ném vào gai, dung nham. Quay lưng để né.'],
+    frost: ['Tinh linh băng', 'Bay lơ lửng, phồng má thổi băng: trúng luồng là bị đóng băng.'],
+    swapper: ['Ma hoán hồn', 'Nhập vào thân người chơi, đổi xác 30 giây: bạn điều khiển con ma đi đánh lại chính mình.']
+};
+const BEST_EL = { burn: 'Cháy', poison: 'Độc', shock: 'Giật', slow: 'Chậm', fire: 'Lửa', ice: 'Băng' };
+const BEST_UI = { cols: 7, cell: 24 };
+// thứ tự: rắn, dơi → theo vùng (theo màn bắt đầu xuất hiện) → loài còn lại
+function bestList() {
+    if (BEST_UI.list) return BEST_UI.list;
+    const L = ['snake', 'bat'], add = k => { if (k && BEST_INFO[k] && L.indexOf(k) < 0) L.push(k); };
+    for (const z of ZONES) { const fr = (FOE_FROM && FOE_FROM[z.id]) || {}, chs = Object.keys(Object.assign({}, z.floor || {}, z.air || {})).sort((a, b) => (fr[a] | 0) - (fr[b] | 0)); for (const ch of chs) add(LVL_CHARS[ch]); if (z.id === 'forest') { add('monkey'); } if (z.id === 'amethyst') add('imp'); }
+    for (const k in BEST_INFO) add(k);
+    return (BEST_UI.list = L);
+}
+function bestZones(kind) {          // tên các vùng có loài này trong bảng sinh quái
+    const out = []; for (const z of ZONES) { const t = Object.assign({}, z.floor || {}, z.air || {}); if (Object.keys(t).some(ch => LVL_CHARS[ch] === kind)) out.push(z.name); }
+    return out;
+}
+function bestHas(kind) { return (',' + (PROF.seen || '') + ',').indexOf(',' + kind + ',') >= 0; }
+function bestSeen(kind) { if (!BEST_INFO[kind] || bestHas(kind) || !(SLOT.cur > 0)) return; PROF.seen = (PROF.seen ? PROF.seen + ',' : '') + kind; profSave(); }
+function bestStep() {          // mỗi ~0,25 s: quái đang hiện trong khung nhìn → đánh dấu đã gặp
+    if (game.demo || !game.player || ((game._bestT = (game._bestT | 0) + 1) % 15)) return;
+    const x0 = cam.x - 8, y0 = cam.y - 8, x1 = cam.x + VIEW_W + 8, y1 = cam.y + VIEW_H + 8;
+    for (const e of game.entities) if (e.alive && BEST_INFO[e.kind] && !bestHas(e.kind) && e.x + e.w > x0 && e.x < x1 && e.y + e.h > y0 && e.y < y1 && !(e.kind === 'mimic' && e.st === 'sleep')) bestSeen(e.kind);
+}
+// ảnh quái: dựng một con mẫu rồi vẽ vào canvas riêng (cache), thu vừa ô
+const _bestImg = {};
+function bestImg(kind) {
+    if (_bestImg[kind] !== undefined) return _bestImg[kind];
+    let cv = null;
+    try {
+        const e = foeMake(kind, 2, 2); if (!e) throw 0;
+        e.x = 60 - e.w / 2; e.y = 90 - e.h; e.px = e.x; e.py = e.y; e.facing = 1; e.dir = 1; e.alive = true;
+        cv = makeCanvas(120, 100); const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+        e.draw(g, 1);
+        const d = g.getImageData(0, 0, 120, 100).data; let a = 120, b = 100, c = -1, f = -1;          // khung bao điểm có màu → cắt sát
+        for (let y = 0; y < 100; y++) for (let x = 0; x < 120; x++) if (d[(y * 120 + x) * 4 + 3] > 20) { if (x < a) a = x; if (x > c) c = x; if (y < b) b = y; if (y > f) f = y; }
+        if (c < 0) cv = null; else { const w = c - a + 1; let h = f - b + 1; if (h > w * 1.6) { b = f + 1 - Math.round(w * 1.4); h = f - b + 1; } cv = { cv, x: a, y: b, w, h }; }          // quá cao (nhện có sợi tơ) → giữ phần dưới
+    } catch (err) { cv = null; }
+    return (_bestImg[kind] = cv);
+}
+function bestWrap(text, w) {
+    const g = ctx; g.save(); g.font = 'bold ' + TEXT.size + 'px ' + TEXT.font; const out = []; let line = '';
+    for (const word of text.split(' ')) { const t = line ? line + ' ' + word : word; if (g.measureText(t).width > w && line) { out.push(line); line = word; } else line = t; }
+    if (line) out.push(line); g.restore(); return out;
+}
+function bestKey(t, code) {          // ←↑↓→ di chuyển; ← ở cột đầu / → ở cột cuối = sang tab bên cạnh. Trả true nếu đã xử lý
+    const n = bestList().length, C = BEST_UI.cols, i = t.bi | 0, col = i % C;
+    if (code === 'ArrowLeft') { if (col === 0) { t.page = 'awards'; t.sel = 0; } else t.bi = i - 1; return true; }
+    if (code === 'ArrowRight') { if (col === C - 1 || i === n - 1) { t.page = 'prof'; t.sel = 0; } else t.bi = i + 1; return true; }
+    if (code === 'ArrowUp') { if (i - C >= 0) t.bi = i - C; return true; }
+    if (code === 'ArrowDown') { if (i + C < n) t.bi = i + C; return true; }
+    return false;
+}
+function bestDraw(t, px, py, pw, y) {          // gọi từ muiDrawMenu (15d) khi t.page === 'best'; y = đầu vùng nội dung
+    const L = bestList(), C = BEST_UI.cols, S = BEST_UI.cell, gx = px + 10, gy = y + 12, sel = clamp(t.bi | 0, 0, L.length - 1);
+    const nSeen = L.filter(bestHas).length; drawText('Đã gặp ' + nSeen + ' / ' + L.length, gx, y - 1, MUI.dim);
+    L.forEach((k, i) => {
+        const x = gx + (i % C) * S, yy = gy + Math.floor(i / C) * S, on = i === sel, seen = bestHas(k);
+        muiRect(x, yy, S - 2, S - 2, on ? MUI.selFill : MUI.rowFill); muiFrame(x, yy, S - 2, S - 2, on ? MUI.gold : MUI.bd, 1);
+        if (seen) { const im = bestImg(k); if (im) { const sc = Math.min(1.5, (S - 5) / im.w, (S - 5) / im.h), w = im.w * sc, h = im.h * sc; ctx.drawImage(im.cv, im.x, im.y, im.w, im.h, Math.round(x + (S - 2 - w) / 2), Math.round(yy + (S - 2 - h) / 2), w, h); } }
+        else drawText('?', x + (S - 2) / 2, yy + (S - 2) / 2 - 5, MUI.dim2, 'center');
+        t.hit.push({ x, y: yy, w: S - 2, h: S - 2, i: -1, sub: 'best', bi: i });
+    });
+    const k = L[sel], ix = gx + C * S + 4, iw = px + pw - 8 - ix; let iy = gy;
+    const ih = Math.ceil(L.length / C) * S - 2; muiRect(ix, iy, iw, ih, MUI.ink); muiFrame(ix, iy, iw, ih, MUI.bd, 1);
+    const tx = ix + 5; iy += 4;
+    if (!bestHas(k)) { drawText('???', tx, iy, MUI.dim2); drawText('Chưa gặp loài này.', tx, iy + 12, MUI.dim2); return; }
+    const I = BEST_INFO[k], d = ENEMY_DEFS[k] || {}, im = bestImg(k);
+    drawText(I[0].toUpperCase(), tx, iy, MUI.gold2); iy += 12;
+    if (im) { const sc = Math.min(1.5, 20 / im.h, (iw - 10) / im.w), w = Math.round(im.w * sc), h = Math.round(im.h * sc); ctx.drawImage(im.cv, im.x, im.y, im.w, im.h, Math.round(ix + (iw - w) / 2), iy, w, h); iy += h + 4; }
+    drawText('Máu ' + (d.hp || '?'), tx, iy, MUI.txt); iy += 10; drawText(d.dmg ? 'Sát thương ' + d.dmg : 'Không gây sát thương', tx, iy, MUI.txt); iy += 10;
+    const el = []; if (d.status) el.push('gây ' + (BEST_EL[d.status] || d.status)); if (d.resist && d.resist.length) el.push('kháng ' + d.resist.map(x => BEST_EL[x] || x).join(', ')); if (d.weak && d.weak.length) el.push('yếu ' + d.weak.map(x => BEST_EL[x] || x).join(', '));
+    if (el.length) { for (const l of bestWrap(el.join(' · '), iw - 10)) { drawText(l, tx, iy, '#9ad8ff'); iy += 10; } }
+    const zs = bestZones(k); if (zs.length) { for (const l of bestWrap('Vùng: ' + zs.join(', '), iw - 10)) { drawText(l, tx, iy, MUI.dim); iy += 10; } }
+    iy += 2; for (const l of bestWrap(I[1], iw - 10)) { drawText(l, tx, iy, MUI.txt); iy += 10; }
+}
+
 // 15f_wardrobe — TỦ ĐỒ THỜI TRANG (COSMETICS_PLAN §5.6–§6). Là một ô hàng LUÔN CÓ của cửa hàng (13d_shop, gear 'wardrobe'); ↓ + Tròn (nhặt) mở giao diện này, đứng hình như bảng chọn ngọc (13m_gear pickStep).
 //   Cột trái: danh mục theo ô (← → đổi ô, ↑ ↓ chọn món, Tròn = thêm / bỏ khỏi GIỎ). Cột phải: «Hiện tại» và «Thử» cạnh nhau (xem nhanh món đang trỏ + giỏ), giỏ + tổng giá.
 //   Mua giỏ = hộp xác nhận (mặc định «Không»), trừ vàng MỘT lần rồi ghi cos theo slot (cosSet, 09l); món cùng ô bị thay vĩnh viễn. Thoát thì giỏ / xem thử bị xoá. Giỏ KHÔNG ghi đĩa.
@@ -18459,7 +18526,8 @@ function wdItems(slot, cls) {          // [{id, it}]; ô áo có thêm «Màu g�
     return l;
 }
 function wdIsDefault(id, slot, cls) { const d = COS_DEFAULT[cls] || {}; return id === '-' ? !d.cloak && slot === 'cloak' : d[slot] === id; }
-function wdPrice(id, it, slot, cls) { const base = WD_PRICE[it.tier || 'medium'] || 1200; return shopPrice(base * (wdIsDefault(id, slot, cls) ? 0.5 : 1)); }
+function wdPrice(id, it, slot, cls) { const base = (WD_PRICE[it.tier || 'medium'] || 1200) * (it.wing ? (it.wing[1] === 'crystal' || it.wing[1] === 'flame' ? 4 : 2) : 1);          // cánh giá ×2; cánh có hiệu ứng (lấp lánh / lửa) ×4 = gấp đôi cánh trắng
+    return shopPrice(base * (wdIsDefault(id, slot, cls) ? 0.5 : 1)); }
 function wdApplyBasket(cur, basket) { const m = Object.assign({}, cur); for (const sl in basket) { if (basket[sl] === '-') delete m[sl]; else m[sl] = basket[sl]; } return m; }
 function wardrobeOpen() {
     const p = game.player; if (!p || game.wd) return;
@@ -18708,7 +18776,7 @@ const TUT_ROOM = {
         "#......................................#",
         "#..............L###....................#",
         "#..............L###....................#",
-        "#.P......##....L###^....o...S..r......S#",
+        "#.P......##....L###^....o...S..r.......#",
         "####################################.###",
         "####################################.###",
         "#.......................#..............#",
@@ -18717,17 +18785,64 @@ const TUT_ROOM = {
         "#...........####........#..............#",
         "#.......................#..............#",
         "#.......................#..............#",
-        "#..E....................#.....^^.......#",
+        "#.E.....................#.....^^.......#",
         "########################################",
         "########################################"
     ],
-    zones: [[1, 6, 0, 'move'], [7, 12, 0, 'jump'], [13, 15, 0, 'ladder'], [16, 21, 0, 'wall'], [22, 28, 0, 'attack'], [29, 32, 0, 'carry'], [33, 38, 0, 'charge'],
-        [28, 35, 1, 'spike'], [25, 27, 1, 'bomb'], [19, 23, 1, 'ropeFar'], [16, 18, 1, 'rope'], [12, 15, 1, 'under'], [9, 11, 1, 'rope'], [1, 5, 1, 'exit']],
-    midRow: 9, ledgeRow: 13, lamps: [[6, 2, 40], [21, 2, 44], [19, 10, 44], [33, 10, 40]]
+    zones: [[1, 6, 0, 'move'], [7, 12, 0, 'jump'], [13, 15, 0, 'ladder'], [16, 21, 0, 'wall'], [22, 28, 0, 'attack'], [29, 32, 0, 'carry'], [33, 38, 0, 'down'],
+        [28, 35, 1, 'spike'], [25, 27, 1, 'bomb'], [19, 23, 1, 'ropeFar'], [16, 18, 1, 'rope'], [12, 15, 1, 'under'], [9, 11, 1, 'rope'], [1, 8, 1, 'exit']],
+    midRow: 9, ledgeRow: 13, lamps: [[6, 2, 40], [21, 2, 44], [19, 10, 44], [33, 10, 40]],
+    exit2: [7, 16]          // cửa thứ hai (bên phải cửa «Bắt đầu game»): sang phòng KỸ THUẬT NÂNG CAO (TUT_ADV)
 };
+// ---- v1.6-75 (Dan): PHÒNG KỸ THUẬT NÂNG CAO — đi từ cửa «Hướng dẫn nâng cao» của phòng tập. Tầng trên: đòn giữ (rắn bên kia hố) → đánh xuyên tường (rắn trong hộp; Thợ Săn: gắn bom phá tường)
+//   (đứng bên PHẢI hộp, quay trái) → bẫy tên (cúi ↓ cho tên bay qua, rồi leo thang qua cột) → giếng sâu (sắp chạm đất thì nhảy đôi / lướt / lượn để không mất máu; thang bên phải để leo lên thử lại). Tầng dưới: đi sang trái tới cửa ra = bắt đầu game.
+const TUT_ADV = {
+    id: 'test', tut: true, adv: true, name: 'Kỹ thuật nâng cao', theme: 'mines',
+    map: [
+        "########################################",
+        "########################################",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#............L####.....................#",
+        "#............L##.#......L##............#",
+        "#.P.......S#.L##S#......L<#............#",
+        "########.#######################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "################################..#L####",
+        "#......................................#",
+        "#......................................#",
+        "#......................................#",
+        "#..E...................................#",
+        "########################################",
+        "########################################"
+    ],
+    zones: [[3, 9, 0, 'charge'], [18, 19, 0, 'thru'], [20, 24, 0, 'arrow'], [27, 33, 0, 'fall'], [34, 38, 0, 'fall'], [28, 38, 1, 'landed'], [1, 9, 1, 'exitAdv']],
+    snakeC: [9, 10], snakeT: [16, 16], midRow: 9, lowTextRow: 21, lamps: [[5, 2, 40], [15, 2, 44], [25, 2, 44], [34, 2, 40], [10, 21, 20], [30, 21, 20]]
+};
+// «Hướng dẫn» ở menu: vào thẳng phòng tập như người mới. Đang có ván → ra khỏi phòng tập thì chơi tiếp ván đó (bản lưu lúc mở menu); không có ván → ván mới.
+function tutFromMenu() {
+    const L = game.level; if (!(L && L.def && L.def.tut)) game.tutBack = menuCanResume() && game.genMeta ? 'resume' : 'new';
+    titleClose(); game.genMeta = null; loadLevel(TUT_ROOM, true); game.fadeIn = 0.45;
+}
 function tutRoomWanted() { return !game.demo && typeof PROF !== 'undefined' && !!PROF && !PROF.tutDone; }
-function tutRoomDone() {
-    tutSeen(); const g = genFor(0); loadLevel(g.def, true); runKit(); game.fadeIn = 0.45;
+function tutRoomDone(adv) {
+    tutSeen(); game.fadeIn = 0.45;
+    if (adv) { loadLevel(TUT_ADV, true); return; }          // cửa «Hướng dẫn nâng cao»
+    const back = game.tutBack; game.tutBack = null;
+    if (back === 'resume') { const d = readSavedRun(); if (d) { resumeRun(d); return; } }
+    if (back) { newRun(); return; }
+    const g = genFor(0); loadLevel(g.def, true); runKit();
 }
 function tutRoomText(id) {
     const k = a => inp.label(a, 1), c = clsOf(game.cls), atk = { sword: 'Chém', alch: 'Bắn gậy phép', hunt: 'Ném boomerang' }[c] || 'Tấn công';
@@ -18746,7 +18861,13 @@ function tutRoomText(id) {
         ropeFar: ['Trên gờ kia có vàng', 'Lại gần gờ (cách dưới 3 ô) rồi dùng móc'],
         under: ['Đang đứng ngay dưới gờ', 'Lùi ra ngoài mép gờ rồi mới bấm ' + k('rope')],
         top: ['Tốt lắm!', 'Nhảy xuống và đi tiếp tới cửa ra'],
-        exit: ['Cửa ra: bấm ↑', 'Chúc bạn chơi vui!']
+        exit: ['Bấm ↑ ở cửa để vào', 'Trái: chơi luôn · Phải: kỹ thuật nâng cao'],
+        good: ['Tốt lắm!', 'Đi tiếp sang phải'],
+        thru: c === 'sword' ? ['Kiếm chém xuyên được tường mỏng', 'Đứng sát tường, chém (đòn giữ với xa hơn)'] : c === 'alch' ? ['Đòn giữ (đạn tụ lực) bay xuyên tường', 'Giữ ' + k('attack') + ' rồi thả, bắn con rắn trong hộp'] : ['Boomerang không xuyên tường: gắn bom phá tường', 'Sát tường giữ ← + ' + k('bomb') + ', rồi ném boomerang'],
+        arrow: ['Bẫy tên phía trước! Giữ ↓ để cúi', 'Tên bay qua đầu, rồi leo thang qua cột'],
+        fall: ['Rơi quá cao sẽ mất máu', c === 'sword' ? 'Sắp chạm đất thì bấm ' + k('jump') + ' (nhảy đôi) để hãm lại' : c === 'alch' ? 'Đang rơi: giữ ' + k('jump') + ' để lượn xuống từ từ' : 'Sắp chạm đất thì bấm ' + k('dash') + ' (lướt) để hãm lại'],
+        landed: ['Không mất máu là bạn làm đúng rồi!', 'Muốn thử lại: leo thang bên phải lên'],
+        exitAdv: ['Cửa ra: bấm ↑ để bắt đầu game', 'Chúc bạn chơi vui!']
     })[id] || ['', ''];
 }
 function tutRoomDraw(g, cx, cy) {
@@ -18754,8 +18875,9 @@ function tutRoomDraw(g, cx, cy) {
     const pc = Math.floor(p.cx / TILE) - B, fl = p.y + p.h > (D.midRow + B) * TILE ? 1 : 0; let z = null;
     for (const q of D.zones) if (q[2] === fl && pc >= q[0] && pc <= q[1]) { z = q; break; }
     let id = z ? z[3] : '';
-    if (fl === 1 && pc >= 12 && pc <= 15) id = p.y + p.h <= (D.ledgeRow + B) * TILE + 1 ? 'top' : 'under';
-    if (id === 'charge' && !game.entities.some(e => e.alive && e.kind === 'snake' && e.cx > (36 + B) * TILE && e.y < (D.midRow + B) * TILE)) id = 'down';          // rắn bên kia hố đã chết → nhắc nhảy xuống
+    if (D.ledgeRow && fl === 1 && pc >= 12 && pc <= 15) id = p.y + p.h <= (D.ledgeRow + B) * TILE + 1 ? 'top' : 'under';
+    { const alive = q => q && game.entities.some(e => e.alive && e.kind === 'snake' && e.cx > (q[0] + B) * TILE && e.cx < (q[1] + 1 + B) * TILE && e.y < (D.midRow + B) * TILE);          // rắn của chặng đã chết → khen, đi tiếp
+        if ((id === 'charge' && D.snakeC && !alive(D.snakeC)) || (id === 'thru' && D.snakeT && !alive(D.snakeT))) id = 'good'; }
     if (game.exitAnim || p.dead) id = '';
     {          // v1.6-64 (Dan): mục CƠ BẢN (đi · nhảy · leo thang) chỉ hiện khi người chơi ở trong vùng 2 giây mà CHƯA làm thao tác đó
         const now0 = game.time || 0; if (T.zid !== id) { T.zid = id; T.zt = now0; T.zdone = false; T.zx = p.cx; }
@@ -18763,11 +18885,17 @@ function tutRoomDraw(g, cx, cy) {
         if ((id === 'move' || id === 'jump' || id === 'ladder') && (T.zdone || now0 - T.zt < 2)) id = '';
     }
     const now = game.time || 0, dt = T.t < 0 ? 0 : Math.min(0.1, Math.max(0, now - T.t)); T.t = now;
-    if (id && (id === T.id || T.a <= 0)) { if (id !== T.id) { T.id = id; const zc = z ? (z[0] + z[1] + 1) / 2 : pc + 0.5; T.x = (zc + B) * TILE; T.y = ((fl ? 12 : 4) + B) * TILE - (id === 'top' ? 24 : id === 'wall' ? 22 : id === 'under' || id === 'rope' ? -22 : 0); } T.a = Math.min(1, T.a + dt * 2.2); }
+    if (id && (id === T.id || T.a <= 0)) { if (id !== T.id) { T.id = id; const zc = z ? (z[0] + z[1] + 1) / 2 : pc + 0.5; T.x = (zc + B) * TILE; T.y = ((fl ? (D.lowTextRow || 12) : 4) + B) * TILE - (id === 'top' ? 24 : id === 'wall' ? 22 : id === 'under' || id === 'rope' ? -22 : 0); } T.a = Math.min(1, T.a + dt * 2.2); }
     else T.a = Math.max(0, T.a - dt * 2.6);
     if (T.a > 0.01 && T.id) {
         const t = tutRoomText(T.id), sx = Math.round(clamp(T.x - cx, 84, VIEW_W - 84)), sy = Math.round(T.y - cy), og = ctx.globalAlpha;
         ctx.globalAlpha = T.a * 0.95; drawText(t[0], sx, sy, '#ffe9a8', 'center'); drawText(t[1], sx, sy + 11, '#f2eee0', 'center'); ctx.globalAlpha = og;
+    }
+    if (D.exit2 && L.exit) for (const [dc, dr, l1, l2] of [[L.exit.c - B, L.exit.r - B, 'BẮT ĐẦU', 'GAME'], [D.exit2[0], D.exit2[1], 'HƯỚNG DẪN', 'NÂNG CAO']]) {          // biển gỗ trên hai cửa
+        const x = Math.round((dc + B + 0.5) * TILE - cx), y = Math.round((dr + B) * TILE - cy) - 34;
+        const wx = x + cx, wy = y + cy;          // tấm biển vẽ theo toạ độ thế giới (g đang dịch theo camera), chữ theo toạ độ màn hình
+        g.fillStyle = '#4a2e14'; g.fillRect(wx - 28, wy - 3, 56, 25); g.fillStyle = '#7a4e24'; g.fillRect(wx - 27, wy - 2, 54, 23); g.fillStyle = '#4a2e14'; g.fillRect(wx - 1, wy + 22, 2, 10);
+        drawText(l1, x, y + 1, '#ffe9a8', 'center'); drawText(l2, x, y + 11, '#ffe9a8', 'center');
     }
 }
 // 16_gameloop — vòng lặp chính: bước cố định 60Hz (accumulator) + vẽ có nội suy; ván chơi / level.
@@ -18958,7 +19086,7 @@ function stepGame() {
     for (const e of game.entities) e.savePrev();
     // Cập nhật theo thứ tự: người chơi trước (để vật đang cầm đi theo tay ở cùng bước), rồi mọi thứ khác
     game.hint = '';
-    if (game.swap) swapHeroUpdate(L, p, STEP); else p.update(L, STEP); stoneStep(L, p, STEP);          // v1.6-71: bị hoán hồn → thân nhân vật do «ma tinh nghịch» điều khiển (11bf)          // v1.6-69: hoá đá (11bf)
+    if (game.swap) swapHeroUpdate(L, p, STEP); else p.update(L, STEP); stoneStep(L, p, STEP);          // v1.6-71: bị hoán hồn → thân nhân vật do «ma tinh nghịch» điều khiển (11bf)
     for (let i = 0; i < game.entities.length; i++) { const e = game.entities[i]; if (e !== p && e.alive) { foeAiPre(e, L, STEP); e.update(L, STEP); foeAiPost(e); } }
     critStep(L, STEP);          // v1.18zz: sinh vật môi trường (trang trí)
     for (const e of game.entities) if (e.holder && e.alive) e.followHolder();
@@ -18972,7 +19100,7 @@ function stepGame() {
     game.entities = game.entities.filter(e => e.alive);
     L.updateFx(STEP); deathGhostStep(L, STEP);
     camUpdate(L, game.swap ? game.swap.ghost : p, STEP);
-    game.atExit = false; lockStep(L, p); if (!game.swap) exitStep(L, p); secretStep(L, p); fireTipStep(L, p); tutStep(STEP); carryHintCount(p, STEP);
+    game.atExit = false; lockStep(L, p); if (!game.swap) exitStep(L, p); secretStep(L, p); fireTipStep(L, p); tutStep(STEP); carryHintCount(p, STEP); bestStep();
     inp.endStep();
     game.time += STEP; comboStep(); stillTick(); game.levelT += STEP; if (!p.dead) { game.runT += STEP; awTick(STEP); }
     if (game.fade > 0 && !p.dead) game.fade = Math.max(0, game.fade - STEP * 4);
@@ -19016,8 +19144,10 @@ function lockStep(L, p) {
     game.pickupMsg = { t: 0, text: 'Cửa ra đã mở!' }; sndPlay('gate', { x: p.cx }); sndPlay('unlock', { x: p.cx, p: 1.2 });
 }
 function exitStep(L, p) {
-    const e = L.exit; if (!e || p.dead) return;
+    let e = L.exit; if (!e || p.dead) return;
     princessRescue(L, p, inp.pressed('up') && overlapBox({ x: e.c * TILE, y: e.r * TILE, w: TILE, h: TILE }, p));
+    const X2 = L.def.exit2, e2 = X2 && { c: X2[0] + LVL.border, r: X2[1] + LVL.border };          // phòng tập: cửa thứ hai (hướng dẫn nâng cao)
+    if (e2 && overlapBox({ x: e2.c * TILE + 2, y: e2.r * TILE, w: TILE - 4, h: TILE }, p)) e = e2;
     const box = { x: e.c * TILE + 2, y: e.r * TILE, w: TILE - 4, h: TILE };
     if (!overlapBox(box, p)) return;
     game.atExit = true;
@@ -19029,7 +19159,7 @@ function exitStep(L, p) {
         game.exitWant = undefined; sndPlay('door', { x: p.cx }); sndPlay('ui', { x: p.cx, p: 1.3 });          // v0.68: cửa ra có tiếng cửa
         if (L.id === 'test' && !L.def.tut) { game.exitMsgT = 2.5; return; }
         if (p.hold) carryDrop(p);
-        game.exitAnim = { t: 0, x0: p.x, tx: e.c * TILE + TILE / 2 - p.w / 2, f: p.facing }; p.vx = p.vy = 0; { const fy = (e.r + 1) * TILE - p.h; if (Math.abs(p.y - fy) < 6) { p.y = fy; p.py = fy; } }          // v1.6-61 (Dan): quay lưng đi vào cửa ~1 s rồi mới sang bảng qua màn
+        game.exitAnim = { t: 0, x0: p.x, tx: e.c * TILE + TILE / 2 - p.w / 2, f: p.facing, alt: e !== L.exit }; p.vx = p.vy = 0; { const fy = (e.r + 1) * TILE - p.h; if (Math.abs(p.y - fy) < 6) { p.y = fy; p.py = fy; } }          // v1.6-61 (Dan): quay lưng đi vào cửa ~1 s rồi mới sang bảng qua màn
     }
 }
 const EXIT_ANIM = { T: 1, walk: 0.3, scale: 0.88 };
@@ -19038,7 +19168,7 @@ function exitAnimStep() {
     p.x = lerp(A.x0, A.tx, Math.min(1, A.t / EXIT_ANIM.walk)); p.px = p.x; p.py = p.y;
     if (A.t < EXIT_ANIM.T) return;
     game.exitAnim = null;
-    if (L.def.tut) { tutRoomDone(); return; }
+    if (L.def.tut) { tutRoomDone(A.alt); return; }
     if (game.levelIdx + 1 >= RUN_LEVELS) { game.won = true; game.wonT = 0; game.inDoor = true; clearRun(); if (!game.recorded) { game.recorded = true; profRecord('win'); } return; }
     game.trans = transInfo(L, p); game.trans.inDoor = true;
 }
@@ -19071,7 +19201,8 @@ function transStatStep(t) {
     const n = t.kinds.length, k = Math.min(n, Math.floor((t.t - TRANS_STAT.t0) / TRANS_STAT.per) + 1), sc = transSched(t);
     if (t.t >= TRANS_STAT.t0 && k > t.tick) { t.tick = k; sndPlay('coin', { p: 1 + k * 0.06, vol: 0.5 }); }
     // v1.2 (Dan): các dòng trên dùng 1 âm «tiền to rơi» (coinLarge1); lưới quái thì tone cao dần ('coin')
-    { let m = 0; for (const x of TRANS_STAT.top) if (t.t >= x) m++; for (const x of sc.ex) if (t.t >= x) m++; if (m > (t.ltick | 0)) { t.ltick = m; sndPlay('coinLarge1', { vol: 0.8 }); } }
+    { let m = 0; for (const x of TRANS_STAT.top) if (t.t >= x) m++; if (m > (t.ltick | 0)) { t.ltick = m; sndPlay('coinLarge1', { vol: 0.8 }); } }
+    { let m = 0; for (const x of sc.ex) if (t.t >= x) m++; if (m > (t.xtick | 0)) { t.xtick = m; sndPlay('summary', { vol: 0.9, p: 1 - (m - 1) * 0.04 }); } }          // v1.6-74 (Dan): các dòng tổng kết sau lưới quái: hợp âm trầm, mỗi dòng trầm thêm chút
     if (!t.done && t.t >= sc.doneAt) {
         t.done = true; const p = game.player;
         if (p && !p.dead) { if (t.tidyGold > 0) { p.gold += t.tidyGold; if (game.stats) game.stats.goldTotal = (game.stats.goldTotal || 0) + t.tidyGold; } if (t.chal && t.chal.ok) { chalGive(t.chal.rew); sndPlay('coinLarge1', { vol: 0.7 }); } }          // v1.2: thưởng dọn đồ + thử thách
@@ -19166,6 +19297,7 @@ function drawHud() {
     else if (subHas(p)) slots.push(['sub', '' + p.sub.n, true, p.sub.id]);          // v0.74: col = id bình (hudIcon vẽ biểu tượng riêng)
     const sel = p.selItem(); let sx = 6;
     for (const s of slots) {
+        if (s[0] === 'sub') game.subHud = { x: sx + 3, y: y + 3 };          // v1.6-74: đích bay của hoạt cảnh thưởng bình (09a rewardFx)
         const gl = tutGlow(s[0]);          // v1.18zo: sau khi vừa dùng bom / móc ở bước hướng dẫn: biểu tượng + số phình to, nháy sáng rồi thu nhỏ
         if (gl) {
             const w = 12 + 5 * s[1].length + 4, cx0 = sx + w / 2 - 2, cy0 = y + 3;
@@ -19184,7 +19316,7 @@ function drawHud() {
             hudDraw(h => { h.font = 'bold ' + fs + 'px ' + TEXT.font; h.textAlign = 'left'; h.textBaseline = 'top'; h.lineJoin = 'round'; h.lineWidth = 2; h.strokeStyle = 'rgba(0,0,0,.85)'; h.strokeText(txt, tx, ty); h.fillStyle = col; h.fillText(txt, tx, ty); }, 1);
         } else { hudIcon(s[0], sx, y - 1, s[3]); drawText(s[1], sx + 9, y - 1, s[2] ? '#ffffff' : '#7a7f90'); } if (s[0] === sel) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(sx - 1, y + 8, 9 + 5 * s[1].length + 2, 1); } sx += 23; }
     // v1.2 (Dan): bỏ biểu tượng hệ trên hàng HUD (nhìn vũ khí trên tay hero là biết)
-              // v1.04 (Dan): biểu tượng hệ theo lớp — Boomerang / Gậy / Kiếm          // v0.96: Giả Kim / Thợ Săn luôn có hệ (mặc định Lửa)
+              // v1.04 (Dan): biểu tượng hệ theo lớp — Boomerang / Gậy / Kiếm
     hudIcon('gold', sx + 2, y - 1); game.goldHud = { x: sx + 5, y: y + 3 };          // v1.2: đích của xu bay
     if (game.goldPopT > 0) { game.goldPopT -= 1 / 60; const k = game.goldPopT / 0.3; drawText('' + p.gold, sx + 11, y - 1 - Math.round(2 * Math.sin(k * Math.PI)), k > 0.5 ? '#fff6c0' : '#ffe27a'); } else drawText('' + p.gold, sx + 11, y - 1, '#ffd24a');          // v1.18zz13: số vàng nảy lên khi nhặt
     if (p.whistleCd > 0.05 && game.level.id !== 'test') { ctx.fillStyle = '#3a3f50'; ctx.fillRect(6, y + 12, 24, 1); ctx.fillStyle = '#9fd8ff'; ctx.fillRect(6, y + 12, Math.round(24 * (1 - p.whistleCd / WHISTLE.cd)), 1); }          // hồi chiêu huýt sáo (thanh mảnh)
@@ -19195,7 +19327,7 @@ function drawHud() {
     }
     statusDrawHud(y + 20);
     gearDrawHud();
-    abilityDrawHud();
+    abilityDrawHud(); rewardFxDraw();
     drawBossBar();
     { const L = game.level, a = L.arena; if (a && !L.arenaOpen && L.arenaLeft > 0 && !(game.lockMsgT > 0)) {          // đang ở phòng đấu trường: nhắc số quái còn lại
         const rx = Math.floor((p.cx / TILE - LVL.border) / LVL.roomW), ry = Math.floor((p.cy / TILE - LVL.border) / LVL.roomH);
@@ -19203,7 +19335,7 @@ function drawHud() {
     } }
     if (game.lockMsgT > 0) { game.lockMsgT -= 1 / 60; drawText(game.lockArena === 'kill' ? 'Cửa bị khoá — hạ thêm ' + Math.max(0, (game.killNeed || 0) - killsDone()) + ' quái để mở (' + killsDone() + '/' + (game.killNeed || 0) + ')' : game.lockArena ? 'Cửa bị khoá — hạ quái trong phòng để mở (còn ' + (game.level.arenaLeft || 0) + ')' : 'Cửa bị phong ấn — hạ boss để mở', VIEW_W / 2, 40, '#ff8a6a', 'center'); if (game.lockMsgT <= 0) game.lockArena = false; }
     if (game.levelIdx === 0 && game.levelT >= 10 && game.level.id !== 'test' && !game.demo && !PROF.hintKeys && SLOT.cur > 0) { PROF.hintKeys = 1; devSave(); }          // v1.6-63 (Dan): 2 dòng nhắc phím chỉ hiện 10 s đầu màn 1-1 ĐÚNG MỘT LẦN (lưu theo máy), sau đó không nhắc lại
-    if (game.levelIdx === 0 && game.levelT < 10 && game.level.id !== 'test' && !PROF.hintKeys && !game.demo && !p.dead && !tutOn() && !hcUnlocked()) {          // v1.2 (Dan): chỉ ở màn 1, tắt hẳn khi đã mở khoá hardcore          // v1.18zk: đang hiện hướng dẫn lần đầu thì ẩn 2 dòng nhắc phím này cho đỡ rối
+    if (game.levelIdx === 0 && game.levelT < 10 && game.level.id !== 'test' && !PROF.hintKeys && !game.demo && !p.dead && !tutOn() && !hcUnlocked()) {          // v1.2 (Dan): chỉ ở màn 1, tắt hẳn khi đã mở khoá hardcore
         ctx.globalAlpha = clamp(10 - game.levelT, 0, 1);
         drawText('←→ đi · ' + inp.label('run', 1) + ' giữ chạy · ' + inp.label('jump', 1) + ' nhảy · ' + inp.label('attack', 1) + ' ' + ({ sword: 'kiếm', alch: 'gậy', hunt: 'boomerang' }[p.cls] || 'kiếm') + ' · ' + inp.label('item', 1) + ' dùng đồ phụ (' + inp.label('swap', 1) + ' đổi) · ↓+' + inp.label('attack', 1) + ' nhặt/mở thùng', VIEW_W / 2, VIEW_H - 22, '#ffe9a8', 'center');
         drawText(inp.label('rope', 1) + ' móc · ' + inp.label('bomb', 1) + ' bom · ' + ({ sword: 'nhảy lần 2 = nhảy đôi', alch: 'giữ ' + inp.label('jump', 1) + ' khi rơi = lượn', hunt: inp.label('dash', 1) + ' lướt' }[p.cls] || '') + ' · ↑ leo thang · ép vào mép khi nhảy = bám mép', VIEW_W / 2, VIEW_H - 12, '#cfe3ff', 'center');
@@ -19917,7 +20049,7 @@ DEMO.tick = function (dt) {          // gọi mỗi khung hình (frameLoop)
     if (game.demo) {
         game.demo.tt += dt;
         if (DEMO.padHit()) { DEMO.stop(); return; }
-        if (game.demo.restart) { if (DEMO.loop) { DEMO.begin(); DEMO.loop = true; } else DEMO.stop(); }          // F9 (DEMO.loop): hết lượt → lượt bot mới ngay          // v1.6-37 (Dan): hết lượt (vào cửa ra / chết / kẹt) hoặc quá DEMO.MAX_T giây → về Welcome DEMO.IDLE giây rồi mới chạy bot lượt mới
+        if (game.demo.restart) { if (DEMO.loop) { DEMO.begin(); DEMO.loop = true; } else DEMO.stop(); }          // F9 (DEMO.loop): hết lượt → lượt bot mới ngay
         return;
     }
     const t = game.title; if (!t || t.page !== 'welcome' || t.cap) return;
@@ -20161,7 +20293,7 @@ DEMO.flatJump = function (p, k, L, nd0) {          // đang đi trên mặt ph�
     const D0 = game.demo || DEMO.lab;
     if (!k.jump || !p.onGround || p.state === 'climb' || p.state === 'hang' || (!k.left && !k.right)) return;
     if (D0 && D0.noFlat === D0.f) return;          // nhảy CÓ CHỦ ĐÍCH (vượt rắn / giẫm đầu / né): giữ nguyên
-    if (nd0 < 90) return;          // v1.6-55 (Dan): đo thực tế — cấm nhảy khi đang có quái gần làm bot MẤT MÁU NHIỀU HƠN (18/30 → 12/30 ván chỉ mất 1 tim), nên chỉ bỏ nhảy thừa lúc KHÔNG có quái quanh mình          // v1.6-55 (Dan): nhảy CÓ CHỦ ĐÍCH (vượt rắn / giẫm đầu / né) thì giữ; còn lại đi trên mặt phẳng là không nhảy — kể cả đang đánh nhau (trước đây có quái < 90 px là cho nhảy tự do nên hay nhảy vào tầm cắn)
+    if (nd0 < 90) return;          // v1.6-55 (Dan): đo thực tế — cấm nhảy khi đang có quái gần làm bot MẤT MÁU NHIỀU HƠN (18/30 → 12/30 ván chỉ mất 1 tim), nên chỉ bỏ nhảy thừa lúc KHÔNG có quái quanh mình
     { const nx0 = BOT.state.path && BOT.state.path[BOT.state.idx + 1]; if (nx0 && (nx0.et === 'fall' || nx0.et === 'drop' || nx0.et === 'walk') && nx0.r >= (BOT.state.path[BOT.state.idx].r)) { k.jump = false; return; } }          // đi xuống / đi ngang: không cần nhảy
     const d = k.right ? 1 : -1, fr = Math.floor((p.y + p.h - 0.5) / 16), c0 = Math.floor(p.cx / 16);
     for (let i = 1; i <= 2; i++) {
@@ -20537,7 +20669,7 @@ DEMO.mission = function (D, p, f) {
     if (m && m.fl === fl && m.cls === cls) {
         while (m.i < m.steps.length && !m.steps[m.i].items.some(alive)) { m.i++; m.si = f; }
         if (m.si === undefined) m.si = f;
-        if (m.i < m.steps.length && f - m.si > 60 * 8 && !m.steps[m.i].items.some(q => q.foe)) { for (const q of m.steps[m.i].items) D.skip.set(q.e, 1e9); m.i++; m.si = f; }          // chỉ bỏ nhóm ĐỒ làm mãi không xong (nhóm quái thì để lớp đánh lo, bỏ sớm hay hụt mạng)          // v1.6-57: nhóm làm mãi không xong 8 s → bỏ, đi tiếp (không đứng đơ)
+        if (m.i < m.steps.length && f - m.si > 60 * 8 && !m.steps[m.i].items.some(q => q.foe)) { for (const q of m.steps[m.i].items) D.skip.set(q.e, 1e9); m.i++; m.si = f; }          // chỉ bỏ nhóm ĐỒ làm mãi không xong (nhóm quái thì để lớp đánh lo, bỏ sớm hay hụt mạng)
         if (m.i >= m.steps.length && f - m.t > 60) m = null;
     } else m = null;
     if (!m || f - m.t > 180) {          // dựng lại mỗi 3 s (quái di chuyển, thấy thêm mục tiêu mới)
@@ -21232,7 +21364,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
         }
     }
     if (D.pause > f && !p.hook && !D.hs && nd0 > 48) B.keys = {};          // dừng 1 s trước khi thử đường khác
-    const nxF = s.path && s.path[s.idx + 1], nearDrop = !!(nxF && (nxF.et === 'fall' || nxF.et === 'drop') && Math.abs(nxF.c * 16 + 8 - p.cx) < 46 && (function () { const dr = Math.sign(nxF.c * 16 + 8 - p.cx) || 1, fy = p.y + p.h + 3; return !L.solidAt(nxF.c * 16 + 8, fy) && L.solidAt((nxF.c + dr) * 16 + 8, fy); })()) && !(DEMO.off && DEMO.off.nd);          // chỉ với hố HẸP 1 ô (bên kia hố lại là nền)          // v1.6-67: sắp tới mép hố cần RƠI xuống thì không chạy nhanh (chạy 180 px/s là lướt qua luôn hố rộng 1 ô, quay lại, lại lướt qua — đo được mất 2 s)
+    const nxF = s.path && s.path[s.idx + 1], nearDrop = !!(nxF && (nxF.et === 'fall' || nxF.et === 'drop') && Math.abs(nxF.c * 16 + 8 - p.cx) < 46 && (function () { const dr = Math.sign(nxF.c * 16 + 8 - p.cx) || 1, fy = p.y + p.h + 3; return !L.solidAt(nxF.c * 16 + 8, fy) && L.solidAt((nxF.c + dr) * 16 + 8, fy); })()) && !(DEMO.off && DEMO.off.nd);          // chỉ với hố HẸP 1 ô (bên kia hố lại là nền)
     if (nearDrop && p.onGround) B.keys.run = false;
     if ((chainFar || D.rush || DEMO.chainW(p)) && !nearDrop && p.onGround && !p.hook && !D.hs && !D.hk && !D.cl && !fight && (B.keys.left || B.keys.right)) { B.keys.run = true; B.stats.chainRun = (B.stats.chainRun | 0) + 1; }
     if (D.wig > f && !p.hook) B.keys = { [D.wigDir > 0 ? 'right' : 'left']: true, run: true, jump: f % 24 < 12 };
