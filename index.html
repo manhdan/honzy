@@ -7757,7 +7757,7 @@ class Player extends Thing {
         // còn cách mép > 3px thì chưa (bò tiếp tới mép); đã nhô ra ngoài mép (vẫn còn chân trên đất) cũng được
         const edgeX = ax > 0 ? (edgeC + 1) * TILE : edgeC * TILE, over = ax > 0 ? this.x + this.w - edgeX : edgeX - this.x;
         if (over < -3) return false;
-        if (this.hold) carryDrop(this);
+        if (this.hold && this.hold.kind !== 'key') carryDrop(this);          // v1.6-73: bám mép vẫn giữ chìa khoá
         this.x = ax > 0 ? edgeX : edgeX - this.w; this.y = r * TILE + 8 - this.h / 2;
         this.vx = this.vy = 0; this.facing = -ax; this.setState('hang'); this.hangCd = 0;
         return true;
@@ -7786,7 +7786,7 @@ class Player extends Thing {
         if (c < 0) return false;
         const mid = c * TILE + TILE / 2;
         if (Math.abs(this.cx - mid) >= 5) return false;                  // SC: |x − tâm thang| < 4
-        if (this.hold && this.hold.mass >= 1) carryDrop(this);           // tay đang cầm vật vừa/nặng thì đánh rơi (SC: leo cần 2 tay; vật nhẹ như mũi tên vẫn giữ)
+        if (this.hold && this.hold.mass >= 1 && this.hold.kind !== 'key') carryDrop(this);           // tay đang cầm vật vừa/nặng thì đánh rơi (SC: leo cần 2 tay; vật nhẹ như mũi tên vẫn giữ) · v1.6-73 (Dan): CHÌA KHOÁ vẫn giữ khi leo thang
         this.x = mid - this.w / 2; this.vx = this.vy = 0; this.fallT = 0; this.jumpHeld = false;
         this.setState('climb'); this.ignorePlat = true;
         return true;
@@ -11337,7 +11337,7 @@ function stoneDraw(p, ctx, alpha) {
 //     nàng vô hại, nhưng kéo người chơi vào quái khác / gai. Bị đánh thì ngừng hát.
 const SLUG = { mul: 0.5, t: 3, windup: 0.5, cooldown: 2.6 };
 const FROSTY = { t: 1.0, range: 64, windup: 0.6, blowT: 0.5, cooldown: 3, keep: 54, speed: 34, mash: 0.15 };
-const SIREN = { t: 3, r: 120, pull: 34, pullWater: 56, windup: 0.5, cooldown: 2.6, near: 12 };
+const SIREN = { t: 3, r: 240, pull: 34, pullWater: 56, windup: 0.5, cooldown: 2.6, near: 12 };
 Object.assign(ENEMY_DEFS, {
     slug:  { hp: 2, w: 14, h: 9, speed: 10, sight: 120, sightY: 48, windup: SLUG.windup, cooldown: SLUG.cooldown, dmg: 0, col: '#9fe4c6' },
     frost: { hp: 2, w: 13, h: 13, speed: FROSTY.speed, sight: 140, sightY: 90, windup: FROSTY.windup, cooldown: FROSTY.cooldown, dmg: 0, col: '#d6eaf8' },
@@ -13552,7 +13552,7 @@ class Hawk extends Thing {
 //   Đi bộ bám người chơi bằng bộ tìm đường theo ô (BFS: đi / nhảy 1-2 ô / nhảy qua khe / rơi / thang; ý từ tools/bot/botlib.js B.reach), dừng lại bắn tên vào quái trong tầm có đường nhìn thẳng (tên chỉ trúng QUÁI).
 //   Sống tới khi chết (p.soldier = số vạch máu, giữ qua màn / chết / lưu ván); mua lại = thay con cũ, đầy máu. Mất máu: nổ (2 vạch) / bẫy / lửa / đạn; quái chạm vào cũng làm mất 1 vạch (mỗi SOLDIER.inv s).
 //   Kẹt quá SOLDIER.stuckT s hoặc cách xa SOLDIER.tpDist px thì tự dịch chuyển về cạnh người chơi (lưới an toàn: nước / thang lạ / chỗ bot chưa biết đi).
-const SOLDIER = { hp: 5, w: 10, h: 14, range: 130, shotCd: 1.4, arrowV: 260, arrowDmg: 1, walk: 70, jump1: -165, jump2: -205, gapJump: -165, gapV: 95, climb: 60, run: 175, runDist: 40, tpDist: 220, stuckT: 2.5, inv: 1.2, replan: 1.5, maxFall: 12, near: 22 };
+const SOLDIER = { hp: 5, w: 10, h: 14, range: 130, shotCd: 2.0, arrowV: 260, arrowDmg: 1, walk: 70, jump1: -165, jump2: -205, gapJump: -165, gapV: 95, climb: 60, run: 175, runDist: 40, tpDist: 220, stuckT: 2.5, inv: 1.2, replan: 1.5, maxFall: 12, near: 22 };
 function soldierReach(L, sc, sr) {          // BFS theo ô từ (sc, sr): trả { seen, par, et, w }
     const w = L.w, h = L.h, T = (c, r) => L.tile(c, r), solid = (c, r) => T_IS_SOLID[T(c, r)], ladder = (c, r) => T(c, r) === T_LADDER || L.hasRope(c, r);
     const plat = (c, r) => T(c, r) === T_ONEWAY || (T(c, r) === T_LADDER && T(c, r - 1) !== T_LADDER), support = (c, r) => solid(c, r + 1) || plat(c, r + 1);
@@ -14803,7 +14803,7 @@ const GEAR_DEFS = {
     lamp: { name: 'Đèn mỏ (1 màn)', price: 300, col: '#ffd24a', ch: 'M' },          // v1.5 (Dan): chỉ bán ở màn tối; đèn trên đầu, vùng sáng gấp đôi đuốc cầm (14_atmosphere)
     refresh: { name: 'Đổi lô hàng', price: 200, col: '#c8d0e0', ch: 'R', svc: true },          // dịch vụ (13d_shop): không vào túi đồ
     hawk: { name: 'Chim ưng', price: 2000, col: '#c8a070', ch: 'E', svc: true },          // dịch vụ: thuê chim ưng đi cùng (13c_princess: Hawk)
-    soldier: { name: 'Lính cung', price: 2000, col: '#4a8a3a', ch: 'S', svc: true },          // dịch vụ: thuê lính cung đi cùng (13c_princess: Soldier)
+    soldier: { name: 'Lính cung', price: 3000, col: '#4a8a3a', ch: 'S', svc: true },          // dịch vụ: thuê lính cung đi cùng (13c_princess: Soldier)
     wardrobe: { name: 'Tủ đồ thời trang', price: 0, col: '#b48aff', ch: 'W', svc: true },          // v1.6-36 (Dan): luôn có 1 ô ở mọi cửa hàng; ↓ + Tròn mở giao diện chọn đồ (15f_wardrobe), không trả tiền ở đây
     bribe: { name: 'Hối lộ (xoá truy nã)', price: 3000, col: '#ffd24a', ch: '$', svc: true },
     ankh: { name: 'Ankh (hồi sinh)', price: 3000, col: '#ffe9a8', ch: 'H', secret: true },
@@ -15956,7 +15956,7 @@ function hookFindLedge(level, p, side) {          // v0.95: side = ±1 (Thợ S�
     const hMax = hookHorizTiles(p) * TILE, vMax = HOOK.vertTiles * TILE;          // v1.02 (Dan): tầm móc = ≤ 10 ô theo CHIỀU CAO và ≤ 3 ô theo chiều NGANG (tính từ mép gờ tới người chơi); Thợ Săn sau boss vùng 2: ngang ≤ 8 ô
     for (let r = r0 - HOOK.vertTiles; r <= r0 + 1; r++) for (let c = c0 - Math.ceil(hMax / TILE) - 1; c <= c0 + Math.ceil(hMax / TILE) + 1; c++) {          // v0.77b (Dan): tìm mép gờ tới hết tầm móc (8 ô) — gờ gần ≤ 3 ô như cũ, gờ xa tới farR phải có đường thẳng / lỗ trần
         if (!level.inside(c, r) || !hookSolid(level, c, r)) continue;
-        { const tt = level.tile(c, r); if (tt !== T_SOLID && tt !== T_HARD && tt !== T_ONEWAY) continue; }          // v1.6: chỉ gờ đá / bục thường (khối vàng, đá đẩy, bẫy… làm tự kéo trượt)
+        { const tt = level.tile(c, r); if (tt !== T_SOLID && tt !== T_HARD && tt !== T_ONEWAY && tt !== T_GOLD && tt !== T_GOLDBIG && tt !== T_STONE && tt !== T_ICE && tt !== T_CRUMBLE) continue; }          // v1.6-73 (Dan: «có lúc không móc được mà không biết vì sao»): gờ có quặng vàng / đá / băng / sàn vỡ cũng móc được (trước bị loại)          // v1.6: chỉ gờ đá / bục thường (khối vàng, đá đẩy, bẫy… làm tự kéo trượt)
         const topY = r * TILE; if (topY > p.y + p.h - 24) continue;          // v1.12 (Dan): gờ chỉ cao hơn chân ≤ ~1 ô thì bỏ qua (tự nhảy lên được)                                  // chỉ gờ CAO hơn chân ít nhất 10 px
         let room = true; for (let k = 1; k <= need + 1; k++) if (level.isSolid(c, r - k)) { room = false; break; } if (!room) continue;          // chỗ đứng phía trên + 1 hàng chừa (v1.6: tự kéo trồi cao hơn mặt gờ vài px, trần thấp sẽ chặn ngang → treo lơ lửng rồi rơi)
         for (const dir of [1, -1]) {
@@ -15997,7 +15997,7 @@ function hookThrow(level, p, ax, up) {
         return { c, r, ceil: true, tx: p.cx, ty: (r + 1) * TILE + 0.5 };
     };
     let g = up ? (ceilHook() || hookFindLedge(level, p, face) || hookFindLedge(level, p)) : (hookFindLedge(level, p, face) || hookFindLedge(level, p));
-    if (!g) { sndPlay('step', { x: p.cx, p: 1.3, vol: 0.3 }); return false; }
+    if (!g) { sndPlay('step', { x: p.cx, p: 1.3, vol: 0.3 }); if (p === game.player && (game.time || 0) - (game.hookMissT || -9) > 1.5) { game.hookMissT = game.time || 0; game.pickupMsg = { t: 0, text: 'Không có gờ / trần trong tầm móc' }; } return false; }          // v1.6-73: báo lý do
     const dx = g.tx - p.cx, dy = g.ty - (p.y + 2), dd = Math.hypot(dx, dy) || 1;
     p.hook = { ph: 'fly', x: p.cx, y: p.y + 2, dx: dx / dd, dy: dy / dd, tx: p.cx, ty: p.y + 2, ax: 0, ay: 0, L: 0, t: 0, tgt: g, dist: dd, x0: p.cx, y0: p.y + 2 };
     if (g.dir) p.facing = g.dir;
