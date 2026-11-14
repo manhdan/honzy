@@ -8583,18 +8583,18 @@ const COS_ART = {
     sash: { outline: false, pal: { s: '#6a4020', S: '#9a6a38' }, parts: [{ x: 0, y: 9, rows: ['sS', '.sS', '..sS', '...sS', '....sS', '.....sS'] }] },
     pouch: { outline: false, pal: { p: '#7a4c22', P: '#a87438', q: '#5a3818', k: '#cfd4e0' }, parts: [{ x: 6, y: 14, rows: ['PPPP', 'pkpp', 'pppq', 'qqqq'] }] },
     sciarf: { outline: false, pal: { y: '#ecc04a', Y: '#b8902a' }, parts: [{ x: -1, y: 8, rows: ['yYyYyYyYyYy', 'YyYyYyYyYyY'] }, { x: 7, y: 10, rows: ['yY', 'Yy', 'yY', 'Yy', 'yY', 'Yy'] }] },
-    bow: { outline: false, pal: { p: '#ff6fa0', P: '#ffc0d8', k: '#c02a68' }, parts: [{ x: 4, y: -5, rows: ['pPp.k.pPp', 'ppppkpppp', 'ppp.k.ppp'] }] },
+    bow: { outline: false, pal: { p: '#ff6fa0', P: '#ffc0d8', k: '#c02a68' }, parts: [{ x: 6, y: -4, rows: ['pP..Pp', 'ppkkpp', 'pP..Pp'] }] },
     flower: { outline: false, pal: { p: '#ff8fb8', P: '#ffd0e2', y: '#ffd84a', g: '#58b04a' }, parts: [{ x: 2, y: -6, rows: ['.pPp.', 'pPyPp', '.pPp.', '..gg.'] }] },
-    crown: { outline: false, pal: { y: '#ffd24a', Y: '#c8921c', r: '#e04858', h: '#fff0a0' }, parts: [{ x: 1, y: -6, rows: ['y.h.y.y', 'yyyyyyy', 'yyyryyy', 'YYYYYYY'] }] },
+    crown: { outline: false, pal: { y: '#ffd24a', Y: '#c8921c', h: '#fff6c0', r: '#e8283c', b: '#4a8af0', w: '#ffffff' }, parts: [{ x: 0, y: -8, rows: ['w...w...w.', 'y..yhy..y.', 'yh.yyy.hy.', 'yyyyyyyyy.', 'yrybyryby.', 'YYYYYYYYY.'] }] },
     bowtie: { outline: false, pal: { r: '#e0485a', R: '#ff8a98', k: '#8a1f35' }, parts: [{ x: 1, y: 8, rows: ['rR.k.Rr', 'rrrkrrr', 'rR.k.Rr'] }] },
     bell: { outline: false, pal: { b: '#d8483a', B: '#ff7a6a', y: '#ffd24a', Y: '#c8921c', k: '#6a4a10' }, parts: [{ x: 0, y: 8, rows: ['bBbBbBbBbB'] }, { x: 4, y: 9, rows: ['.yy.', 'yYyy', '.kk.'] }] }
 };
 // ---- Món HIẾM: thỉnh thoảng có tia lấp lánh (chỉ là chớp trắng nhỏ vài điểm ảnh, KHÔNG toả sáng — không chiếu sáng màn tối, đúng ràng buộc §1) ----
 COS_ART.crystal = { outline: false, pal: { L: '#9ee8ff', D: '#4aa8d8', h: '#ffffff' }, parts: [{ x: 2, y: 3, rows: ['hLL', 'L.L', 'L.L', 'DDD'] }, { x: 6, y: 3, rows: ['hLL', 'L.L', 'L.L', 'DDD'] }, { x: 5, y: 4, rows: ['D'] }] };
-COS_ART.bowgem = { outline: false, pal: { p: '#ff6fa0', P: '#ffc0d8', k: '#c02a68', g: '#5ad0ff', G: '#e8fbff' }, parts: [{ x: 4, y: -5, rows: ['pPp.k.pPp', 'ppppkpppp', 'ppp.k.ppp'] }, { x: 7, y: -4, rows: ['gG'] }] };
+COS_ART.bowgem = { outline: false, pal: { p: '#ff6fa0', P: '#ffc0d8', k: '#c02a68', g: '#5ad0ff', G: '#e8fbff' }, parts: [{ x: 6, y: -4, rows: ['pP..Pp', 'ppgGpp', 'pP..Pp'] }] };
 COS_ART.star = { outline: false, pal: { y: '#ffd24a', Y: '#c8921c', w: '#fff3b0', o: '#0f0c1f' }, parts: [{ x: 3, y: 9, rows: ['.oo.', 'owwo', 'oyYo', '.oo.'] }, { x: 4, y: 10, rows: ['w'] }] };
 COS_ITEMS.round_crystal = { slot: 'eyewear', name: 'Kính pha lê', paint: 'crystal', tier: 'rare', spark: [[3, 3], [7, 3], [8, 6]] };
-COS_ITEMS.bow_gem = { slot: 'headpiece', name: 'Nơ cài ngọc', paint: 'bowgem', tier: 'rare', spark: [[7, -4], [10, -4]] };
+COS_ITEMS.bow_gem = { slot: 'headpiece', name: 'Nơ cài ngọc', paint: 'bowgem', tier: 'rare', spark: [[8, -3], [11, -4]] };
 COS_ITEMS.brooch_star = { slot: 'brooch', name: 'Trâm sao vàng', paint: 'star', tier: 'rare', spark: [[4, 10], [6, 11]] };
 function cosSparkle(ctx, it, f, white, dw, dh) {          // style khớp đồng vàng lấp lánh (13p_envfx: chấm '#fff6b8' thỉnh thoảng): chấm sáng nhỏ, chỉ lúc đỉnh mới có 4 tia nhạt
     if (white || !it.spark) return;
@@ -8624,7 +8624,7 @@ COS_ITEMS.scarf_gold = { slot: 'scarf', name: 'Khăn vàng', paint: 'sciarf', ti
 for (const [k, nm, l, d] of [['blue', 'Khăn xanh dương', '#5a86e0', '#34589c'], ['pink', 'Khăn hồng', '#f08cb4', '#c05c88'], ['white', 'Khăn trắng', '#f0f0f6', '#b4b8c8'], ['red', 'Khăn caro đỏ', '#d4504a', '#a83030']]) { COS_ART['sciarf_' + k] = { outline: false, pal: { y: l, Y: d }, parts: COS_ART.sciarf.parts }; COS_ITEMS['scarf_' + k] = { slot: 'scarf', name: nm, paint: 'sciarf_' + k, tier: 'medium' }; }
 COS_ITEMS.bow = { slot: 'headpiece', name: 'Nơ tai', paint: 'bow', tier: 'small' };
 COS_ITEMS.flower = { slot: 'headpiece', name: 'Hoa cài', paint: 'flower', tier: 'small' };
-COS_ITEMS.crown = { slot: 'headpiece', name: 'Vương miện nhỏ', paint: 'crown', tier: 'small' };
+COS_ITEMS.crown = { slot: 'headpiece', name: 'Vương miện nhỏ', paint: 'crown', tier: 'small', spark: [[0, -8], [4, -8], [8, -8]] };
 COS_ITEMS.bowtie = { slot: 'scarf', name: 'Nơ cổ', paint: 'bowtie', tier: 'medium' };
 COS_ITEMS.bell = { slot: 'scarf', name: 'Vòng chuông', paint: 'bell', tier: 'medium' };
 COS_ITEMS.chain.spark = [[4, 11], [5, 12]]; COS_ITEMS.chain.tier = 'rare';
@@ -8634,21 +8634,21 @@ COS_ITEMS.crown.spark = [[2, -4], [6, -4], [4, -3]]; COS_ITEMS.crown.tier = 'rar
 COS_ART.santa_hat = { outline: false, pal: { r: '#d82a3a', R: '#ff6a72', w: '#ffffff', W: '#cfd8ea' }, parts: [{ x: 4, y: -13, rows: ['.ww.', 'wwww', 'wwwW', '.wW.'] }, { x: 0, y: -9, rows: ['....rrrr..', '...rrrrrr.', '..rrRrrrr.', '.rrrRrrrr.', '.rrrrrrrr.', 'wwwwwwwwww', 'WwWwWwWwWw'] }] };
 COS_ART.santa_beard = { outline: false, pal: { c: '#9aa6c0', W: '#f4f7ff', w: '#ffffff' }, parts: [{ x: 1, y: 5, rows: ['cWWcWWc.', '.cWWWWc.'] }, { x: 0, y: 7, rows: ['cWWWWWWWWc', 'cWwWWWWwWc', '.cWWWWWWc.', '..cWWWWc..', '...cWWc...', '....cc....'] }] };
 COS_ART.glow_goggles = { outline: false, pal: { D: '#22406a', L: '#7af4ff', h: '#e6ffff' }, parts: [{ x: 2, y: 3, rows: ['DDD', 'DhD', 'DLD', 'DDD'] }, { x: 6, y: 3, rows: ['DDD', 'DhD', 'DLD', 'DDD'] }, { x: 5, y: 4, rows: ['D'] }] };
-COS_ART.halo = { outline: false, pal: { y: '#ffd24a', h: '#fff6b8', Y: '#c8921c' }, parts: [{ x: 1, y: -8, rows: ['..hyyy..', '.yY..yY.', '..yYYy..'] }] };
-COS_ART.miner = { outline: false, pal: { y: '#f2c230', Y: '#b88a14', h: '#ffe888', k: '#3a2a10', L: '#fffbd0' }, parts: [{ x: 0, y: -7, rows: ['...yyyy...', '..yhyyyy..', '.yyyyyyyy.', 'YYYYYYYYYY'] }, { x: 4, y: -5, rows: ['kLLk', 'kkkk'] }] };
+COS_ART.halo = { outline: false, pal: { y: '#ffd24a', h: '#fff6b8', Y: '#c8921c' }, parts: [{ x: -1, y: -10, rows: ['...hhyyy...', '.yy.....yy.', 'yY.......Yy', '.yYY...YYy.', '...YYYYY...'] }] };
+COS_ART.miner = { outline: false, pal: { y: '#f2c230', Y: '#b88a14', k: '#3a2a10', L: '#fffbd0', s: '#5a4a3a' }, parts: [{ x: 4, y: -4, rows: ['.YYYY.', 'YLLLLY', '.YkkY.'] }] };
 COS_ART.redbow = { outline: false, pal: { r: '#e8283c', R: '#ff7a88', k: '#a01426', y: '#ffd24a' }, parts: [{ x: 6, y: -4, rows: ['rR..Rr', 'rrkkrr', 'rR..Rr'] }] };
 COS_ITEMS.santa_hat = { slot: 'headpiece', name: 'Mũ ông già Noel', paint: 'santa_hat', tier: 'exclusive' };
 COS_ITEMS.santa_beard = { slot: 'scarf', name: 'Râu ông già Noel', paint: 'santa_beard', tier: 'exclusive' };
 COS_ITEMS.redbow = { slot: 'headpiece', name: 'Nơ đỏ cài tai', paint: 'redbow', tier: 'medium' };
 COS_ITEMS.glow_goggles = { slot: 'eyewear', name: 'Kính phát sáng', paint: 'glow_goggles', tier: 'rare', glow: [5, 4.5, 9, '90,240,255'] };
-COS_ITEMS.halo = { slot: 'headpiece', name: 'Vòng sáng thiên thần', paint: 'halo', tier: 'rare', glow: [4.5, -7, 8, '255,222,110'] };
-COS_ITEMS.miner = { slot: 'headpiece', name: 'Mũ thợ mỏ có đèn', paint: 'miner', tier: 'rare', glow: [5, -4, 9, '255,240,150'] };
+COS_ITEMS.halo = { slot: 'headpiece', name: 'Vòng sáng thiên thần', paint: 'halo', tier: 'rare', glow: [4.5, -8, 11, '255,222,110'] };
+COS_ITEMS.miner = { slot: 'headpiece', name: 'Đèn thợ mỏ', paint: 'miner', tier: 'rare', glow: [7, -3, 10, '255,240,150'] };
 
 // ---- v1.6-36 (đợt 2): thêm đồ đầu / kính / cổ / ngực / túi + áo pastel ----
-COS_ART.witch = { outline: false, pal: { p: '#6a3aa8', P: '#9a6ad8', y: '#ffd24a', q: '#4a2478' }, parts: [{ x: 0, y: -10, rows: ['......pp..', '.....pPpp.', '....pPppp.', '...pPpppp.', '..ppppppp.', '..pppppppp', 'ppyyyyyypp'] }, { x: -1, y: -3, rows: ['qqqqqqqqqqqq'] }] };
-COS_ART.chef = { outline: false, pal: { w: '#ffffff', W: '#d8dff0', c: '#aab2c8' }, parts: [{ x: 0, y: -8, rows: ['..wwwwww..', '.wwWwwWww.', '.wwwwwwww.', '.wWwwwwWw.', '..wwwwww..', '.cwcwcwcw.'] }] };
-COS_ART.catears = { outline: false, pal: { p: '#ff9ec4', P: '#ffd0e2', k: '#d0507e' }, parts: [{ x: 0, y: -6, rows: ['.pp....pp.', 'pPPp..pPPp', 'pPPPppPPPp', 'kkkkkkkkkk'] }] };
-COS_ART.antlers = { outline: false, pal: { b: '#8a5a30', B: '#b88450' }, parts: [{ x: 0, y: -8, rows: ['b..B..B..b', 'bb.b..b.bb', '.bbb..bbb.', '..bb..bb..', '..bb..bb..', '..bb..bb..'] }] };
+COS_ART.witch = { outline: false, pal: { p: '#6a3aa8', P: '#9a6ad8', y: '#ffd24a', q: '#4a2478' }, parts: [{ x: -1, y: -15, rows: ['..........p.', '.........pp.', '........pPp.', '.......pPp..', '......pPpp..', '......pPpp..', '.....pPppp..', '.....pPpppp.', '....pPppppp.', '...pPpppppp.', '...yyyyyyyy.', 'qqqqqqqqqqqq'] }] };
+COS_ART.chef = { outline: false, pal: { w: '#ffffff', W: '#d8dff0', c: '#aab2c8' }, parts: [{ x: -1, y: -14, rows: ['..ww..ww....', '.wwwwwwwww..', 'wwWwwwwwWww.', 'wwwwwWwwwww.', '.wwwwwwwww..', '..wwwwwww...', '..wWwwwww...', '..wwwwWww...', '..wwwwwww...', '..wWwwwww...', '.ccccccccc..'] }] };
+COS_ART.catears = { outline: false, pal: { p: '#ff9ec4', P: '#ffd0e2', k: '#d0507e' }, parts: [{ x: 0, y: -5, rows: ['.pp....pp.', 'pPPp..pPPp', 'pPPPppPPPp', 'kkkkkkkkkk'] }] };
+COS_ART.antlers = { outline: false, pal: { b: '#8a5a30', B: '#c08a52', h: '#e8c898' }, parts: [{ x: -4, y: -12, rows: ['h..h........h..h', 'b..b.h....h.b..b', 'bb.b.b....b.b.bb', '.bbbbb....bbbbb.', '...bbB....Bbb...', '....bB....Bb....', '....bB....Bb....', '....bb....bb....'] }] };
 COS_ART.heartg = { outline: false, pal: { p: '#ff4f8a', h: '#ffc0d8' }, parts: [{ x: 2, y: 3, rows: ['hpp', 'ppp', '.p.'] }, { x: 6, y: 3, rows: ['hpp', 'ppp', '.p.'] }] };
 COS_ART.eyepatch = { outline: false, pal: { k: '#17121f', h: '#55506a' }, parts: [{ x: 6, y: 3, rows: ['kkk', 'khk', 'kkk', '.k.'] }, { x: 3, y: 2, rows: ['kkkkkkk'] }] };
 COS_ART.groucho = { outline: false, pal: { k: '#17121f', t: '#d8a878' }, parts: [{ x: 2, y: 3, rows: ['kkk', 'k.k', 'kkk'] }, { x: 6, y: 3, rows: ['kkk', 'k.k', 'kkk'] }, { x: 5, y: 4, rows: ['k'] }, { x: 2, y: 7, rows: ['kkkkkkkk'] }, { x: 4, y: 6, rows: ['tt'] }] };
@@ -8664,11 +8664,11 @@ for (const [id, nm, tier, art, slot] of [['witch_hat', 'Mũ phù thủy', 'exclu
 COS_ITEMS.snowflake.spark = [[5, 11], [3, 9], [7, 13]]; COS_ITEMS.lantern.glow = [8.5, 16, 8, '255,190,90'];
 
 // ---- v1.6-36 (đợt 3) ----
-COS_ART.bunny = { outline: false, pal: { p: '#f6f2f8', P: '#ffb0c8', g: '#c8c0d8' }, parts: [{ x: 0, y: -11, rows: ['.pp....pp.', '.pPp..pPp.', '.pPp..pPp.', '.pPp..pPp.', '.pPp..pPp.', '.pPp..pPp.', '.ppp..ppp.'] }] };
-COS_ART.phones = { outline: false, pal: { h: '#8a8aa8', H: '#c0c0d8', c: '#e0485a', C: '#ff8a98', k: '#2a0f18' }, parts: [{ x: 0, y: -6, rows: ['..hhhhhh..', '.hH....Hh.', 'hH......Hh'] }, { x: -1, y: -3, rows: ['cC', 'cc', 'cc', 'ck'] }, { x: 9, y: -3, rows: ['Cc', 'cc', 'cc', 'kc'] }] };
+COS_ART.bunny = { outline: false, pal: { p: '#f6f2f8', P: '#ffb0c8', g: '#c8c0d8' }, parts: [{ x: -3, y: -11, rows: ['.pp.......pp.', 'pPPp.....pPPp', 'pPPp.....pPPp', 'pPPp.....pPPp', 'pPPp.....pPPp', 'pPPp.....pPPp', 'pPpg.....gpPp', 'ppg.......gpp', 'pg.........gp'] }] };
+COS_ART.phones = { outline: false, pal: { h: '#8a8aa8', H: '#dfe3f0', c: '#e0485a', C: '#ff8a98', k: '#2a0f18' }, parts: [{ x: -2, y: -7, rows: ['...HHHHHHHH...', '.hH........Hh.', 'hH..........Hh', 'h............h'] }, { x: -3, y: -3, rows: ['.cc', 'cCc', 'cCc', 'cCc', 'ccc', '.kc'] }, { x: 10, y: -3, rows: ['cc.', 'cCc', 'cCc', 'cCc', 'ccc', 'ck.'] }] };
 COS_ART.party = { outline: false, pal: { b: '#4a8af0', B: '#8abaff', y: '#ffd24a', p: '#ff6fa0' }, parts: [{ x: 0, y: -10, rows: ['....yy....', '...bBbb...', '...bbpb...', '..bbBbbb..', '..bpbbbb..', '.bbbbbBbb.', '.bBbbpbbb.'] }] };
 COS_ART.pirate = { outline: false, pal: { r: '#d8283c', R: '#ff6a7a', w: '#ffffff', k: '#9a1426' }, parts: [{ x: 0, y: -5, rows: ['..rrrrrr..', '.rRwrrwrr.', 'rrrrrrrrrr', 'kkkkkkkkkk'] }, { x: 9, y: -3, rows: ['rr.', '.rr', 'rr.'] }] };
-COS_ART.fcrown = { outline: false, pal: { p: '#ff8fb8', y: '#ffd84a', w: '#ffffff', g: '#58b04a', b: '#8ab0ff' }, parts: [{ x: 0, y: -5, rows: ['.p..y.w.b.', 'gpgyywgbgg'] }, { x: 0, y: -3, rows: ['gggggggggg'] }] };
+COS_ART.fcrown = { outline: false, pal: { p: '#ff7fb0', w: '#ffffff', b: '#8ab0ff', c: '#ffd84a', g: '#58b04a', G: '#8ce870' }, parts: [{ x: -1, y: -6, rows: ['.p....w....b.', 'pcp..wcw..bcb', 'gpgGggwggGgbg', '.gggGgggGggg.'] }] };
 COS_ART.sprout = { outline: false, pal: { g: '#58c04a', G: '#a8f080', s: '#3a8a30' }, parts: [{ x: 3, y: -9, rows: ['GG..gg', '.gGGg.', '..gg..', '..s...', '..s...'] }] };
 COS_ART.glass3d = { outline: false, pal: { w: '#f4f4f8', r: '#ff4a4a', c: '#4ae0f0' }, parts: [{ x: 1, y: 3, rows: ['wwww', 'wrrw', 'wrrw', 'wwww'] }, { x: 5, y: 3, rows: ['wwww', 'wccw', 'wccw', 'wwww'] }] };
 COS_ART.visor = { outline: false, pal: { k: '#1c1830', c: '#4ae0f0', C: '#b8f8ff' }, parts: [{ x: -1, y: 3, rows: ['kkkkkkkkkkkk', 'kccccccccccck', 'kcCccccccCck', 'kkkkkkkkkkkk'] }] };
@@ -8702,7 +8702,7 @@ function cosGlow(ctx, it, f, white, dw, dh) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2); ctx.restore();
 }
 function cosPaint(ctx, it, fr, A, white, dw, dh) {
-    const row = typeof COS_FACE !== 'undefined' && COS_FACE[fr.a]; let f = row && row[fr.i]; if (!f) return; const w = f[1] - f[0], h = f[3] - f[2]; if (!(w === 9 && h >= 7)) { if (!(it.slot === 'headpiece' && w >= 6 && w <= 10 && h >= 5)) return; f = [f[0] + Math.round((w - 9) / 2), f[1], f[2], f[3]]; }          // đồ đội đầu vẫn vẽ khi cúi / ngồi / bị thương (mặt hẹp hơn: căn giữa theo hộp)          // chỉ vẽ khi thấy đủ mặt thẳng (lướt / ngồi / cúi nặng thì ẩn)
+    const row = typeof COS_FACE !== 'undefined' && COS_FACE[fr.a]; let f = row && row[fr.i]; if (!f) return; const w = f[1] - f[0], h = f[3] - f[2]; if (!(w === 9 && h >= 7)) { if (!((it.slot === 'headpiece' || it.wide) && w >= 6 && w <= 10 && h >= 5)) return; f = [f[0] + Math.round((w - 9) / 2), f[1], f[2], f[3]]; }          // đồ đội đầu vẫn vẽ khi cúi / ngồi / bị thương (mặt hẹp hơn: căn giữa theo hộp)          // chỉ vẽ khi thấy đủ mặt thẳng (lướt / ngồi / cúi nặng thì ẩn)
     const r = 1 / RES; for (const q of cosArtPix(it)) { ctx.fillStyle = white ? '#ffffff' : q[2]; ctx.fillRect(-dw / 2 + (f[0] + q[0]) * r, -dh + (f[2] + q[1]) * r, r, r); }
     cosSparkle(ctx, it, f, white, dw, dh); cosGlow(ctx, it, f, white, dw, dh);
 }
@@ -8736,11 +8736,12 @@ function cosOf(p) {          // bộ đồ đang hiện của nhân vật: thử
 }
 function cosDraw(p, ctx, fr, A, white, dw, dh) {
     if (fr.lie) return;          // nằm ngang khi chết: ẩn đồ như kế hoạch §5.3
-    const y = cosRowY(fr.a); if (y === undefined) return;
+    const y = cosRowY(fr.a);          // dải atlas (chỉ đồ dạng ảnh cần; chém / chém lên không có dải) — đồ vẽ điểm dùng COS_FACE nên vẫn hiện khi chém
     const cos = cosOf(p);
     for (const slot of COS_Z) {
         const it = COS_ITEMS[cos[slot]]; if (!it) continue;
         if (it.paint) { cosPaint(ctx, it, fr, A, white, dw, dh); continue; }
+        if (y === undefined) continue;
         const img = white ? assetWhite(it.img) : assetGet(it.img); if (!img) continue;
         ctx.drawImage(img, fr.i * A.fw, y, A.fw, A.fh, -dw / 2, -dh, dw, dh);
     }
@@ -8751,12 +8752,29 @@ const COS_CLOAK = {          // id: [tên, hue 0..1, nhân độ bão hoà, nhâ
     cloak_orange: ['Áo cam', 0.06, 1, 1.15], cloak_gold: ['Áo vàng', 0.12, 0.95, 1.2], cloak_green: ['Áo xanh lá', 0.33, 0.9, 0.95], cloak_teal: ['Áo ngọc lam', 0.47, 0.9, 1],
     cloak_blue: ['Áo xanh dương', 0.60, 1, 1], cloak_indigo: ['Áo chàm', 0.70, 0.95, 1], cloak_purple: ['Áo tím', 0.79, 0.9, 1], cloak_pink: ['Áo hồng', 0.90, 0.6, 1.4],
     cloak_white: ['Áo trắng', 0.60, 0.12, 1.75], cloak_black: ['Áo đen', 0.70, 0.2, 0.5], cloak_red: ['Áo đỏ', 0.0, 0.95, 1.5], cloak_mint: ['Áo bạc hà', 0.45, 0.45, 1.5], cloak_lavender: ['Áo oải hương', 0.75, 0.4, 1.5],
-    cloak_mummy: ['Áo băng quấn', 0, 0, 1, 'mummy']
+    cloak_reaper: ['Áo tử thần', 0, 0, 1, 'reaper'], cloak_panda: ['Áo gấu trúc', 0, 0, 1, 'panda'], cloak_frog: ['Áo ếch xanh', 0, 0, 1, 'frog'], cloak_octo: ['Áo bạch tuộc', 0, 0, 1, 'octo'], cloak_bee: ['Áo ong', 0, 0, 1, 'bee'], cloak_straw: ['Áo dâu tây', 0, 0, 1, 'straw'],
+    cloak_dalm: ['Áo chó đốm', 0, 0, 1, 'dalm'], cloak_cow: ['Áo bò sữa', 0, 0, 1, 'cow'], cloak_owl: ['Áo cú', 0, 0, 1, 'owl'],
+    cloak_pumpkin: ['Áo bí ngô', 0, 0, 1, 'pumpkin'], cloak_sq: ['Áo sóc', 0, 0, 1, 'sq'], cloak_snow: ['Người tuyết · Áo tuyết', 0, 0, 1, 'snow'],
+    cloak_dino: ['Áo khủng long', 0, 0, 1, 'dino'], cloak_tv: ['Áo xám', 0, 0, 1, 'tvc']
 };
-// Áo «hoa văn» cho bộ đồ toàn thân: thay hẳn điểm áo bằng chất liệu của bộ (giữ khối sáng / tối của áo gốc qua v), để bộ không bị lệch với áo choàng
+// Áo «hoa văn» của bộ đồ: thay hẳn điểm áo bằng chất liệu / hoa văn của bộ (giữ khối sáng / tối của áo gốc qua v), để bộ không bị lệch với áo choàng
 const COS_CLOAK_PAT = {
-    mummy: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2, band = (y * 2 + x) % 7 === 0, C = [[232, 224, 200], [196, 186, 156], [140, 128, 100]][Math.min(2, t + (band ? 1 : 0))]; return (x * 7 + y * 3) % 23 === 0 ? [250, 246, 230] : C; },
+    reaper: (x, y, v, h) => { if (y >= h - 3 && (x * 3 + y * 2) % 5 < 2) return [0, 0, 0, 0]; const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return [[58, 54, 72], [36, 33, 48], [20, 18, 28]][t]; },          // đen xám, gấu áo rách lỗ chỗ
+    panda: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return [[252, 250, 246], [228, 224, 228], [192, 188, 200]][t]; },          // trắng toàn thân (vai đen = panda_paws)
+    frog: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return (x * 5 + y * 3) % 17 === 0 && t < 2 ? [60, 150, 56] : [[96, 196, 80], [72, 160, 62], [46, 116, 44]][t]; },          // xanh lá cùng màu mũ ếch, chấm đậm
+    octo: (x, y, v, h) => { if (y >= h - 3 && x % 4 === 0) return [0, 0, 0, 0]; const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return (x * 7 + y * 5) % 13 === 0 ? [255, 196, 224] : [[220, 100, 164], [182, 72, 136], [124, 44, 98]][t]; },          // chấm giác hút, gấu áo tách thành xúc tu
+    bee: (x, y, v, h) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return ((h - y) >> 1) % 3 === 0 ? [[48, 42, 52], [34, 30, 38], [22, 20, 26]][t] : [[255, 214, 64], [236, 180, 40], [180, 128, 24]][t]; },          // sọc ngang vàng đen
+    straw: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return (x * 5 + y * 3) % 9 === 0 ? [255, 226, 110] : [[236, 54, 70], [196, 34, 52], [136, 20, 36]][t]; },          // đỏ lấm tấm hạt vàng
+    dalm: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2, a = (x >> 1) * 5 + (y >> 1) * 11, s = a % 13 === 0 || (a + 3) % 17 === 0; return s ? [[40, 36, 48], [30, 26, 38], [20, 18, 26]][t] : [[250, 250, 252], [226, 228, 240], [170, 174, 196]][t]; },          // trắng đốm đen
+    cow: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2, sx = (x / 6) | 0, sy = (y / 5) | 0, lx = x % 6, ly = y % 5, on = ((sx * 37 + sy * 91 + sx * sy * 13) % 7) < 3 && lx > 0 && lx < 5 && ly < 4 && !(lx === 4 && ly === 3); return on ? [[40, 36, 48], [30, 26, 38], [20, 18, 26]][t] : [[250, 250, 252], [226, 228, 240], [170, 174, 196]][t]; },          // trắng mảng đen như bò sữa
+    owl: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2, r = (y >> 1) & 1, f = ((x + r * 2) % 4) === 0 && (y & 1) === 1; return f ? [[222, 184, 132], [196, 152, 104], [140, 102, 68]][t] : [[168, 118, 74], [140, 94, 58], [96, 62, 40]][t]; },          // nâu xếp lớp như lông vũ
+    pumpkin: (x, y, v, h) => { if (y >= h - 3 && (x * 3 + y * 2) % 5 < 2) return [0, 0, 0, 0]; const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; if (y === h - 8 || (y === h - 9 && x % 4 < 2) || (y === h - 7 && x % 4 >= 2)) return [[250, 160, 50], [234, 115, 54], [190, 80, 40]][t]; return [[112, 72, 152], [82, 52, 118], [52, 32, 80]][t]; },          // tím sẫm, dải zíc-zắc cam, gấu rách
+    sq: (x, y, v) => { const t = v > 0.62 ? 0 : v > 0.42 ? 1 : 2; return [[252, 180, 118], [240, 154, 92], [212, 124, 72]][t]; },          // cam sáng theo lông sóc
+    snow: () => [0, 0, 0, 0],          // áo tàng hình: thân là món snow_body
+    dino: (x, y, v) => [[129, 189, 187], [93, 154, 173], [70, 121, 135]][v > 0.62 ? 0 : v > 0.42 ? 1 : 2],          // xanh ngọc theo da khủng long
+    tvc: (x, y, v) => [[134, 136, 157], [96, 101, 121], [72, 76, 103]][v > 0.62 ? 0 : v > 0.42 ? 1 : 2]          // xám vỏ tivi
 };
+COS_CLOAK_PAT.snow.strip = true;
 for (const id in COS_CLOAK) COS_ITEMS[id] = { slot: 'cloak', name: COS_CLOAK[id][0], cloak: COS_CLOAK[id], tier: COS_CLOAK[id][4] ? 'medium' : 'recolor' };
 const COS_CLOAK_SRC = { sword: h => (h > 0.90 || h < 0.05), alch: h => Math.abs(h - 0.70) < 0.03, hunt: h => Math.abs(h - 0.33) < 0.03 };          // sắc áo gốc của từng lớp (khớp tools/gen_class_sprites.recolor)
 const _cloakCache = new WeakMap();
@@ -8773,8 +8791,17 @@ function cosCloakImg(p, img) {
         for (let i = 0; i < a.length; i += 4) {
             if (a[i + 3] < 200) continue; const [h, s, v] = _rgb2hsv(a[i] / 255, a[i + 1] / 255, a[i + 2] / 255);
             if (s < 0.3 || v < 0.12 || !isC(h)) continue;
-            if (pat) { const q = i >> 2, c = pat(q % img.width, (q / img.width) | 0, v); a[i] = c[0]; a[i + 1] = c[1]; a[i + 2] = c[2]; continue; }
+            if (pat) { const q = i >> 2, c = pat(q % img.width, (q / img.width) | 0, v, img.height); a[i] = c[0]; a[i + 1] = c[1]; a[i + 2] = c[2]; if (c.length > 3) a[i + 3] = c[3]; continue; }          // h = cao khung (mỗi dải hình chỉ có 1 hàng khung) · phần tử thứ 4 = độ trong (gấu áo rách)
             const [r, gg, b] = _hsv2rgb(hue, Math.min(1, s * sm), Math.min(1, v * vm)); a[i] = Math.round(r * 255); a[i + 1] = Math.round(gg * 255); a[i + 2] = Math.round(b * 255);
+        }
+        if (pat && pat.strip) {          // áo «tàng hình» (bộ thay cả thân, vd Người tuyết): xoá luôn nét viền tối không còn giáp điểm màu nào
+            const W = img.width, H = img.height, dark = k => a[k + 3] >= 200 && Math.max(a[k], a[k + 1], a[k + 2]) < 70, lit = k => a[k + 3] >= 200 && Math.max(a[k], a[k + 1], a[k + 2]) >= 70, kill = [];
+            for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+                const k = (y * W + x) * 4; if (!dark(k)) continue; let keep = false;
+                for (let dy = -1; dy <= 1 && !keep; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && lit((yy * W + xx) * 4)) { keep = true; break; } }
+                if (!keep) kill.push(k);
+            }
+            for (const k of kill) a[k + 3] = 0;
         }
         g.putImageData(d, 0, 0); out = c;
     } catch (e) { out = img; }
@@ -8794,22 +8821,12 @@ function cosHeroStrip(cls) {
 }
 
 // ---- v1.6-58 (Dan): sửa vài món nhìn chưa rõ + 4 BỘ ĐỒ chủ đề (phi hành gia · khủng long · thuyền trưởng cướp biển · ninja) ----
-COS_ART.antlers = { outline: false, pal: { b: '#8a5a30', B: '#c08a52', h: '#e8c898' }, parts: [{ x: 1, y: -9, rows: ['h....h', 'Bb..bB', '.Bb.bB', '..BbB.', '..bbb.', '...b..'] }, { x: 0, y: -4, rows: ['bB......Bb'] }] };
 COS_ART.groucho = { outline: false, pal: { k: '#17121f', t: '#e8b488', T: '#c08a60', h: '#55506a' }, parts: [{ x: 1, y: 2, rows: ['kkkkkkkkk'] }, { x: 1, y: 3, rows: ['khhk', '.kk.'] }, { x: 5, y: 3, rows: ['khhk', '.kk.'] }, { x: 4, y: 5, rows: ['tTt', 'ttt'] }, { x: 2, y: 7, rows: ['kkkkkk', '.kkkk.'] }] };
 COS_ART.sash = { outline: false, pal: { s: '#8a3a2a', S: '#c25a3a', y: '#f2c230', Y: '#b88a14' }, parts: [{ x: 0, y: 8, rows: ['Ss........', '.Ss.......', '..Ss......', '...Ss.....', '....Ss....', '.....Ss...', '......Ss..'] }, { x: 6, y: 14, rows: ['yYy', 'yyy'] }] };
 COS_ART.chain = { outline: false, pal: { c: '#e4e8f4', C: '#9aa0b8', g: '#6ae0ff', G: '#dffaff', o: '#0f0c1f' }, parts: [{ x: 1, y: 8, rows: ['cC......Cc', '.cC....Cc.', '..cC..Cc..'] }, { x: 3, y: 11, rows: ['oooo', 'oGgo', 'oggo', 'oooo'] }, { x: 4, y: 12, rows: ['G'] }] };
 COS_ART.pouch = { outline: false, pal: { p: '#8a5626', P: '#c08a46', q: '#5a3818', y: '#f2c230', k: '#3a2410' }, parts: [{ x: 5, y: 12, rows: ['.qqqq.'] }, { x: 5, y: 13, rows: ['PPPPPP', 'pPyypP', 'ppyypp', 'qppppq', '.qqqq.'] }] };
 COS_ART.sprout = { outline: false, pal: { g: '#4aa83a', G: '#8ce860', s: '#3a7a2c', h: '#d8ffc0' }, parts: [{ x: 1, y: -10, rows: ['Gh....hG', 'gGg..gGg', '.gGg.gGg', '..gGgGg.', '...sss..', '....s...', '....s...'] }] };
 
-COS_ART.astro_helm = { outline: false, pal: { w: '#eef2ff', W: '#aab6d4', h: '#ffffff', k: '#5a6480', y: '#f2c230' }, parts: [
-    { x: 4, y: -9, rows: ['y', 'y'] },
-    { x: 0, y: -7, rows: ['..wwwwww..', '.whwwwwWW.', 'wwwwwwwWWW'] },
-    { x: -1, y: -4, rows: ['Www', 'Www', 'ww.', 'ww.', 'ww.', 'Www', 'WWw'] },
-    { x: 8, y: -4, rows: ['wwW', 'wwW', '.WW', '.WW', '.WW', 'wwW', 'wWW'] },
-    { x: 1, y: 3, rows: ['k'] }, { x: 9, y: 3, rows: ['k'] }] };
-COS_ART.astro_visor = { outline: false, pal: { y: '#f4c43a', Y: '#a87a14', h: '#fff2b0', k: '#3a2a10' }, parts: [
-    { x: 0, y: 2, rows: ['kkkkkkkkkk', 'kyhyyyyyYk', 'kyyyyyyyYk', 'kYYYYYYYYk', '.kkkkkkkk.'] }] };
-COS_ART.astro_pack = { outline: false, pal: { w: '#dfe5f2', W: '#9aa4c0', r: '#e0485a', g: '#58c860', k: '#4a5068' }, parts: [{ x: 2, y: 8, rows: ['W....W', 'W....W'] }, { x: 2, y: 10, rows: ['wwwwww', 'wrkgkw', 'wWWWWw', 'kkkkkk'] }] };
 
 COS_ART.dino_hood = { outline: false, pal: { g: '#4a9a44', G: '#7fd45e', d: '#2f6a2c', y: '#f2e04a' }, parts: [
     { x: 0, y: -8, rows: ['...y..y...', '..yyy.yyy.'] },
@@ -8836,12 +8853,11 @@ COS_ART.ninja_mask = { outline: false, pal: { k: '#2b2a3c', K: '#43435c' }, part
 COS_ART.shuriken = { outline: false, pal: { s: '#cfd6e8', S: '#8a92ac', k: '#2b2a3c', b: '#4a4258' }, parts: [{ x: 5, y: 13, rows: ['bbbb', 'kkkk'] }, { x: 5, y: 10, rows: ['.s.', 'sSs', '.s.'] }, { x: 7, y: 11, rows: ['.s.', 'sSs', '.s.'] }] };
 
 for (const [id, nm, tier, art, slot] of [
-    ['astro_helm', 'Phi hành gia · Mũ', 'exclusive', 'astro_helm', 'headpiece'], ['astro_visor', 'Phi hành gia · Kính vàng', 'rare', 'astro_visor', 'eyewear'], ['astro_pack', 'Phi hành gia · Bình khí', 'rare', 'astro_pack', 'brooch'],
     ['dino_hood', 'Khủng long · Mũ gai', 'exclusive', 'dino_hood', 'headpiece'], ['dino_collar', 'Khủng long · Khăn vảy', 'medium', 'dino_collar', 'scarf'], ['dino_claw', 'Khủng long · Vòng vuốt', 'medium', 'dino_claw', 'brooch'],
     ['tricorn', 'Cướp biển · Mũ thuyền trưởng', 'exclusive', 'tricorn', 'headpiece'], ['pirate_sash', 'Cướp biển · Đai lưng', 'medium', 'pirate_sash', 'belt'], ['parrot', 'Cướp biển · Vẹt trên vai', 'exclusive', 'parrot', 'brooch'],
     ['ninja_hood', 'Ninja · Khăn trùm', 'rare', 'ninja_hood', 'headpiece'], ['ninja_mask', 'Ninja · Khăn che mặt', 'medium', 'ninja_mask', 'scarf'], ['shuriken', 'Ninja · Túi phi tiêu', 'medium', 'shuriken', 'pouch']])
     COS_ITEMS[id] = { slot, name: nm, paint: art, tier };
-COS_ITEMS.astro_visor.spark = [[2, 4], [7, 4]]; COS_ITEMS.parrot.spark = [[8, 4]];
+COS_ITEMS.parrot.spark = [[8, 4]];
 // ---- v1.6-61 (Dan, ý từ Corvian Curse): DẢI DÂY MŨ — 2 dải vải đỏ buộc sau đầu, mô phỏng dây (verlet) nên bay theo chạy / nhảy / rơi / lướt. Thuần trang trí; trạng thái ở p._rib, cập nhật mỗi khung vẽ.
 const RIBBON = { on: true, n: [6, 4], seg: 1.35, grav: [0.085, 0.07], drag: 0.9 };          // v1.6-62: ngắn còn ~75 %, mảnh hơn; màu lấy từ món «khăn» (ô ribbon) đang đeo
 const RIB_COL = { red: ['Khăn đỏ', '#e23a3a', '#ff8a7a', '#8a1c28'], orange: ['Khăn cam', '#f08a2a', '#ffc070', '#9a4a12'], yellow: ['Khăn vàng', '#f2c230', '#fff0a0', '#9a7410'], green: ['Khăn xanh lá', '#4aae44', '#9ae07a', '#256a2a'], cyan: ['Khăn xanh ngọc', '#3ac8d0', '#a8f4f4', '#1a7884'], blue: ['Khăn xanh dương', '#3a7ae2', '#8ab8ff', '#1c3c8a'], purple: ['Khăn tím', '#9a52e0', '#d0a6ff', '#4a2480'], pink: ['Khăn hồng', '#f070a8', '#ffc0d8', '#9a2a5c'], white: ['Khăn trắng', '#f0f2fa', '#ffffff', '#9aa6c0'], black: ['Khăn đen', '#3a3648', '#6a6680', '#14121c'] };
@@ -8851,7 +8867,7 @@ COS_SLOTS.push('ribbon'); for (const c in COS_DEFAULT) COS_DEFAULT[c].ribbon = '
 // BỘ ĐỒ (tab «Bộ» của tủ đồ, 15f): các món đã phối sẵn theo chủ đề — mua một lần cả bộ
 const COS_SETS = [
     ['Ông già Noel', ['santa_hat', 'santa_beard', 'cloak_red', 'belt_gold', 'gift', 'rib_white']], ['Tuần lộc', ['antlers', 'bell', 'snowflake', 'cloak_orange', 'rib_red']],
-    ['Phi hành gia', ['astro_helm', 'astro_visor', 'astro_pack', 'cloak_white', 'rib_blue']], ['Khủng long', ['dino_hood', 'dino_collar', 'dino_claw', 'cloak_green', 'rib_green']],
+    ['Khủng long', ['dino_hood', 'dino_collar', 'dino_claw', 'cloak_green', 'rib_green']],
     ['Cướp biển', ['tricorn', 'eyepatch', 'pirate_sash', 'parrot', 'cloak_black', 'rib_red']], ['Ninja', ['ninja_hood', 'ninja_mask', 'shuriken', 'cloak_black', 'rib_black']],
     ['Phù thủy', ['witch_hat', 'moon_pin', 'belt_gem', 'potion_glow', 'cloak_purple', 'rib_purple']], ['Thợ mỏ', ['miner', 'belt_rope', 'lantern', 'cloak_orange', 'rib_yellow']],
     ['Hoàng gia', ['crown', 'pearls', 'pauldron_gold', 'belt_gold', 'cloak_purple', 'rib_yellow']], ['Thiên thần', ['halo', 'scarf_white', 'brooch_star', 'cloak_white', 'rib_white']]
@@ -8889,22 +8905,10 @@ function heroBackFrame(p, i) {
 }
 
 // ================= v1.6-66 (Dan) =================
-// ---- BỘ ĐỒ VUI: Lính trắng · Robot (+ sừng, đuôi quỷ để ghép với cánh dơi) ----
-COS_ART.mummy_wrap = { outline: false, pal: { w: '#e8e0c8', W: '#b8ac8a', d: '#8a7e60' }, parts: [
-    { x: 0, y: -6, rows: ['.wwwwwwww.', 'wWwwwWwwww', 'wwwWwwwwWw', 'WwwwwwWwww'] }, { x: -1, y: -2, rows: ['ww', 'Ww', 'ww'] }, { x: 9, y: -2, rows: ['ww', 'wW', 'ww'] },
-    { x: 10, y: 1, rows: ['w.', 'ww', '.w', '.W', '.w'] }] };
-COS_ART.mummy_eyes = { outline: false, pal: { w: '#e8e0c8', W: '#b8ac8a', g: '#9aff7a' }, parts: [{ x: 0, y: 0, rows: ['wwWwwwWww', 'WwwwWwwwW'] }, { x: 0, y: 5, rows: ['wWwwwWwww', 'wwwWwwwWw'] }, { x: 0, y: 3, rows: ['w.......w'] }] };
-COS_ART.mummy_body = { outline: false, pal: { w: '#e8e0c8', W: '#b8ac8a' }, parts: [{ x: -1, y: 8, rows: ['wWwwwWwwwWw', '.wwWwwwWww.'] }, { x: 1, y: 11, rows: ['WwwwWwww', 'wwWwwwWw', '.Wwww.w.'] }] };
-COS_ART.robo_head = { outline: false, pal: { s: '#aab4c8', S: '#e6ecf6', k: '#4a5268', r: '#ff5a4a', y: '#ffd24a' }, parts: [
-    { x: 4, y: -9, rows: ['rr', 'kk', 'kk'] }, { x: 0, y: -6, rows: ['.ssssssss.', 'sSSSSSSSSs', 'sSssssssSs', 'kkkkkkkkkk'] },
-    { x: -2, y: -1, rows: ['kk', 'yk', 'kk'] }, { x: 10, y: -1, rows: ['kk', 'ky', 'kk'] }] };
-COS_ART.robo_visor = { outline: false, pal: { k: '#20263a', c: '#5ae6ff', C: '#d8fbff' }, parts: [{ x: 0, y: 2, rows: ['kkkkkkkkkk', 'kcCckkcCck', 'kcCckkcCck', 'kkkkkkkkkk'] }] };
-COS_ART.robo_core = { outline: false, pal: { s: '#aab4c8', S: '#e6ecf6', k: '#4a5268', c: '#5ae6ff', y: '#ffd24a', r: '#ff5a4a' }, parts: [{ x: 2, y: 9, rows: ['kkkkkk', 'kcSyrk', 'kSSSSk', 'kkkkkk'] }, { x: 1, y: 13, rows: ['s.s..s.s'] }] };
+// ---- BỘ ĐỒ VUI: Robot (+ sừng, đuôi quỷ để ghép với cánh dơi) ----
 COS_ART.devil_horns = { outline: false, pal: { r: '#c8283a', R: '#ff6a70', d: '#7a1424' }, parts: [{ x: -1, y: -9, rows: ['R..........R', 'rR........Rr', 'rr........rr', '.rd......dr.', '..d......d..'] }] };
 COS_ART.devil_tail = { outline: false, pal: { r: '#c8283a', R: '#ff6a70', d: '#7a1424' }, parts: [{ x: -5, y: 9, rows: ['.R.', 'RrR', 'drd', '.r.', '.r.', '.rr', '..r', '..rr'] }] };
 (function (L) { for (const q of L) COS_ITEMS[q[0]] = Object.assign({ slot: q[4], name: q[1], paint: q[3], tier: q[2] }, q[5] || {}); })([
-    ['mummy_wrap', 'Lính trắng · Băng quấn đầu', 'rare', 'mummy_wrap', 'headpiece'], ['mummy_eyes', 'Lính trắng · Băng che mặt', 'medium', 'mummy_eyes', 'eyewear'], ['mummy_body', 'Lính trắng · Băng quấn người', 'medium', 'mummy_body', 'scarf'],
-    ['robo_head', 'Robot · Mũ sắt ăng-ten', 'exclusive', 'robo_head', 'headpiece'], ['robo_visor', 'Robot · Kính đèn LED', 'rare', 'robo_visor', 'eyewear', { glow: [4.5, 3.5, 7, '90,230,255'] }], ['robo_core', 'Robot · Bảng mạch ngực', 'medium', 'robo_core', 'brooch'],
     ['devil_horns', 'Quỷ nhỏ · Cặp sừng', 'rare', 'devil_horns', 'headpiece'], ['devil_tail', 'Quỷ nhỏ · Đuôi mũi tên', 'medium', 'devil_tail', 'pouch']]);
 // ---- CÁNH SAU LƯNG (ô đồ mới `wings`): vẽ bằng công thức SAU thân nhân vật, hai cánh xoè hai bên; góc cánh theo trạng thái — đứng: vẫy nhẹ · chạy: cụp ra sau, rung nhanh · nhảy lên: đập mạnh · rơi: giương cao, rung như dù · lượn / bám tường: xoè ngang.
 const WING_DEF = {          // id: [tên, kiểu, màu chính, màu sáng, màu tối, độ dài px, hạng]
@@ -8918,8 +8922,130 @@ const WING_DEF = {          // id: [tên, kiểu, màu chính, màu sáng, màu 
 for (const k in WING_DEF) COS_ITEMS[k] = { slot: 'wings', name: WING_DEF[k][0], wing: WING_DEF[k], tier: WING_DEF[k][6] };
 COS_ITEMS.wings_none = { slot: 'wings', name: 'Không đeo cánh', wing: null, tier: 'recolor', none2: true };
 COS_SLOTS.push('wings');
-COS_SETS.push(['Lính trắng', ['mummy_wrap', 'mummy_eyes', 'mummy_body', 'cloak_mummy', 'rib_white']], ['Robot', ['robo_head', 'robo_visor', 'robo_core', 'cloak_blue', 'rib_cyan']],
+COS_SETS.push(['Robot', ['robot_head', 'cloak_white', 'rib_cyan']],
     ['Quỷ nhỏ', ['devil_horns', 'devil_tail', 'wings_devil', 'cloak_red', 'rib_black']]);
+// ---- v1.6-77: 5 BỘ THEO NGUYÊN TẮC «xoay quanh áo choàng» (COSMETICS_PLAN §11): mỗi bộ = áo (màu / hoa văn) + đồ trên mũ trùm + đồ trên mặt + 1 món nhỏ ----
+COS_ART.fox_ears = { outline: false, pal: { o: '#e8742a', O: '#b8501a', w: '#ffffff', k: '#5a2a14' }, parts: [{ x: -3, y: -8, rows: ['o...........o', 'oo.........oo', 'oko.......oko', 'okko.....okko', 'Okkoo...ookkO', 'Owwoo...oowwO'] }] };
+COS_ART.kitsune = { outline: false, pal: { r: '#e0303c', R: '#ff7a80' }, parts: [{ x: 0, y: 0, rows: ['....r....', '.rR...Rr.'] }, { x: 0, y: 6, rows: ['rr.....rr'] }] };
+COS_ART.fox_tail = { outline: false, pal: { o: '#e8742a', O: '#b8501a', w: '#ffffff', W: '#e4e0ea' }, parts: [{ x: -6, y: 8, rows: ['..ww..', '.wWoo.', 'ooooo.', 'oOooo.', '.oOooo', '..oOoo', '...oOo'] }] };
+COS_ART.skull = { outline: false, pal: { k: '#1a1420', g: '#7dff9a', s: '#b8b4c6' }, parts: [{ x: 0, y: 3, rows: ['.kk...kk.', '.kg...gk.', '.kk...kk.', '....k....', '..kkkkk..', '..k.k.k..'] }, { x: 0, y: 1, rows: ['s.......s'] }] };
+COS_ART.scythe = { outline: false, pal: { h: '#5a3a24', H: '#8a5a34', s: '#e4e6ee', S: '#9a9eb0' }, parts: [{ x: -15, y: -7, rows: ['..sss...', '.sSSSs..', 'sS.hHSs.', 's..hH.S.', '...hH...', '...hH...', '....hH..', '....hH..', '.....hH.', '.....hH.'] }] };
+COS_ART.soul_lamp = { outline: false, pal: { k: '#2a2438', K: '#5a5470', g: '#7dff9a', G: '#d8ffe0' }, parts: [{ x: 6, y: 11, rows: ['.kk.', 'kGgk', 'kggk', 'KkkK'] }] };
+COS_ART.frog_eyes = { outline: false, pal: { g: '#58c04a', G: '#a8f080', w: '#ffffff', k: '#17121f', d: '#3a8a36' }, parts: [{ x: -2, y: -10, rows: ['.gGg......gGg.', 'gwwwg....gwwwg', 'gwkkg....gwkkg', 'gwkkg....gwkkg', '.gggggggggggg.', 'gGGggggggggGGg', 'gggggggggggggg', 'dggggggggggggd'] }, { x: -3, y: -2, rows: ['dgg', 'ggg', 'ggd', 'gd.'] }, { x: 10, y: -2, rows: ['ggd', 'ggg', 'dgg', '.dg'] }] };
+COS_ART.frog_belly = { outline: false, pal: { y: '#e0eca0', Y: '#fffad0' }, parts: [{ x: 2, y: 9, rows: ['.yyyy.', 'yYyyyy', 'yyyyYy', '.yyyy.'] }] };
+COS_ART.lily = { outline: false, pal: { g: '#3a9a44', G: '#7fd45e', p: '#ff8fb8', P: '#ffd0e2' }, parts: [{ x: 6, y: 12, rows: ['..p.', '.pPp', 'gGGg', 'gggg'] }] };
+COS_ART.panda_ears = { outline: false, pal: { k: '#22202a', K: '#4a4658', w: '#f8f6f2', W: '#dcd8dc' }, parts: [{ x: -3, y: -8, rows: ['.kkk.......kkk.', 'kkKkk.....kkKkk', 'kkkkwwwwwwwkkkk', '.kkwwWwwwwWwkk.', '.wwwwwwwwwwwww.', '.wwwwwwwwwwwww.'] }, { x: -3, y: -2, rows: ['www', 'ww', 'wW', 'W.'] }, { x: 10, y: -2, rows: ['www', '.ww', '.Ww', '..W'] }] };
+COS_ART.panda_eyes = { outline: false, pal: { k: '#22202a', w: '#ffffff' }, parts: [{ x: 2, y: 3, rows: ['kk...kk', 'kwk.kwk', '.k...k.'] }] };
+COS_ART.panda_paws = { outline: false, pal: { k: '#22202a', K: '#4a4658' }, parts: [{ x: -2, y: 7, rows: ['.kk', 'kKkk', 'kkkk', '.kk.'] }, { x: 8, y: 7, rows: ['kk.', 'kkKk', 'kkkk', '.kk.'] }] };
+COS_ART.bamboo = { outline: false, pal: { g: '#58b04a', G: '#a8e070', d: '#2f7a2c', l: '#7fd45e' }, parts: [{ x: 7, y: 8, rows: ['..ll', '.ll.', '..g.', '.Gd.', '.g..', 'Gd..', 'g...'] }] };
+COS_ART.bcat_ears = { outline: false, pal: { k: '#2a2438', K: '#4a4258', p: '#ff9ec4', P: '#ffd0e2' }, parts: [{ x: 0, y: -6, rows: ['.kk....kk.', 'kpPk..kPpk', 'kpPPkkPPpk', 'kkkkkkkkkk'] }] };
+COS_ART.whiskers = { outline: false, pal: { k: '#3a3550', p: '#ff8fb8' }, parts: [{ x: -3, y: 5, rows: ['kkk....pp...kkk', '.kk.........kk.'] }] };
+COS_ART.cat_bell = { outline: false, pal: { r: '#d02a3a', R: '#ff6a72', y: '#f2c230', Y: '#b88a14', k: '#5a3a10' }, parts: [{ x: 0, y: 8, rows: ['rRrrrrrrRr'] }, { x: 4, y: 9, rows: ['yYy', 'yyY', '.k.'] }] };
+COS_ART.fish = { outline: false, pal: { b: '#6a9ad8', B: '#b8d8ff', k: '#17121f' }, parts: [{ x: 6, y: 12, rows: ['.bb..b', 'bkBbbb', 'bBbb.b'] }] };
+for (const [id, nm, tier, art, slot] of [
+    ['fox_ears', 'Cáo thần · Tai cáo', 'exclusive', 'fox_ears', 'headpiece'], ['kitsune_mask', 'Cáo thần · Vằn mặt nạ', 'medium', 'kitsune', 'eyewear'], ['fox_tail', 'Cáo thần · Đuôi cáo', 'rare', 'fox_tail', 'pouch'],
+    ['skull_face', 'Tử thần · Mặt đầu lâu', 'rare', 'skull', 'eyewear'], ['scythe', 'Tử thần · Lưỡi hái', 'exclusive', 'scythe', 'pouch'], ['soul_lamp', 'Tử thần · Đèn hồn', 'medium', 'soul_lamp', 'belt'],
+    ['frog_eyes', 'Ếch · Mũ mắt ếch', 'exclusive', 'frog_eyes', 'headpiece'], ['frog_belly', 'Ếch · Bụng ếch', 'small', 'frog_belly', 'brooch'], ['lily_pad', 'Ếch · Lá sen', 'medium', 'lily', 'pouch'],
+    ['panda_ears', 'Gấu trúc · Tai gấu', 'rare', 'panda_ears', 'headpiece'], ['panda_eyes', 'Gấu trúc · Quầng mắt', 'medium', 'panda_eyes', 'eyewear'], ['bamboo', 'Gấu trúc · Nhánh tre', 'small', 'bamboo', 'pouch'], ['panda_paws', 'Gấu trúc · Vai lông đen', 'medium', 'panda_paws', 'brooch'],
+    ['bcat_ears', 'Mèo đen · Tai mèo', 'rare', 'bcat_ears', 'headpiece'], ['whiskers', 'Mèo đen · Ria mèo', 'small', 'whiskers', 'eyewear'], ['cat_bell', 'Mèo đen · Vòng chuông', 'medium', 'cat_bell', 'scarf'], ['fish_snack', 'Mèo đen · Cá khô', 'small', 'fish', 'pouch']])
+    COS_ITEMS[id] = { slot, name: nm, paint: art, tier };
+COS_ITEMS.scythe.classes = ['sword', 'alch'];          // nối dài từ chuôi kiếm / đầu gậy sau lưng (Stryker không đeo gì sau lưng)
+COS_ITEMS.soul_lamp.glow = [7.5, 13, 8, '120,255,150']; COS_ITEMS.skull_face.glow = [4.5, 4.5, 7, '120,255,150'];
+COS_SETS.push(['Cáo thần', ['fox_ears', 'kitsune_mask', 'fox_tail', 'cloak_orange', 'rib_white']], ['Tử thần', ['skull_face', 'scythe', 'soul_lamp', 'cloak_reaper', 'rib_black']],
+    ['Ếch', ['frog_eyes', 'frog_belly', 'lily_pad', 'cloak_frog', 'rib_green']], ['Gấu trúc', ['panda_ears', 'panda_eyes', 'panda_paws', 'bamboo', 'cloak_panda', 'rib_green']], ['Mèo đen', ['bcat_ears', 'whiskers', 'cat_bell', 'fish_snack', 'cloak_black', 'rib_red']]);
+// ---- v1.6-79: bộ Bạch tuộc + món lẻ tai thỏ cụp, củ cà rốt, sừng kỳ lân ----
+COS_ART.rabbit_ears = { outline: false, pal: { p: '#f6f2f8', P: '#ffb0c8', g: '#c8c0d8' }, parts: [{ x: -3, y: -11, rows: ['.pp...........', 'pPPp..........', 'pPPp..........', 'pPPp..........', 'pPPp.....ppp..', 'pPPp....pPPpp.', 'pPPp....pPPPpp', 'pPpg....pPp.pp', 'ppg......pp..p'] }] };
+COS_ART.carrot = { outline: false, pal: { o: '#f08a2a', O: '#c8601a', g: '#58b04a', G: '#9ae07a' }, parts: [{ x: 6, y: 10, rows: ['..gG', '.Ggg', 'ooO.', 'oOo.', 'oo..', 'O...'] }] };
+COS_ART.uni_horn = { outline: false, pal: { w: '#ffffff', r: '#ff4a5a', o: '#ff9a3a', y: '#ffe14a', g: '#5ad06a', b: '#4a9aff', i: '#5a5ae0', v: '#b06aff' }, parts: [{ x: 2, y: -12, rows: ['..w..', '..r..', '.ro..', '.oy..', '.ygg.', '.gbb.', '.bii.', 'iivvv'] }] };          // xoắn 7 sắc cầu vồng
+COS_ART.octo_dome = { outline: false, pal: { p: '#d0609a', P: '#f090c0', s: '#ffd0e4', d: '#a04070' }, parts: [{ x: -2, y: -11, rows: ['....pppppp....', '..ppPPpppppp..', '.pPPpppppPppp.', 'ppPppsppppsppp', 'ppppppppppppps', 'pspppppppppppp', 'pppppsppppsppp', '.dpppppppppppd', '..dddddddddd..'] }] };
+COS_ART.octo_arm = { outline: false, pal: { p: '#d0609a', P: '#f090c0', s: '#ffd0e4' }, parts: [{ x: 8, y: 7, rows: ['Pp..', 'psp.', '.ppP', '..sp', '.ppP', 'pps.', 'pp..', '.p..'] }] };
+COS_ART.octo_blush = { outline: false, pal: { k: '#ff7fb0' }, parts: [{ x: 0, y: 5, rows: ['k.k.....k.k', '.k.......k.'] }] };
+for (const [id, nm, tier, art, slot] of [['rabbit_ears', 'Tai thỏ cụp', 'medium', 'rabbit_ears', 'headpiece'], ['carrot', 'Củ cà rốt', 'small', 'carrot', 'pouch'], ['uni_horn', 'Sừng kỳ lân', 'rare', 'uni_horn', 'headpiece'],
+    ['octo_dome', 'Bạch tuộc · Mũ bạch tuộc', 'exclusive', 'octo_dome', 'headpiece'], ['octo_arm', 'Bạch tuộc · Xúc tu', 'medium', 'octo_arm', 'brooch'], ['octo_blush', 'Bạch tuộc · Má hồng', 'small', 'octo_blush', 'eyewear']])
+    COS_ITEMS[id] = { slot, name: nm, paint: art, tier };
+COS_ITEMS.uni_horn.spark = [[4, -12], [3, -8]];
+COS_ART.bee_ant = { outline: false, pal: { y: '#ffd24a', Y: '#fff2a0', k: '#8a7458' }, parts: [{ x: 0, y: -11, rows: ['Yy......yY', 'yy......yy', '.k......k.', '..k....k..', '..k....k..', '...k..k...', '...k..k...'] }] };
+COS_ART.honey = { outline: false, pal: { y: '#ffc23a', Y: '#fff0a0', k: '#7a4c22', o: '#d8902a' }, parts: [{ x: 6, y: 11, rows: ['.YY.', 'kkkk', 'oyYo', 'oyyo', '.oo.'] }] };
+COS_ART.straw_top = { outline: false, pal: { g: '#3a9a44', G: '#7fd45e', d: '#256a2a' }, parts: [{ x: -1, y: -8, rows: ['.....dd.....', '.....d......', '..gg.gG.gg..', '.gGgggggggGg', 'gggGggggGggg', '.dg.dg.gd.gd'] }] };
+COS_ART.straw_flower = { outline: false, pal: { w: '#ffffff', W: '#e4e0ea', y: '#ffd84a' }, parts: [{ x: 6, y: 9, rows: ['.w.', 'wyw', '.W.'] }] };
+for (const [id, nm, tier, slot] of [['bee_ant', 'Ong · Râu ong', 'medium', 'headpiece'], ['honey', 'Ong · Hũ mật', 'small', 'pouch'], ['straw_top', 'Dâu tây · Cuống lá', 'medium', 'headpiece'], ['straw_flower', 'Dâu tây · Hoa dâu', 'small', 'brooch']])
+    COS_ITEMS[id] = { slot, name: nm, paint: id, tier };
+COS_SETS.push(['Bạch tuộc', ['octo_dome', 'octo_blush', 'octo_arm', 'cloak_octo', 'rib_pink']], ['Ong', ['bee_ant', 'honey', 'cloak_bee', 'wings_bee', 'rib_yellow']], ['Dâu tây', ['straw_top', 'straw_flower', 'cloak_straw', 'rib_green']]);
+COS_ART.dog_cap = {outline: false, pal: {f: '#fafafc', F: '#d0d2e0', k: '#3a3646', m: '#f0d4a4', e: '#2a2028', W: '#ffffff', n: '#2a2028', p: '#ff7a8a', d: '#aeb4cc', t: '#b8783c', T: '#8a542a'}, parts: [{x: -3, y: -5, rows: ['................', '................', '....dddddddd....', '...dffkkffffd...', '..dffkffffffFd..', '..dfffffffffFd..', '..dfffffffffFd..', '..dfffffffffFd..', '..dffeWfffeWfd..', '..dffeefffeefd..', '..dfmmmnnnmmfd..', '...dmmmmkmmmd...', '....dmmpppmd....', '.....dddddd.....']}, {x: -3, y: -1, rows: ['tt', 'tT', 'tT', 'tT', 'tT', 'tt', '.t']}, {x: 11, y: -1, rows: ['tt', 'Tt', 'Tt', 'Tt', 'Tt', 'tt', 't.']}]};
+COS_ART.dog_collar = {outline: false, pal: {r: '#d02a3a', R: '#ff6a72', y: '#f2c230', Y: '#b88a14'}, parts: [{x: 0, y: 8, rows: ['rRrrrrrrRr']}, {x: 4, y: 9, rows: ['yYy', '.y.']}]};
+COS_ART.dog_bone = {outline: false, pal: {w: '#fff6e0', W: '#d8c8a0'}, parts: [{x: 6, y: 12, rows: ['ww..ww', 'WwwwwW', 'ww..ww']}]};
+COS_ART.cow_cap = {outline: false, pal: {w: '#fafafc', W: '#d0d2e0', k: '#2a2630', h: '#f0e4c0', p: '#ffb0c0', P: '#e07890', e: '#2a2028', d: '#4a4658'}, parts: [{x: -3, y: -5, rows: ['..h..........h..', '..hh........hh..', '...hdd....ddh...', '...dkkkwwwwwd...', '..dwkkkwwwwwWd..', '..dwwkwwwwwwWd..', '..dwwwwwwwwwWd..', '..dwwwwwwwwwWd..', '..dwweWwwweWwd..', '..dwweewwweewd..', '..dwppppppppwd..', '..dwppkpppkpwd..', '...dwPPPPPPPd...', '....dddddddd....']}, {x: -3, y: 1, rows: ['pp', 'pP', 'pp']}, {x: 11, y: 1, rows: ['pp', 'Pp', 'pp']}]};
+COS_ART.cow_bell = {outline: false, pal: {y: '#f2c230', Y: '#b88a14', k: '#5a3a10', b: '#6a4a2a'}, parts: [{x: 0, y: 8, rows: ['bbbbbbbbbb']}, {x: 3, y: 9, rows: ['yyyy', 'yYYy', 'yyyy', '.kk.']}]};
+COS_ART.cow_milk = {outline: false, pal: {w: '#ffffff', g: '#9ac8f0', G: '#6a98c8', c: '#d8383a'}, parts: [{x: 7, y: 11, rows: ['.cc.', 'gwwg', 'gwwg', 'gwwg', 'GGGG']}]};
+COS_ART.owl_cap = {outline: false, pal: {b: '#a06a3c', D: '#6a4228', c: '#f2e0b8', y: '#ffd24a', k: '#22160a', o: '#ff9a2a', d: '#6a4228'}, parts: [{x: -3, y: -5, rows: ['..d..........d..', '..dd........dd..', '..dbd......dbd..', '...dDbbbbbbDd...', '..dbbDbbbbDbbd..', '..dbccbbbbccbd..', '..dccccccccccd..', '..dcyyyccyyycd..', '..dcykyccykycd..', '..dcykyooykycd..', '..dcyyyooyyycd..', '..dbbccccccbbd..', '...dbbDbbDbbd...', '....dddddddd....']}]};
+COS_ART.owl_wing = {outline: false, pal: {b: '#a8764a', B: '#d8a878', d: '#6a4228'}, parts: [{x: 9, y: 7, rows: ['Bb.', 'bBb', 'bbb', 'bdb', '.bd']}]};
+COS_ART.owl_feather = {outline: false, pal: {b: '#d8a878', d: '#6a4228'}, parts: [{x: 6, y: 12, rows: ['..b', '.bb', 'bbd', 'd..']}]};
+for (const [id, nm, tier, slot] of [['dog_cap', 'Chó đốm · Mũ tai cụp', 'exclusive', 'headpiece'], ['dog_collar', 'Chó đốm · Vòng cổ', 'medium', 'scarf'], ['dog_bone', 'Chó đốm · Khúc xương', 'small', 'pouch'],
+    ['cow_cap', 'Bò sữa · Mũ bò', 'exclusive', 'headpiece'], ['cow_bell', 'Bò sữa · Chuông bò', 'medium', 'scarf'], ['cow_milk', 'Bò sữa · Chai sữa', 'small', 'pouch'],
+    ['owl_cap', 'Cú · Mũ cú', 'exclusive', 'headpiece'], ['owl_wing', 'Cú · Cánh nhỏ', 'medium', 'brooch'], ['owl_feather', 'Cú · Lông vũ', 'small', 'pouch']])
+    COS_ITEMS[id] = { slot, name: nm, paint: id, tier };
+COS_SETS.push(['Chó đốm', ['dog_cap', 'dog_collar', 'dog_bone', 'cloak_dalm', 'rib_red']], ['Bò sữa', ['cow_cap', 'cow_bell', 'cow_milk', 'cloak_cow', 'rib_white']], ['Cú', ['owl_cap', 'owl_wing', 'owl_feather', 'cloak_owl', 'rib_yellow']]);
+COS_ART.pumpkin_head = {'outline': false, 'pal': {'a': '#1a2434', 'b': '#be6a64', 'c': '#ee972d', 'd': '#ea7336', 'e': '#8a5153', 'f': '#ae2c50', 'g': '#de523d', 'h': '#fefdfe'}, 'parts': [{'x': -3, 'y': -6, 'rows': ['......aa.......', '....aabbaaa....', '..aacdeeeccaa..', '.accdcfeefdcca.', 'acccccdffccccda', 'adcgdccgccccgca', 'agcgcddgdddcgca', 'agcgdaagdddaada', 'adcgcaaaddaaaca', 'acddgaaaddaaaga', 'agddggaaggaagga', '.agggggcdcdgga.', '..aagggggggaa..']}]};
+COS_ART.sunflower_head = {'outline': false, 'pal': {'a': '#1f2037', 'b': '#f8d05b', 'c': '#e7973b', 'd': '#de503d', 'e': '#aa313f', 'f': '#ec7535', 'g': '#a3c341', 'h': '#40943d'}, 'parts': [{'x': -4, 'y': -6, 'rows': ['.......aaa.......', '....aaabbbaaa....', '...abbabbbabba...', '..aabbcbbbcbbaa..', '.abbcbbbbbbbcbba.', '.abbbcbcccbcbbba.', '.aaccdcccccdccaa.', 'abbbdccccccccbbba', 'acbbcccacccacbbca', 'accccccacccacccca', '.aacccdaeeeadcaa.', '.acbdccfcccccbca.', '.acccdffcccdccca.', '..aabbcbbbcbbaa..', '...accacccacca...', '...aaaacccaaa....']}]};
+COS_ART.snow_head = {'outline': false, 'pal': {'a': '#1e2235', 'b': '#fdfefd', 'c': '#bbbdd3', 'd': '#f4903c', 'e': '#871c4c', 'f': '#ad2d42'}, 'parts': [{'x': -3, 'y': -5, 'rows': ['.....aaaa......', '...aacbbbaa....', '..acbbbbbbba...', '.abbbbbbbbbca..', '.abbbbbbbbbba..', 'abbbbbbbbbbbca.', 'acbbbbabbbabba.', 'acbbbbabbbabba.', 'accbbcacdddddda', '.acbabbbcddddaa', '.acccbabaccca..']}]};
+COS_ART.snow_scarf = {'outline': false, 'pal': {'e': '#871c4c', 'f': '#ad2d42', 'r': '#d84a5a'}, 'parts': [{'x': 0, 'y': 6, 'rows': ['efrrrrrrfe', '.ef.......', '.ef.......']}]};
+COS_ART.snow_body = {'outline': false, 'pal': {'a': '#1e2235', 'b': '#fdfefd', 'c': '#bbbdd3'}, 'parts': [{'x': -3, 'y': 7, 'rows': ['.....aaaaaa.....', '...aabbbbbbaa...', '..abbbbbbbbbba..', '.abbbbbbbbbbbba.', '.abbbbbbbabbbba.', 'acbbbbbbbbbbbbba', 'acbbbbbbbbbbbbba', 'acbbbbbbbabbbbba', 'acbbbbbbbbbbbbba', 'acbbbbbbbbbbbbba', 'accbbbbbbabbbbba', '.acbbbbbbbbbbba.', '.accbbbbbbbbbba.', '..acccbbbbbbba..', '...aaccccccaa...', '.....aaaaaa.....']}]};
+COS_ART.pumpkin_vine = {'outline': false, 'pal': {'g': '#40943d', 'G': '#a3c341'}, 'parts': [{'x': 0, 'y': 7, 'rows': ['.gGgggGgg.', 'gG..gg..Gg']}]};
+COS_ART.sq_head = {'outline': false, 'pal': {'a': '#1f2436', 'b': '#d78e6b', 'c': '#c0665f', 'd': '#faad70', 'e': '#fdfcf4', 'f': '#faa9a7', 'g': '#6e4048', 'h': '#fccd94', 'i': '#924858'}, 'parts': [{'x': -2, 'y': -3, 'rows': ['...baa.aa....', '...addadda...', '...adeadea...', '.abddeddeda..', 'abddddddddba.', 'adddeeeeeeda.', 'addeeaeeeaea.', 'addeeaeeeaea.', 'ddeffghhagfea', 'bdeeeeeeeeeea', 'addeeeeeeeha.', '.aabdehhaaa..']}]};
+COS_ART.sq_tail = {'outline': false, 'pal': {'a': '#1f2436', 'b': '#d78e6b', 'c': '#c0665f', 'd': '#faad70', 'e': '#fdfcf4', 'f': '#faa9a7', 'g': '#6e4048', 'h': '#fccd94', 'i': '#924858'}, 'parts': [{'x': -9, 'y': -5, 'rows': ['....aaaaa...', '..aabbbbbaa.', '.abbccccccbaa', 'addddccccca', '.aadddccca', '...addcca', '....adda', '....adda', '...addda', '...addca', '..adddad', '..addcab', '..adccca', '..adccci', '...abccca', '...adccca', '....abcca', '.....acia', '......aaa']}]};
+for (const [id, nm, tier, slot] of [['pumpkin_head', 'Bí ngô · Đầu bí ngô', 'exclusive', 'headpiece'], ['pumpkin_vine', 'Bí ngô · Cổ lá', 'small', 'scarf'], ['sunflower_head', 'Hướng dương · Đầu hoa', 'exclusive', 'headpiece'],
+    ['snow_head', 'Người tuyết · Đầu tuyết', 'exclusive', 'headpiece'], ['snow_scarf', 'Người tuyết · Khăn đỏ', 'small', 'scarf'], ['snow_body', 'Người tuyết · Thân tuyết', 'rare', 'belt'], ['sq_head', 'Sóc · Đầu sóc', 'exclusive', 'headpiece'], ['sq_tail', 'Sóc · Đuôi xù', 'rare', 'pouch']])
+    COS_ITEMS[id] = { slot, name: nm, paint: id, tier };
+COS_ITEMS.snow_body.wide = true; COS_ITEMS.snow_body.setOnly = true; COS_ITEMS.cloak_snow.setOnly = true;          // thân tuyết + áo tàng hình chỉ bán theo bộ
+COS_SETS.push(['Bí ngô', ['pumpkin_head', 'pumpkin_vine', 'cloak_pumpkin', 'rib_orange']], ['Hướng dương', ['sunflower_head', 'cloak_green', 'rib_yellow']], ['Người tuyết', ['snow_head', 'snow_scarf', 'snow_body', 'cloak_snow', 'rib_red']], ['Sóc', ['sq_head', 'sq_tail', 'cloak_sq', 'rib_white']]);
+COS_ART.ocat_head = {'outline': false, 'pal': {'a': '#1d2232', 'b': '#fdbd79', 'c': '#ea8861', 'd': '#235b56', 'e': '#fca7a9', 'f': '#308780'}, 'parts': [{'x': -3, 'y': -5, 'rows': ['..aa......aa..', '.abba....acca.', '.abbba..accca.', '.abcbaaaaaaca.', '.abccabcccbaa.', '.abccbbbccbba.', '.acbbbbbbbbba.', '.abbbbdbbbdba.', 'aaccbbdbbbdbaa', 'abbbeefcccfeea', 'acccbbbbbbbbca', '.abbbbbbbbbba.', '..aacbbccaaa..']}]};
+COS_ART.pink_head = {'outline': false, 'pal': {'a': '#182533', 'b': '#ad2f41', 'c': '#cdd2e4', 'd': '#d574a8', 'e': '#fba9a0', 'f': '#7f204d', 'g': '#f6fbfd'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['.....aaaaaaa.......', '...aabbbcgccaa.....', '..adbbbbcgcccba....', '.adefbeeeeeeeeda...', '.aeffeeeeeeeeeea...', 'adeffeeddeeeddeea..', 'aeeffeedddeddddea..', 'aeefeeeggggggddea..', 'aeefeeegagggagdea..', 'aeedeeggagggagdea..', 'adedeegefgggfedea..', 'adddeeggggggggdda..', 'adddeggggggggddda..', 'addde.......addda..', '.add........adda...']}]};
+COS_ART.diver_head = {'outline': false, 'pal': {'a': '#1b2331', 'b': '#e77634', 'c': '#565a7e', 'd': '#fdfefe', 'e': '#45a7bf', 'f': '#73c2c0', 'g': '#edb343'}, 'parts': [{'x': -2, 'y': -5, 'rows': ['..........aaa', '..........aba', '..........aca', '..aaaaaaaaaca', '.addddddddaca', 'addaaaaaaaaaa', 'adabbbbbbbbba', 'adabeefffeeba', 'adabefffeefba', 'adabfffeeffba', 'adabbbbbbbbba', '.adaaaaaaaaa.']}]};
+COS_ART.medic_cap = {'outline': false, 'pal': {'a': '#192535', 'b': '#dc503d', 'c': '#ebc3b7', 'd': '#707a90', 'e': '#ab313d', 'f': '#faefe8', 'g': '#682e33', 'h': '#bdbfd4', 'i': '#525468', 'j': '#8489a8'}, 'parts': [{'x': -2, 'y': -7, 'rows': ['..aaaaaaaa........', '.abbbbbbcbad......', 'aeeeebbfffbgd.....', 'aeeebbbbcbbgd.....', 'aeeebbaaaaaaa.....', 'aeeeeabbbbbbbad...', 'aaaaaaaaaaaaaad...']}]};
+COS_ART.straw_hat = {'outline': false, 'pal': {'a': '#1d2134', 'b': '#fdcb8a', 'c': '#feab71', 'd': '#da5139', 'e': '#b42a45', 'f': '#fcfcfa', 'g': '#f3d164', 'h': '#ee9439', 'i': '#4ea6b2', 'j': '#3b8378', 'k': '#b1ead1', 'l': '#70c4bf'}, 'parts': [{'x': -4, 'y': -7, 'rows': ['.....aaaaaaa.....', '....abbbbbbba....', '...acbbbbbbbba...', '...accbbbbbbba...', '...accccbbddddaa.', '.aaeeeeeedbbbbbba', 'acccbbbbbbcaaaaaa', 'aaaaaaaaaaaafaaa.']}]};
+COS_ART.flower_big = {'outline': false, 'pal': {'a': '#1c2232', 'b': '#f7a7a2', 'c': '#60aa3b', 'd': '#8ee5bd', 'e': '#fcfdf9', 'f': '#6a3c57', 'g': '#f6cf63', 'h': '#dd7a8a', 'i': '#6fc5bd', 'j': '#225c4d', 'k': '#c6d7e0', 'l': '#ee913b'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['.........aa.......', 'aa.aa..aabba.aa...', 'acaddaabbebfaggaa.', 'acadedfbefehfgegga', '.aiejeefhkhhfefega', '.aiikijfhhffllela.', '..ajiijeffeefflla.', '.aca..........faca', '.aaa..........acca']}]};
+for (const [id, nm, tier] of [['ocat_head', 'Mèo cam · Đầu mèo', 'exclusive'], ['pink_head', 'Tóc hồng · Mái tóc', 'exclusive'], ['diver_head', 'Thợ lặn · Mặt nạ lặn', 'exclusive'], ['medic_cap', 'Mũ đỏ chữ thập', 'medium'], ['straw_hat', 'Mũ rơm', 'medium'], ['flower_big', 'Vòng hoa lớn', 'medium']])
+    COS_ITEMS[id] = { slot: 'headpiece', name: nm, paint: id, tier };
+COS_SETS.push(['Mèo cam', ['ocat_head', 'cloak_sq', 'rib_white']], ['Tóc hồng', ['pink_head', 'cloak_pink', 'rib_pink']], ['Thợ lặn', ['diver_head', 'cloak_teal', 'rib_cyan']]);
+COS_ART.tv_head = {'outline': false, 'pal': {'a': '#606579', 'b': '#191e32', 'c': '#bcbed3', 'd': '#86889d', 'e': '#484c67', 'f': '#55a1b4', 'g': '#54829a', 'h': '#6ec4c2', 'i': '#387b77', 'j': '#233c4e', 'k': '#8be2ca', 'l': '#7ba1b5', 'm': '#ffffff'}, 'parts': [{'x': -4, 'y': -5, 'rows': ['...........abbb.', '......bbb.bbacb.', '......bcbbbadbb.', '.bbbbbbbcbcabbbb', 'beeeaddddddddddb', 'beeeadffffffgedb', 'beeeadhhhhhhfedb', 'beeeadhbhhhijedb', 'beeeadhbhhhabedb', 'beeeadkbfffebedb', 'beeeadhgffhfaedb', 'beeeadfllllldadb', 'ajjjeaacccaaaaaa']}]};
+COS_ART.clown_head = {'outline': false, 'pal': {'a': '#231c44', 'b': '#182024', 'c': '#626287', 'd': '#f1b641', 'e': '#84b83f', 'f': '#866a3d', 'g': '#4ea5b4', 'h': '#dc9758', 'i': '#ee943a', 'j': '#66ac7d', 'k': '#df4c33', 'l': '#712752', 'm': '#e6703f', 'n': '#f7fefd', 'o': '#ce8c85', 'p': '#dea89e', 'q': '#8d8f96', 'r': '#beb9c8', 's': '#d3d2df'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['......aaaaaab.....', '...caaddeeeeeaa...', '..afddddeeeeegga..', '.ahiddddeeeeeggga.', '.ahdhhdddeejgggga.', 'akiddihddeggggglla', 'akkmdhnnnnnnnnllla', 'akkkonnnnnnnnnnlla', 'akkpnnnnannnnanala', '.aaqnnnnannnnanaa.', '..aqnnngarkkmaga..', '..acsnnnnnkkmnna..', '...ccnnnnnnnnra...']}]};
+COS_ART.robot_head = {'outline': false, 'pal': {'a': '#1f2135', 'b': '#88879f', 'c': '#72c6be', 'd': '#b7bbd3', 'e': '#fdfdff', 'f': '#e6e9ed', 'g': '#4c7276', 'h': '#d3d4d7', 'i': '#505361', 'j': '#3a3e49', 'k': '#70748f', 'l': '#52a0a8'}, 'parts': [{'x': -3, 'y': -5, 'rows': ['......aaa.......', '....baccca......', '..aaaaacccaaaa..', '.addeeeeeeeefda.', '.aeedaaacccggea.', 'aaaghaaaaaaaaaa.', 'aeaghaaeaaabeaaa', 'adaghaeaeaebgeaa', 'aaaieaiajajaajab', 'babeeaaaaaaaiba.', '.kgbebbbbbbbbda.', '..ajbdffddgkgkg.']}]};
+COS_ART.dino_head = {'outline': false, 'pal': {'a': '#1e2339', 'b': '#81bdbb', 'c': '#5d9aad', 'd': '#467987', 'e': '#dc5439', 'f': '#fffcfe', 'g': '#464a63', 'h': '#288e7f'}, 'parts': [{'x': -6, 'y': -4, 'rows': ['a....aaaaaaaaaaaa.', 'a...abbbbbbbbbbbba', '...aacccccccacdaca', '..aeaccccaccccccca', '..aeaccccaccccccca', '...aacccdaccccccca', '..aeaccccccaccccca', '..aeaddcccccaaaaa.', '...aadddcccffag...', '....acccccfffag...', '....acccccfffag...']}]};
+COS_ART.astro_head = {'outline': false, 'pal': {'a': '#565979', 'b': '#878ba9', 'c': '#1d2236', 'd': '#717388', 'e': '#bbbdcb', 'f': '#f9fafc', 'g': '#303551', 'h': '#dbdde2'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['.ab...cccccd.....', '.cdacceffffdcc...', '.ccafffgggggbfc..', '.cbhffgggbbagcfc.', 'ccfffgggggbbagcc.', 'cfdbfggggcgggggec', 'ceabfcggggggabgfc', 'ceabfcccggggcccfc', 'cccaeccccccccccfc', '.cbeeccccccccccc.', '.cbeeeccccccccfc.', '.ccaefecccccbfc..', '.cbacbeeeeefac...']}]};
+COS_ART.nonla = {'outline': false, 'pal': {'a': '#2b1a30', 'b': '#dd8c6a', 'c': '#ffa963', 'd': '#f0b581', 'e': '#fdfeff', 'f': '#666570', 'g': '#babcd3', 'h': '#d3d2df', 'i': '#888b9f', 'j': '#464c62'}, 'parts': [{'x': -5, 'y': -7, 'rows': ['........aa........', '......aabbaa......', '...aaaccccccaaa...', '.aadcccccccccccaa.', 'abbbbbbbbbbbbbbbba', 'acccccccccccccccca', 'aaaaaaaaaaaaaaaaaa']}]};
+COS_ART.tophat = {'outline': false, 'pal': {'a': '#1c2134', 'b': '#464a67', 'c': '#b9bbd0', 'd': '#fefdfe', 'e': '#d3d3d8', 'f': '#33384c'}, 'parts': [{'x': -6, 'y': -7, 'rows': ['.....aaaaaaaaa.....', '....aaaabbaabbab...', '....aaaabbaabbab...', '....aaaabbaabbab...', '....aaaabbaabbab...', '.baaccccddccddc.aa.', 'aaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaa']}]};
+COS_ART.cap_pink = {'outline': false, 'pal': {'a': '#24263b', 'b': '#464b5e', 'c': '#f9fdff', 'd': '#b7bccf', 'e': '#f7a4aa', 'f': '#f2d1d2', 'g': '#8a9195', 'h': '#646670', 'i': '#70748d', 'j': '#e6e7eb'}, 'parts': [{'x': -3, 'y': -6, 'rows': ['..aaaaaaaaab....', '.acccccccccca...', 'adddddceeefcca..', 'addddcccecccca..', 'addddccaaaaaaaa.', 'adddddaeeeeeeeea', 'aaaaaaaaaaaaaaaa']}]};
+COS_ART.cap_green = {'outline': false, 'pal': {'a': '#7a7c92', 'b': '#1f2235', 'c': '#63686f', 'd': '#fefeff', 'e': '#b7bccf', 'f': '#a7c445', 'g': '#c6d38e', 'h': '#d9e4ae', 'i': '#a4bc67', 'j': '#dfdee5', 'k': '#92929c', 'l': '#414553'}, 'parts': [{'x': -3, 'y': -6, 'rows': ['..abbbbbbbbb....', '.bcdddddddddb...', 'beeeeedfdgffdb..', 'beeeeddffhdfdb..', 'beeeeddbbbbbbbb.', 'beeeeebifffffffb', 'bbbbbbbbbbbbbbbb']}]};
+COS_ART.cap_teal = {'outline': false, 'pal': {'a': '#212437', 'b': '#5e637e', 'c': '#fdfeff', 'd': '#babdd0', 'e': '#61a4b2', 'f': '#8d8d99', 'g': '#d8dade'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['.....aaaaaaaaa....', '...baccccccccca...', '..bbddddceeeeeca..', '..bbdddccceddeca..', '..bbdddccaaaaaaaa.', '..bbddddaeeeeeeeea', '..baaaaaaaaaaaaaaa']}]};
+COS_ART.cap_orange = {'outline': false, 'pal': {'a': '#1b1e31', 'b': '#fafefe', 'c': '#4f546a', 'd': '#babdd0', 'e': '#dcc16d', 'f': '#f0ae3b', 'g': '#fffdca', 'h': '#323a49', 'i': '#c0a869', 'j': '#dcd9e7', 'k': '#8286a1', 'l': '#71738a'}, 'parts': [{'x': -5, 'y': -6, 'rows': ['.....aaaaaaaaa.....', '....abbbbbbbbba....', '..caddddbefffbbaa..', '..cadddbbbgfffbaa..', '..cadddbbhaaaaaaaa.', '..caddddaieffffffea', '..caaaaaaaaaaaaaaaa']}]};
+COS_ART.cap_dark = {'outline': false, 'pal': {'a': '#191e33', 'b': '#454867', 'c': '#7b7f99', 'd': '#e3e6f0', 'e': '#c1c2c9', 'f': '#fffffd', 'g': '#9a9da6', 'h': '#60667c'}, 'parts': [{'x': -3, 'y': -6, 'rows': ['..aaaaaaaaa....', '.abbbbbbbbbab..', 'aaaaaabbbbbbba.', 'aaaaabbbbbbbba.', 'aaaaabbaaaaaaaa', 'aaaaaaabbbbbbbb', 'aaaaaaaaaaaaaaa']}]};
+COS_ART.vr_visor = {'outline': false, 'pal': {'a': '#80829b', 'b': '#1d2236', 'c': '#45455f', 'd': '#61646c', 'e': '#fefefd', 'f': '#b9bcbe', 'g': '#d3d2dc'}, 'parts': [{'x': -3, 'y': 2, 'rows': ['.be.bbcccbbbbcbb', 'bbbbbbcccbbbbcbb', 'bbbbbcccbbbccbbb', '.be.bcccb.bccbb.']}]};
+for (const [id, nm, tier, slot] of [['tv_head', 'Đầu TV · Tivi', 'exclusive'], ['clown_head', 'Chú hề · Tóc bảy màu', 'exclusive'], ['robot_head', 'Robot · Đầu robot', 'exclusive'], ['dino_head', 'Khủng long nhí · Đầu khủng long', 'exclusive'], ['astro_head', 'Phi hành gia · Mũ kính', 'exclusive'],
+    ['nonla', 'Nón lá', 'medium'], ['tophat', 'Mũ chóp cao', 'medium'], ['cap_pink', 'Mũ lưỡi trai hồng', 'small'], ['cap_green', 'Mũ lưỡi trai xanh lá', 'small'], ['cap_teal', 'Mũ lưỡi trai xanh ngọc', 'small'], ['cap_orange', 'Mũ lưỡi trai cam', 'small'], ['cap_dark', 'Mũ lưỡi trai đen', 'small'], ['vr_visor', 'Kính VR', 'medium', 'eyewear']])
+    COS_ITEMS[id] = { slot: slot || 'headpiece', name: nm, paint: id, tier };
+COS_SETS.push(['Đầu TV', ['tv_head', 'cloak_tv', 'rib_cyan']], ['Chú hề', ['clown_head', 'cloak_white', 'rib_red']], ['Khủng long nhí', ['dino_head', 'cloak_dino', 'rib_red']], ['Phi hành gia', ['astro_head', 'cloak_white', 'rib_white']]);
+// Món nhỏ đội trên đỉnh mũ trùm (v1.6-87): vẽ tay cỡ nhỏ theo màu bảng biểu tượng của hoạ sĩ; x tự căn giữa đầu, đáy món chạm đỉnh mũ
+function cosTop(id, nm, rows, pal, tier) { const w = rows[0].length; COS_ART[id] = { outline: false, pal, parts: [{ x: Math.round(4.5 - w / 2), y: -4 - rows.length, rows }] }; COS_ITEMS[id] = { slot: 'headpiece', name: nm, paint: id, tier: tier || 'small' }; }
+cosTop('apple_top', 'Quả táo', ['....dcc', '.aaada.', 'ammmmma', 'amommka', 'ammmmka', 'ammmmka', '.akkka.', '..aaa..'], { a: '#1a1420', m: '#d4262f', k: '#96211a', o: '#fff6f3', c: '#69ab27', d: '#955124' });
+cosTop('daisy_top', 'Hoa cúc', ['..aaa..', '.abbba.', 'abbdbba', 'abdddba', 'abbdbba', '.abbba.', '..ala..', 'ammlmma', '.aalaa.'], { a: '#1a1420', b: '#f7f6f4', d: '#e5a213', l: '#328128', m: '#6ab232' });
+cosTop('gem_top', 'Kim cương', ['.aaaaaa.', 'abccbdda', 'abcbjdfa', '.ajjdfa.', '..ajfa..', '...aa...'], { a: '#1a1420', b: '#7bd0e5', c: '#e9fcff', j: '#3fbef3', d: '#129edc', f: '#006fb9' }, 'medium');
+// Đồ MANG THEO nhỏ treo ở hông (ô Túi, v1.6-88): vẽ tay cỡ nhỏ theo bảng Noel / nhãn dán của hoạ sĩ, viền đen
+function cosCarry(id, nm, rows, pal) { COS_ART[id] = { outline: false, pal, parts: [{ x: 9 - Math.round(rows[0].length / 2), y: 17 - rows.length, rows }] }; COS_ITEMS[id] = { slot: 'pouch', name: nm, paint: id, tier: 'small' }; }
+cosCarry('carry_ginger', 'Bánh gừng', ['..aaa..', '.abbba.', '.aBbBa.', 'aabbbaa', 'abbwbba', 'aabbbaa', '.ababa.', '.aa.aa.'], { a: '#0c0c12', b: '#d09a4a', B: '#7a4a1c', w: '#ffffff' });
+cosCarry('carry_bauble', 'Quả châu', ['...a...', '..aya..', '.aaaaa.', 'arorrra', 'arrrrRa', 'arrrrRa', '.arRRa.', '..aaa..'], { a: '#0c0c12', y: '#f2c230', r: '#e23a3a', R: '#9a1c28', o: '#ffd0c8' });
+cosCarry('carry_bell', 'Chuông vàng', ['ara.ara', '.aaraa.', '.ayyya.', '.ayyYa.', 'ayyyyYa', 'aaaaaaa', '..aYa..'], { a: '#0c0c12', y: '#f8cf4a', Y: '#b88a14', r: '#e23a3a' });
+cosCarry('carry_gift', 'Hộp quà', ['ara.ara', '.aaraa.', 'aaaaaaa', 'ayyryya', 'arrrrra', 'ayyrYYa', 'aaaaaaa'], { a: '#0c0c12', y: '#f8cf4a', Y: '#d09a1c', r: '#e23a3a' });
+cosCarry('carry_wreath', 'Vòng lá Noel', ['..aaaa..', '.arrrra.', 'aggrrgga', 'agGaaGga', 'arGaaGga', 'aggGGgra', '.agggga.', '..aaaa..'], { a: '#0c0c12', g: '#3a9a44', G: '#256a2a', r: '#e23a3a' });
+cosCarry('carry_sun', 'Mặt trời', ['o..aa..o', '..ayya..', '.ayyyya.', 'ayeyyeya', 'ayyyyyya', '.ayyyya.', '..ayya..', 'o..aa..o'], { a: '#0c0c12', y: '#ffd95a', o: '#f0a830', e: '#0c0c12' });
+cosCarry('carry_cherry', 'Cherry', ['...gg..', '..g.g..', '.g...g.', 'aaa.aaa', 'aroaroa', 'arrarra', '.aa.aa.'], { a: '#0c0c12', g: '#3a9a44', r: '#e84a4a', o: '#ffc0b8' });
+cosCarry('carry_heart', 'Trái tim hồng', ['.aa.aa.', 'aPpappa', 'apppppa', '.apppa.', '..apa..', '...a...'], { a: '#0c0c12', p: '#ff8fb0', P: '#ffd0e0' });
+cosCarry('carry_tulip', 'Hoa tulip', ['.a.a.a.', 'ararara', 'arrrrra', 'arrrrRa', '.arRRa.', '..aga..', 'aggggga', '.aaaaa.'], { a: '#0c0c12', r: '#f0604a', R: '#c8402e', g: '#3a9a44' });
+// v1.6-89: mẫu 8×8 của hoạ sĩ, chép nguyên từng điểm (không viền)
+cosCarry('carry_pineapple', 'Quả dứa', ['.a.a.a', '..aaa.', '.bcac.', 'bcbcbc', 'cbcbcc', 'bcbcbc', 'cbcbcc', '.cccc.'], {'a': '#30cd32', 'b': '#feb42d', 'c': '#d3681f'});
+cosCarry('carry_melon', 'Dưa hấu', ['defeeeed', 'deeeefed', 'deefeeed', 'adeeeeda', 'gaddddag', '.gaaaag.'], {'a': '#30cd32', 'd': '#fdfff0', 'e': '#fd273a', 'f': '#21201e', 'g': '#008001'});
+cosCarry('carry_orange', 'Quả cam', ['.....aa.', '.....aaa', '.bbbaaaa', 'bbbbba..', 'bbbbbc..', 'bcbbbc..', 'cbbbcc..', '.cccc...'], {'a': '#fff6f1', 'b': '#feb52b', 'c': '#d3681d'});
+cosCarry('carry_chick', 'Gà con', ['.....a.', '..bbaca', '.bbbba.', '.bdbdb.', 'bbbebbb', 'bbbbbbb', '.bbbbb.', '..e.e..'], {'a': '#f9cada', 'b': '#fbf77a', 'c': '#bee9f4', 'd': '#14110f', 'e': '#f7ad22'});
+cosCarry('carry_snail', 'Ốc sên', ['a........', '.a.......', 'bbb.cccc.', 'bdbcceecc', 'bbbceccec', '.bbceceec', '.bbcecccc', '.bbbceeeb', '.bbbbbbb.'], {'a': '#fa7681', 'b': '#8bcd86', 'c': '#42b1cd', 'd': '#000000', 'e': '#edcd5c'});
 { const a = COS_SETS.find(q => q[0] === 'Thiên thần'); if (a && a[1].indexOf('wings_angel') < 0) a[1].push('wings_angel'); }
 function wingsDraw(p, g, alpha) {
     if (!p || (p !== game.player && !p.ribPrev) || game.exitAnim) return; const it = COS_ITEMS[(cosOf(p) || {}).wings], D = it && it.wing; if (!D) return;
@@ -13275,7 +13401,7 @@ function trapStep(level) {
     }
 }
 function trapFire(level, tr) {
-    tr.fired = true; tr.cd = TRAP.rearmT;
+    tr.fired = true; tr.cd = (level.def && level.def.trapRearm) || TRAP.rearmT;          // phòng tập nâng cao: bẫy nạp nhanh
     const face = tr.dir > 0 ? (tr.c + 1) * TILE + 1 : tr.c * TILE - 9, y = tr.r * TILE + TILE / 2 - 1;
     const a = entAdd(new Arrow(face, y, tr.dir)); a.vx = tr.dir * TRAP.arrowV; a.vy = 0; a.thrower = null;
     sndPlay('arrowShot', { x: face });          // bước 8: tiếng bắn tên riêng (trước đây 'shoot' chung với súng)
@@ -18522,7 +18648,7 @@ const WD_PRICE = { recolor: 600, small: 900, medium: 1200, exclusive: 1500, rare
 function wdItems(slot, cls) {          // [{id, it}]; ô áo có thêm «Màu gốc» (id '-')
     const l = []; if (slot === 'set') { for (let i = 0; i < COS_SETS.length; i++) { const ids = COS_SETS[i][1].filter(id => COS_ITEMS[id] && (!COS_ITEMS[id].classes || COS_ITEMS[id].classes.indexOf(cls) >= 0)); l.push({ id: 'set' + i, it: { slot, name: COS_SETS[i][0], set: ids } }); } return l; }
     if (slot === 'cloak') l.push({ id: '-', it: { slot, name: 'Màu gốc', tier: 'recolor', none: true } });
-    for (const id in COS_ITEMS) { const it = COS_ITEMS[id]; if (it.slot === slot && (!it.classes || it.classes.indexOf(cls) >= 0)) l.push({ id, it }); }
+    for (const id in COS_ITEMS) { const it = COS_ITEMS[id]; if (it.slot === slot && (!it.classes || it.classes.indexOf(cls) >= 0) && !it.setOnly && !((slot === 'headpiece' || slot === 'brooch') && it.name.indexOf(' · ') > 0)) l.push({ id, it }); }          // đồ riêng của bộ (tên «Bộ · món») ở ô Đầu / Ngực chỉ bán theo bộ
     return l;
 }
 function wdIsDefault(id, slot, cls) { const d = COS_DEFAULT[cls] || {}; return id === '-' ? !d.cloak && slot === 'cloak' : d[slot] === id; }
@@ -18538,7 +18664,14 @@ function wardrobeOpen() {
 function wdSetNeed(W, ids) { return ids.filter(id => W.cur[COS_ITEMS[id].slot] !== id); }          // các món của bộ chưa đeo
 function wdSetPrice(W, ids) { let t = 0; for (const id of wdSetNeed(W, ids)) t += wdPrice(id, COS_ITEMS[id], COS_ITEMS[id].slot, game.cls); return t; }
 function wardrobeClose() { game.wd = null; game.cosFit = null; sndPlay('menuClose'); }
-function wdRows(W) { const slot = WD_TAB[W.tab][0], l = wdItems(slot, game.cls); return { slot, l, n: l.length }; }
+const WD_STOCK = 10;          // v1.6-86 (Dan): mỗi ô chỉ bày ngẫu nhiên 10 món CHƯA có; lứa hàng đổi sau mỗi lượt chơi (hạt = PROF.runs), món đang đeo luôn hiện
+function wdStock(W, slot, l) {
+    const own = q => q.id === '-' || (q.it.set ? !wdSetNeed(W, q.it.set).length : W.cur[slot] === q.id), rest = l.filter(q => !own(q)); if (rest.length <= WD_STOCK) return l;
+    const seed = ((typeof PROF !== 'undefined' && PROF.runs) | 0) * 7919 + WD_TAB.findIndex(t => t[0] === slot) * 131, key = q => { let h = seed | 0; for (let i = 0; i < q.id.length; i++) h = Math.imul(h ^ q.id.charCodeAt(i), 2654435761); return (h ^ (h >>> 15)) >>> 0; };
+    const pick = new Set(rest.map(q => [key(q), q.id]).sort((a, b) => a[0] - b[0]).slice(0, WD_STOCK).map(q => q[1]));
+    return l.filter(q => own(q) || pick.has(q.id));
+}
+function wdRows(W) { const slot = WD_TAB[W.tab][0], l = wdStock(W, slot, wdItems(slot, game.cls)); return { slot, l, n: l.length }; }
 function wdBasketList(W) {
     const out = []; let total = 0;
     for (const sl in W.basket) { const id = W.basket[sl], it = id === '-' ? { slot: sl, name: 'Màu gốc', tier: 'recolor' } : COS_ITEMS[id], pr = wdPrice(id, it, sl, game.cls), old = W.cur[sl], oldN = old ? COS_ITEMS[old].name : (sl === 'cloak' ? 'Màu gốc' : ''); total += pr; out.push({ sl, id, name: it.name, price: pr, lose: oldN }); }
@@ -18563,8 +18696,8 @@ function wardrobeStep() {          // v1.6-59 (Dan): ← → ô · ↑ ↓ món 
         if (inp.pressed('left')) { W.tab = (W.tab + WD_TAB.length - 1) % WD_TAB.length; W.row = 0; sndPlay('ui', { p: 1 }); }
         if (inp.pressed('right')) { W.tab = (W.tab + 1) % WD_TAB.length; W.row = 0; sndPlay('ui', { p: 1 }); }
         if (R.n) {
-            if (inp.pressed('up')) { W.row = (W.row + R.n - 1) % R.n; sndPlay('ui', { p: 1.1 }); }
-            if (inp.pressed('down')) { W.row = (W.row + 1) % R.n; sndPlay('ui', { p: 1.1 }); }
+            if (inp.pressed('up') && W.row > 0) { W.row--; sndPlay('ui', { p: 1.1 }); }          // không quay vòng
+            if (inp.pressed('down') && W.row < R.n - 1) { W.row++; sndPlay('ui', { p: 1.1 }); }
         }
         const e = R.l[W.row], isSet = !!(e && e.it.set), need = isSet ? wdSetNeed(W, e.it.set) : null, cur = e ? (W.cur[R.slot] || (R.slot === 'cloak' ? '-' : null)) : null, worn = e && (isSet ? !need.length : (e.id === cur || (e.id === '-' && !W.cur.cloak)));
         const setIn = isSet && need.length > 0 && need.every(id => W.basket[COS_ITEMS[id].slot] === id), setAdd = () => { for (const id of need) W.basket[COS_ITEMS[id].slot] = id; };
@@ -18598,11 +18731,11 @@ function wdPreview(g, cx, fy, map, t) {          // vẽ nhân vật ×3 ĐỨNG
 }
 function wardrobeDraw() {
     const W = game.wd; if (!W) return; TEXT.q.length = 0; muiPalSet(); const R = wdRows(W), p = game.player, a = Math.min(1, W.t * 4), cls = game.cls;
-    const PX = 24, PY = 16, PW = 272, PH = 208;          // bảng ≈ 75% màn hình, kiểu khung Menu (muiPanel)
+    const PX = 8, PY = 16, PW = 304, PH = 208;          // v1.6-78: rộng hơn để ô Hiện tại / Thử đủ chỗ cho cánh
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.55 * a; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = a;
     muiPanel(PX, PY, PW, PH);
     drawText('TỦ ĐỒ THỜI TRANG', PX + 10, PY + 6, MUI.gold2); drawText('$' + p.gold, PX + PW - 10, PY + 6, '#ffd24a', 'right');
-    WD_TAB.forEach((tb, i) => { const TW = 256 / WD_TAB.length, x = PX + 8 + i * TW, sel = i === W.tab; muiRect(x, PY + 19, TW - 1.5, 13, sel ? MUI.selFill : MUI.rowFill); if (sel) muiFrame(x, PY + 19, TW - 1.5, 13, MUI.bdHi, 1); drawText(tb[1], Math.round(x + TW / 2 - 0.7), PY + 21, sel ? '#ffffff' : MUI.dim, 'center'); });
+    WD_TAB.forEach((tb, i) => { const TW = (PW - 16) / WD_TAB.length, x = PX + 8 + i * TW, sel = i === W.tab; muiRect(x, PY + 19, TW - 1.5, 13, sel ? MUI.selFill : MUI.rowFill); if (sel) muiFrame(x, PY + 19, TW - 1.5, 13, MUI.bdHi, 1); drawText(tb[1], Math.round(x + TW / 2 - 0.7), PY + 21, sel ? '#ffffff' : MUI.dim, 'center'); });
     const top = PY + 37, vis = 9, first = Math.max(0, Math.min(Math.max(0, R.n - vis), W.row - 4)), LX = PX + 8, LW = 152;
     let hover = null; if (R.n > vis) drawText((first > 0 ? '▲ ' : '') + (W.row + 1) + '/' + R.n + (first + vis < R.n ? ' ▼' : ''), LX + LW, PY + 6 + 0, MUI.dim2, 'right');
     for (let k = 0; k < vis && first + k < R.n; k++) {
@@ -18614,17 +18747,17 @@ function wardrobeDraw() {
     }
     // xem thử (đứng yên): Hiện tại | Thử
     const fit = wdApplyBasket(W.cur, W.basket); if (hover && hover.it.set) { for (const id of hover.it.set) fit[COS_ITEMS[id].slot] = id; } else if (hover && !hover.it.none) fit[R.slot] = hover.id; else if (hover && hover.it.none) delete fit[R.slot];
-    const RX = PX + 166; muiRect(RX, PY + 37, 98, 68, MUI.selFill); drawText('Hiện tại', RX + 25, PY + 39, MUI.dim, 'center'); drawText('Thử', RX + 74, PY + 39, '#ffe9a8', 'center');
-    wdPreview(ctx, RX + 25, PY + 100, W.cur, W.t); wdPreview(ctx, RX + 74, PY + 100, fit, W.t);
+    const RX = PX + 166, RW = PW - 174; muiRect(RX, PY + 37, RW, 68, MUI.selFill); drawText('Hiện tại', RX + RW / 4, PY + 39, MUI.dim, 'center'); drawText('Thử', RX + RW * 3 / 4, PY + 39, '#ffe9a8', 'center');
+    ctx.save(); ctx.beginPath(); ctx.rect(RX, PY + 37, RW, 68); ctx.clip(); wdPreview(ctx, RX + RW / 4, PY + 100, W.cur, W.t); wdPreview(ctx, RX + RW * 3 / 4, PY + 100, fit, W.t); ctx.restore();
     // giỏ
-    const B = wdBasketList(W); muiRect(RX, PY + 108, 98, 66, MUI.rowFill); drawText('Giỏ', RX + 5, PY + 110, '#ffe9a8');
+    const B = wdBasketList(W); muiRect(RX, PY + 108, RW, 66, MUI.rowFill); drawText('Giỏ', RX + 5, PY + 110, '#ffe9a8');
     B.out.slice(0, 3).forEach((o, i) => { drawText(o.name + ' $' + o.price, RX + 5, PY + 120 + i * 14, MUI.txt); if (o.lose) drawText('  mất: ' + o.lose, RX + 5, PY + 127 + i * 14, '#ff9a9a'); });
     if (B.out.length > 3) drawText('+' + (B.out.length - 3) + ' món nữa', RX + 5, PY + 162, MUI.dim);
     if (!B.out.length) drawText('(trống)', RX + 5, PY + 122, MUI.dim2);
-    drawText('Tổng $' + B.total, RX + 94, PY + 163, B.total > p.gold ? '#ff8a8a' : '#ffd24a', 'right');
+    drawText('Tổng $' + B.total, RX + RW - 4, PY + 163, B.total > p.gold ? '#ff8a8a' : '#ffd24a', 'right');
     muiRect(PX + 8, PY + 178, PW - 16, 1, MUI.bdLo);
     if (W.msg) drawText(W.msg, PX + 10, PY + 182, '#ffb060');
-    drawText(inp.label('dash', 1) + ' MUA · ' + inp.label('item', 1) + ' ĐÓNG · ' + inp.label('jump', 1) + ' thêm/bỏ giỏ', PX + 10, PY + 192, MUI.txt); drawText('← → đổi ô · ↑ ↓ chọn món', PX + PW - 10, PY + 192, MUI.dim, 'right');
+    drawText(inp.label('dash', 1) + ' Mua · ' + inp.label('item', 1) + ' Đóng · ' + inp.label('jump', 1) + ' Thêm / bớt giỏ', PX + 10, PY + 192, MUI.txt);          // tên phím theo đang dùng bàn phím hay tay cầm (inp.label)
     if (W.confirm) {
         const B2 = B; TEXT.q.length = 0; ctx.globalAlpha = 0.6 * a; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = a; muiPanel(52, 56, 216, 120);
         drawText('Mua giỏ — $' + B2.total + '?', 160, 64, MUI.gold2, 'center'); drawText('Món cùng ô sẽ bị THAY, món cũ MẤT:', 160, 78, MUI.txt, 'center');
@@ -18795,7 +18928,7 @@ const TUT_ROOM = {
     exit2: [7, 16]          // cửa thứ hai (bên phải cửa «Bắt đầu game»): sang phòng KỸ THUẬT NÂNG CAO (TUT_ADV)
 };
 // ---- v1.6-75 (Dan): PHÒNG KỸ THUẬT NÂNG CAO — đi từ cửa «Hướng dẫn nâng cao» của phòng tập. Tầng trên: đòn giữ (rắn bên kia hố) → đánh xuyên tường (rắn trong hộp; Thợ Săn: gắn bom phá tường)
-//   (đứng bên PHẢI hộp, quay trái) → bẫy tên (cúi ↓ cho tên bay qua, rồi leo thang qua cột) → giếng sâu (sắp chạm đất thì nhảy đôi / lướt / lượn để không mất máu; thang bên phải để leo lên thử lại). Tầng dưới: đi sang trái tới cửa ra = bắt đầu game.
+//   (đứng bên PHẢI hộp, quay trái) → bẫy tên (nạp lại 3 s — def.trapRearm; cúi ↓ cho tên bay qua, rồi leo thang qua cột) → giếng rộng tới tường (sắp chạm đất thì nhảy đôi / lướt / lượn để không mất máu; thang sát mép giếng chạm sàn để leo lên thử lại). Tầng dưới ngắn: cửa ra ngay cạnh.
 const TUT_ADV = {
     id: 'test', tut: true, adv: true, name: 'Kỹ thuật nâng cao', theme: 'mines',
     map: [
@@ -18805,30 +18938,30 @@ const TUT_ADV = {
         "#......................................#",
         "#......................................#",
         "#............L####.....................#",
-        "#............L##.#......L##............#",
-        "#.P.......S#.L##S#......L<#............#",
-        "########.#######################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "################################..#L####",
-        "#......................................#",
-        "#......................................#",
-        "#......................................#",
-        "#..E...................................#",
+        "#............L##.#........L##..........#",
+        "#.P.......S#.L##S#........L<#..........#",
+        "########.#######################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "################################L......#",
+        "#########################.......L......#",
+        "#########################.......L......#",
+        "#########################.......L......#",
+        "#########################..E....L......#",
         "########################################",
         "########################################"
     ],
-    zones: [[3, 9, 0, 'charge'], [18, 19, 0, 'thru'], [20, 24, 0, 'arrow'], [27, 33, 0, 'fall'], [34, 38, 0, 'fall'], [28, 38, 1, 'landed'], [1, 9, 1, 'exitAdv']],
-    snakeC: [9, 10], snakeT: [16, 16], midRow: 9, lowTextRow: 21, lamps: [[5, 2, 40], [15, 2, 44], [25, 2, 44], [34, 2, 40], [10, 21, 20], [30, 21, 20]]
+    zones: [[3, 9, 0, 'charge'], [18, 19, 0, 'thru'], [20, 26, 0, 'arrow'], [29, 38, 0, 'fall'], [33, 38, 1, 'landed'], [25, 31, 1, 'exitAdv']],
+    snakeC: [9, 10], snakeT: [16, 16], midRow: 9, lowTextRow: 21, trapRearm: 3, lamps: [[5, 2, 40], [15, 2, 44], [23, 2, 44], [35, 2, 40], [29, 21, 20]]
 };
 // «Hướng dẫn» ở menu: vào thẳng phòng tập như người mới. Đang có ván → ra khỏi phòng tập thì chơi tiếp ván đó (bản lưu lúc mở menu); không có ván → ván mới.
 function tutFromMenu() {
@@ -18864,9 +18997,9 @@ function tutRoomText(id) {
         exit: ['Bấm ↑ ở cửa để vào', 'Trái: chơi luôn · Phải: kỹ thuật nâng cao'],
         good: ['Tốt lắm!', 'Đi tiếp sang phải'],
         thru: c === 'sword' ? ['Kiếm chém xuyên được tường mỏng', 'Đứng sát tường, chém (đòn giữ với xa hơn)'] : c === 'alch' ? ['Đòn giữ (đạn tụ lực) bay xuyên tường', 'Giữ ' + k('attack') + ' rồi thả, bắn con rắn trong hộp'] : ['Boomerang không xuyên tường: gắn bom phá tường', 'Sát tường giữ ← + ' + k('bomb') + ', rồi ném boomerang'],
-        arrow: ['Bẫy tên phía trước! Giữ ↓ để cúi', 'Tên bay qua đầu, rồi leo thang qua cột'],
+        arrow: ['Bẫy tên phía trước! Lại gần thì giữ ↓ để cúi', 'Tên bay qua đầu (bẫy nạp lại sau 3 giây)'],
         fall: ['Rơi quá cao sẽ mất máu', c === 'sword' ? 'Sắp chạm đất thì bấm ' + k('jump') + ' (nhảy đôi) để hãm lại' : c === 'alch' ? 'Đang rơi: giữ ' + k('jump') + ' để lượn xuống từ từ' : 'Sắp chạm đất thì bấm ' + k('dash') + ' (lướt) để hãm lại'],
-        landed: ['Không mất máu là bạn làm đúng rồi!', 'Muốn thử lại: leo thang bên phải lên'],
+        landed: ['Không mất máu là bạn làm đúng rồi!', 'Muốn thử lại: leo thang bên trái lên'],
         exitAdv: ['Cửa ra: bấm ↑ để bắt đầu game', 'Chúc bạn chơi vui!']
     })[id] || ['', ''];
 }
@@ -18877,7 +19010,7 @@ function tutRoomDraw(g, cx, cy) {
     let id = z ? z[3] : '';
     if (D.ledgeRow && fl === 1 && pc >= 12 && pc <= 15) id = p.y + p.h <= (D.ledgeRow + B) * TILE + 1 ? 'top' : 'under';
     { const alive = q => q && game.entities.some(e => e.alive && e.kind === 'snake' && e.cx > (q[0] + B) * TILE && e.cx < (q[1] + 1 + B) * TILE && e.y < (D.midRow + B) * TILE);          // rắn của chặng đã chết → khen, đi tiếp
-        if ((id === 'charge' && D.snakeC && !alive(D.snakeC)) || (id === 'thru' && D.snakeT && !alive(D.snakeT))) id = 'good'; }
+        if (id === 'charge' && D.snakeC && !alive(D.snakeC)) id = 'good'; if (id === 'thru' && D.snakeT && !alive(D.snakeT)) id = 'arrow'; }          // xong chặng tường → báo trước bẫy tên phía trước (đủ thời gian đọc)
     if (game.exitAnim || p.dead) id = '';
     {          // v1.6-64 (Dan): mục CƠ BẢN (đi · nhảy · leo thang) chỉ hiện khi người chơi ở trong vùng 2 giây mà CHƯA làm thao tác đó
         const now0 = game.time || 0; if (T.zid !== id) { T.zid = id; T.zt = now0; T.zdone = false; T.zx = p.cx; }
