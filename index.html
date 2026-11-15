@@ -19372,7 +19372,7 @@ function tutRoomDraw(g, cx, cy) {
         const t = tutRoomText(T.id), sx = Math.round(clamp(T.x - cx, 84, VIEW_W - 84)), sy = Math.round(T.y - cy), og = ctx.globalAlpha;
         ctx.globalAlpha = T.a * 0.95; drawText(t[0], sx, sy, '#ffe9a8', 'center'); drawText(t[1], sx, sy + 11, '#f2eee0', 'center'); ctx.globalAlpha = og;
     }
-    if (D.exit2 && L.exit) for (const [dc, dr, l1, l2] of [[L.exit.c - B, L.exit.r - B, 'BẮT ĐẦU', 'GAME'], [D.exit2[0], D.exit2[1], 'HƯỚNG DẪN', 'NÂNG CAO']]) {          // biển gỗ trên hai cửa
+    if (D.exit2 && L.exit && !slotScreenOn()) for (const [dc, dr, l1, l2] of [[L.exit.c - B, L.exit.r - B, 'BẮT ĐẦU', 'GAME'], [D.exit2[0], D.exit2[1], 'HƯỚNG DẪN', 'NÂNG CAO']]) {          // biển gỗ trên hai cửa (v1.6-103: không vẽ ở màn Welcome / chọn slot — nền Welcome là phòng tập)
         const x = Math.round((dc + B + 0.5) * TILE - cx), y = Math.round((dr + B) * TILE - cy) - 34;
         const wx = x + cx, wy = y + cy;          // tấm biển vẽ theo toạ độ thế giới (g đang dịch theo camera), chữ theo toạ độ màn hình
         g.fillStyle = '#4a2e14'; g.fillRect(wx - 28, wy - 3, 56, 25); g.fillStyle = '#7a4e24'; g.fillRect(wx - 27, wy - 2, 54, 23); g.fillStyle = '#4a2e14'; g.fillRect(wx - 1, wy + 22, 2, 10);
