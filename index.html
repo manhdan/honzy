@@ -233,7 +233,7 @@ const WATER = { grav: 0.35, fallMax: 70, speed: 0.7, fric: 0.94, stroke: -105, i
 // Bẫy đè (GĐ5.3, 13h_crusher): khối trần rơi khi người chơi đứng dưới trong tầm, rồi từ từ nâng lại
 const CRUSH = { range: 7, warnT: 0.45, fallStep: 0.03, riseStep: 0.35, restT: 0.8, halfW: 12, coolT: 4 };          // v1.4 (Dan): coolT = nghỉ sau khi nâng xong, chưa kích lại được (trước: rơi liền khi người chơi quay lại)
 // Mạng nhện / sàn vỡ (GĐ5.5)
-const ART = { grass: true, crush: true, shadow: true, selout: true };          // v1.6-107 (Roadmap_Celeste): công tắc từng phần nâng cấp mỹ thuật, để so A/B
+const ART = { grass: true, crush: true, shadow: false, selout: true };          // v1.6-107 (Roadmap_Celeste): công tắc từng phần nâng cấp mỹ thuật, để so A/B
 // v1.6-113 (Roadmap_Celeste D): MÀU CÓ NGHĨA — một bảng chung cho trạng thái / đạn nguyên tố / chữ HUD. Băng = chậm (cùng xanh băng), độc xanh lá, sét vàng chanh (khác vàng tiền: ấm hơn), lửa cam, choáng tím.
 //   Dấu hiệu phụ ngoài màu: biểu tượng trạng thái có hình riêng (10c STATUS_GLYPH: lửa · bông tuyết · giọt độc · tia sét · sao choáng) + tên chữ trên HUD.
 const COL = { poison: '#7be06a', ice: '#7fd8ff', shock: '#ffe45a', fire: '#ff8a3a', stun: '#c070ff', gold: '#ffd24a', heart: '#e23a4a', danger: '#ff4a3a' };
@@ -468,7 +468,7 @@ const THEMES = {
         tint: '#c07a4a', weather: 'dust', ground: null, style: 'mines', wind: { base: 0.3, gust: 0.55, speed: 22, len: 200, dir: -1 },          // v1.6-108: gió lùa hầm, chậm
         sky: ['#141216', '#1c181c'], layers: [],
         back: ['#18172a', '#201e34', '#29263f', '#100f1c'],          // v1.6-120 (Dan chọn C): tường nền lạnh xanh tím than — đất ấm nổi lên (trước: ['#1a171b', '#221e23', '#2b262c', '#121013'])
-        dirt: { base: ['#7c3a26', '#86422a', '#743422'], dark: '#4a1e30', mid: '#a0582c', light: '#c47c3a', rim: '#e0964c', pebble: '#b06434', crack: '#2a1024', root: ['#7c4b2c', '#6a3d23', '#b07a44'] },
+        dirt: { base: ['#6e3a22', '#76402a', '#683620'], dark: '#3e1f12', mid: '#8a4c2c', light: '#a8653a', rim: '#c27a46', pebble: '#9a5a34', crack: '#2e160c', root: ['#7c4b2c', '#6a3d23', '#b07a44'] },
         solid: ['#6e3a22', '#76402a'], edge: '#3e1f12', top: '#c27a46', plat: ['#b08a4e', '#7a5c30']
     },
     cave: {
@@ -497,7 +497,7 @@ const THEMES = {
     },
     // Lần 40: HANG NÚI LỬA — màn cuối (Titan). Đá bazan đen, trời đỏ sẫm, mặt đất nứt lộ dung nham; chưa vùng nào dùng.
     magma: {
-        tint: '#ff6a2a', weather: 'ember', ground: 'brick', shimmer: { len: 150, speed: 28, hi: '#ff9a3a', hi2: '#ff5a1a', a: 0.55, col: '#ffd070' },          // v1.6-110: luồng nhiệt chạy chậm trên mặt đá
+        tint: '#ff6a2a', weather: 'ember', ground: 'brick', lavadrip: { p: 0.22 }, shimmer: { len: 150, speed: 28, hi: '#ff9a3a', hi2: '#ff5a1a', a: 0.55, col: '#ffd070' },          // v1.6-110: luồng nhiệt chạy chậm trên mặt đá
         sky: ['#1a0c0c', '#3a1410'],
         layers: [{ f: 0.08, col: '#2a1210', w: 90, base: 150, amp: 100, kind: 'tri' }, { f: 0.18, col: '#3a1812', w: 50, base: 190, amp: 95, kind: 'tri' }, { f: 0.36, col: '#4a1e14', w: 30, base: 232, amp: 60, kind: 'col' }],
         solid: ['#3c2a2e', '#36262a'], edge: '#1e1216', top: '#d8642a', plat: ['#b8743a', '#7a4a22'], glow: '#ff7a3a',
@@ -3333,7 +3333,7 @@ function ambTick(S, now, E) {
     if (S.farT === undefined) { S.farT = now + 8 + _ar() * 20; S.rumT = now + 20 + _ar() * 30; }
     if (E.water && E.wk < 0.5 && calm > 0.3 && now >= S.farT) { ambFarWater(S, now + 0.05, 0.022, (_ar() - 0.5) * 1.6); if (L) L('amb_water', 'env'); S.farT = now + 30 + _ar() * 35; }          // màn nhiều nước: thỉnh thoảng nghe nước chảy xa (không phát khi đang đứng cạnh nước)
     if (p.rumble && calm > 0.5 && now >= S.rumT) { ambRumble(S, now + 0.05, 0.03, (_ar() - 0.5) * 1.2); if (L) L('amb_rumble', 'env'); S.rumT = now + 35 + _ar() * 40; }          // hang sâu: đá lở xa, rất khẽ, 35–75 s một lần
-    if (r > 0.6 && now >= S.thunT) { if (S.thunT > 0) { ambThunder(S, now + 0.05, r, _ar() < 0.3); st.thunders++; if (L) L('amb_thunder', 'env'); } S.thunT = now + 22 + _ar() * 40; }
+    if (r > 0.6 && now >= S.thunT) { if (S.thunT > 0) { ambThunder(S, now + 0.05, r, _ar() < 0.3); game.thunderFlash = 0.35; st.thunders++; if (L) L('amb_thunder', 'env'); } S.thunT = now + 22 + _ar() * 40; }
 }
 // môi trường của một màn: hồ sơ vùng + màn này có mưa không (cố định cho từng màn, không dùng rng chơi)
 function ambEnvFor(L) {
@@ -4150,7 +4150,7 @@ function drawHearts(hp, maxHp, x, y, blink) {
 //   Màu cố định theo kiểu đất, chỉ ngả nhẹ theo màu ám của phòng (th.tintCol, xem 15c_zones). Ô nứt / cổng chốt / gai / nền rơi vẫn vẽ ở 06_render theo màu theme.
 const GROUND = {
     rock: { plat: 'wood', body: ['#55536e', '#4d4b66'], dark: '#2e2648', light: '#747090', strata: '#3c3656', cap: '#a49cbc', cap2: '#7a7298', edge: '#221c38', glint: '#c8c0dc' },          // v1.6-122 (Dan chọn A): đá xám tím, bóng / viền chàm, mặt trên oải hương — lệch tông với nền hang xanh than
-    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff'] },
+    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], grassFringe: '#3c8a3c', edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff'] },
     moss: { plat: 'wood', body: ['#2c3a4e', '#263446'], dark: '#16223a', light: '#3e526e', moss: ['#4aa888', '#8ad8a0', '#26706a'], edge: '#0e1628', glow: '#9ff0d0', cap: '#6fd0ff', stem: '#cfe9f5' },          // v1.6-112: rêu mặt trên sáng hơn; v1.6-125 (Dan chọn A): đá xanh than lạnh, rêu lệch tông (gốc xanh ngọc, ngọn vàng lục)
     brick: { plat: 'slab', body: ['#776d90', '#6d6386', '#80789b'], mortar: '#3a3447', dark: '#443c57', light: '#9c92b8', cap: '#b8aed4', cap2: '#7d7398', edge: '#2c2638', rune: '#ffb06a' },          // v1.6-112: Tàn tích — gạch sáng hơn, nền xa tối hơn (70% về bản đề xuất)
     // BỘ MÀU CŨ (v0.28, đất tối hơn nền; để dùng lại nếu cần): crystal: { plat: 'crystal', body: ['#237a84', '#1f7079'], facet: '#37a0a8', light: '#55c4cc', cap: '#a0fff8', cap2: '#45d0d8', gem: '#e6fffd', glow: '#5ff2ec', edge: '#10424a' },
@@ -4216,11 +4216,11 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
         }
     } else if (style === 'grass') {
         for (let k = 0; k < 4; k++) if (N(2 + k) < 0.34) _gpx(g, T(P.pebble), x + Math.floor(N(6 + k) * 13), y + 4 + Math.floor(N(10 + k) * 10), 2, 2);
-        for (let k = 0; k < 4; k++) _gpx(g, T(k % 2 ? P.dark : P.light), x + Math.floor(N(14 + k) * 15), y + 3 + Math.floor(N(18 + k) * 12), N(22 + k) < 0.4 ? 3 : 1, 1);
+        for (let k = 0; k < 4; k++) { const ly = y + 3 + Math.floor(N(18 + k) * 12); if (up && ly < y + 7) continue; _gpx(g, T(k % 2 ? P.dark : P.light), x + Math.floor(N(14 + k) * 15), ly, N(22 + k) < 0.4 ? 3 : 1, 1); }          // v1.6-126 (Dan): không vạch tối sát dưới lớp cỏ
         if (N(26) < 0.3) { const a = 2 + Math.floor(N(27) * 9), b = 5 + Math.floor(N(28) * 6); for (let j = 0; j < 4; j++) _gpx(g, T(P.root), x + a + (j >> 1), y + b + j, 1, 1); }
         if (up) {                                  // cỏ phủ: 3 hàng xanh + vạt tua, ngọn cỏ lên trên mặt, thỉnh thoảng có hoa
             _gpx(g, T(P.grass[0]), x, y, TILE, 3);
-            for (let i = 0; i < TILE; i++) { _gpx(g, T(N(30 + i) > 0.5 ? P.grass[2] : P.grass[0]), x + i, y + 3, 1, 1 + (N(50 + i) > 0.55 ? 1 : 0)); if (N(70 + i) < 0.5) _gpx(g, T(P.grass[1]), x + i, y, 1, 1); }
+            for (let i = 0; i < TILE; i++) { _gpx(g, T(N(30 + i) > 0.5 ? (P.grassFringe || P.grass[2]) : P.grass[0]), x + i, y + 3, 1, 1 + (N(50 + i) > 0.55 ? 1 : 0)); if (N(70 + i) < 0.5) _gpx(g, T(P.grass[1]), x + i, y, 1, 1); }
             if (typeof ART !== 'undefined' && ART.grass && _grassSink) {          // v1.6-107 (Roadmap_Celeste B): ngọn cỏ + hoa sang lớp động 14b_wind (ngả theo gió, đổi sắc, rẽ khi có người đi qua) — cùng vị trí / chiều cao như bản vẽ chết
                 const bl = [];
                 for (let i = 0; i < TILE; i += 2) if (N(90 + i) < 0.7) { const h = 1 + Math.floor(N(110 + i) * 3), bc = N(130 + i) > 0.5 ? P.grass[1] : P.grass[0]; bl.push([i, h, T(bc), T(P.grassHi || '#a6e070'), T(P.grass[2]), null]); }
@@ -4265,7 +4265,13 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
         if (N(5) < 0.04 && !up && !dn) { const cx = x + 4, cy = y + 4; _gpx(g, T(P.rune), cx + 3, cy, 2, 1); _gpx(g, T(P.rune), cx + 2, cy + 1, 4, 1); _gpx(g, T(P.rune), cx + 3, cy + 2, 2, 1); g.globalAlpha = 0.25; _gpx(g, T(P.rune), cx + 1, cy - 1, 6, 5); g.globalAlpha = 1; }      // chạm khắc phát sáng
         if (up) { _gpx(g, T(P.edge), x, y, TILE, 1); _gpx(g, T(P.cap), x, y + 1, TILE, 1); _gpx(g, T(P.light), x, y + 2, TILE, 1); _gpx(g, T(P.cap2), x, y + 3, TILE, 2); for (let i = 0; i < TILE; i += 8) _gpx(g, T(P.mortar), x + i + 7, y + 1, 1, 4); }      // gờ phiến đá trên cùng
         if (dn) { _gpx(g, T(P.dark), x, y + TILE - 2, TILE, 2); _gpx(g, T(P.edge), x, y + TILE - 1, TILE, 1); }
-        if (ART.grass && _grassSink && th && th.shimmer && up) glintRecord(_grassSink, c, r, [[gx, gy, TILE, 0]]);          // v1.6-110: Núi lửa — luồng nhiệt chạy qua mặt đá (glintDraw, màu cam)
+        if (ART.grass && _grassSink && th && th.shimmer && up) glintRecord(_grassSink, c, r, [[gx, gy, TILE, 0]]);
+        if (ART.grass && _grassSink && th && th.lavadrip) {          // v1.6-126 (Dan): Núi lửa — hạt dung nham bám gạch (thỉnh thoảng), kiểu dây leo ở Tàn tích: giọt treo dưới gờ phồng dần rồi rơi · vệt chảy dọc mép tường (lavaDripDraw)
+            const D = th.lavadrip, lv = [];
+            if (dn) for (let k = 0; k < 2; k++) if (N(700 + k) < D.p) lv.push([0, gx + 2 + Math.floor(N(702 + k) * 12), gy + TILE, 0, N(704 + k) * 6.28]);
+            for (const sd of [lf ? -1 : 0, rt ? 1 : 0]) if (sd && N(710 + (sd > 0 ? 1 : 0)) < D.p * 0.8) lv.push([1, sd < 0 ? gx : gx + TILE, gy + 2 + Math.floor(N(712 + (sd > 0 ? 1 : 0)) * 8), sd, N(714) * 6.28]);
+            if (lv.length) (_grassSink.lavad = _grassSink.lavad || new Map()).set(r * _grassSink.w + c, lv);
+        }          // v1.6-110: Núi lửa — luồng nhiệt chạy qua mặt đá (glintDraw, màu cam)
         if (ART.grass && _grassSink && th && th.ivy) {          // v1.6-110 (Dan: lâu đài bỏ hoang): dây thường xuân bám mặt tường đứng (thân vẽ vào cache, lá động — ivyDraw) · sỏi vụn + lá khô trên mặt (lá bị gió cuốn — driftDraw)
             const V = th.ivy, lv = [];          // v1.6-111: thân + lá đều vẽ động ở nửa điểm (14b_wind ivyDraw) — ở đây chỉ ghi dây: [kiểu, x, y, dài, phía, hạt giống]
             for (const sd of [lf ? -1 : 0, rt ? 1 : 0]) if (sd && tileNoise(c * 2 + (sd > 0 ? 1 : 0), Math.floor(r / 3), 600) < V.p) lv.push([0, sd < 0 ? gx : gx + TILE - 1, gy, TILE, sd, c * 1.7]);          // dây bò dọc mép tường đứng, từng mảng dài ~3 ô
@@ -4328,7 +4334,7 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
             for (let i = 0; i < TILE; i++) { const d = 4 + ((N(300 + (i >> 2)) * 3) | 0); _gpx(g, T(P.snow), x + i, y, 1, d); _gpx(g, T(P.snowSh), x + i, y + d, 1, 1); }
             for (let i = 0; i < TILE; i += 5) if (N(320 + i) < 0.5) _gpx(g, T(P.cap2), x + i, y + 1, 2, 1);
             if (ART.grass && _grassSink && th) {          // v1.6-108: Núi tuyết — cỏ khô nhô khỏi tuyết (grassDraw) · tuyết bị gió cuốn trên mặt (driftDraw)
-                if (th.tufts && N(520) < th.tufts.p) { const U = th.tufts, bl = [], n = 2 + Math.floor(N(521) * 3), x0 = Math.floor(N(522) * 11); for (let i = 0; i < n; i++) bl.push([x0 + i + (N(530 + i) < 0.3 ? 1 : 0), 3 + Math.floor(N(540 + i) * 3), U.col[N(550 + i) < 0.5 ? 0 : 1], U.col[2], U.col[3], 0]); grassRecord(_grassSink, c, r, bl); }
+                if (th.tufts && !(lf && rt) && N(520) < th.tufts.p) { const U = th.tufts, bl = [], n = 2 + Math.floor(N(521) * 3), x0 = Math.floor(N(522) * 11); for (let i = 0; i < n; i++) bl.push([x0 + i + (N(530 + i) < 0.3 ? 1 : 0), 3 + Math.floor(N(540 + i) * 3), U.col[N(550 + i) < 0.5 ? 0 : 1], U.col[2], U.col[3], 0]); grassRecord(_grassSink, c, r, bl); }
                 if (th.drift) (_grassSink.drift = _grassSink.drift || new Set()).add(r * _grassSink.w + c);
             }
         }
@@ -4498,8 +4504,8 @@ function crushArt(q, zone, c, r) {
         band(17, '#1f6a76', 0.5, 3); prism(3, 5, 5, 13); prism(8, 9, 4, 9); prism(17, 3, 6, 15); prism(24, 8, 4, 10); prism(13, 12, 3, 6);
         const C = ['#bff8fa', '#4fc4cc', '#ffffff'];
         spikes(5, 22, C, [9, 6, 10, 7, 9]);
-    } else if (zone === 'ruins') {          // khối đá cát phong hoá: mép sứt, vết nứt, dải chữ khắc cổ phát sáng mờ, nanh đá mòn
-        const s = '#a8905e', sd = '#6e5a36', sl = '#d2b886', k = '#4a3a20';
+    } else if (zone === 'ruins') {          // khối gạch đá cùng màu gạch vùng, phong hoá: mép sứt, vết nứt, dải chữ khắc cổ phát sáng mờ, nanh đá mòn
+        const B = GROUND.brick, s = B.body[0], sd = B.dark, sl = B.cap, k = B.edge;          // v1.6-126 (Dan): cùng màu gạch Tàn tích
         q(0, 0, 32, 22, s); q(0, 0, 32, 2, sl); q(0, 19, 32, 3, sd); q(0, 2, 1, 17, sd); q(31, 2, 1, 17, sd);
         q(0, 0, 2, 1, sd); q(27, 0, 5, 1, sd); q(29, 1, 3, 1, sd);          // mép sứt
         for (let k2 = 0; k2 < 6; k2++) { const x = 2 + Math.floor(N(150 + k2) * 26), y = 3 + Math.floor(N(160 + k2) * 4); q(x, y, 3, 1, sd); q(x, y + 1, 2, 1, sl); }
@@ -4509,7 +4515,7 @@ function crushArt(q, zone, c, r) {
         q(1, 11, 30, 3, gd);
         for (let i = 0; i < 6; i++) { const x = 2 + i * 5, v = Math.floor(N(170 + i) * 3); if (v === 0) { q(x, 11, 3, 1, gm); q(x + 1, 12, 1, 2, G); } else if (v === 1) { q(x, 11, 1, 3, gm); q(x + 2, 11, 1, 3, gm); q(x + 1, 12, 1, 1, G); } else { q(x, 12, 3, 1, G); q(x + 1, 11, 1, 1, gm); q(x + 1, 13, 1, 1, gm); } }
         for (let i = 0; i < 32; i += 5) if (N(180 + i) < 0.5) q(i, 2, 2, 1, '#7a8a4a');          // rêu khô trên mặt
-        q(0, 22, 32, 1, sd); spikes(4, 22, ['#c4ac78', '#8c7448', '#e8d8b0'], [8, 6, 7, 8]);
+        q(0, 22, 32, 1, sd); spikes(4, 22, [B.light, B.body[1], B.cap], [8, 6, 7, 8]);
     } else if (zone === 'snow') {          // khối băng nén, sương giá trên mặt, nhũ băng dài ngắn
         q(0, 0, 32, 22, '#8cc0e4'); q(0, 0, 32, 4, '#e6f4ff'); q(0, 4, 32, 1, '#c8e4f8'); q(0, 19, 32, 3, '#5a8cb4');
         q(4, 7, 1, 8, '#ffffff'); q(5, 7, 4, 1, '#ffffff'); q(20, 9, 7, 1, '#d8ecfa'); q(26, 10, 1, 6, '#d8ecfa'); q(12, 13, 5, 1, '#5a8cb4'); q(16, 13, 1, 4, '#5a8cb4'); band(16, '#8cc0e4', 0.8, 4);
@@ -4968,7 +4974,7 @@ function drawCorpseHp(e, ctx, alpha) {
 }
 function drawCorpseCore(e, ctx, alpha) {
     const { q, P } = hpAnchor(e, ctx, alpha), base = e.col || '#8a8a8a', sh = shadeCol(base, -0.35), li = shadeCol(base, 0.3), t = e.tier || 'M', k = e.srcKind || '';
-    const X = (x, y) => { q(x, y, 1, 1, '#1a1220'); q(x + 2, y, 1, 1, '#1a1220'); q(x + 1, y + 1, 1, 1, '#1a1220'); q(x, y + 2, 1, 1, '#1a1220'); q(x + 2, y + 2, 1, 1, '#1a1220'); };   // mắt ×
+    const EC = (typeof CORPSE_LOOK !== 'undefined' && CORPSE_LOOK[k] && CORPSE_LOOK[k].eye) || '#1a1220', X = (x, y) => { q(x, y, 1, 1, EC); q(x + 2, y, 1, 1, EC); q(x + 1, y + 1, 1, 1, EC); q(x, y + 2, 1, 1, EC); q(x + 2, y + 2, 1, 1, EC); };   // mắt ×
     ctx.globalAlpha = e.age > 20 ? 0.55 : 1;
     corpseDecoHp(k, q, P, true);
     // 3 khuôn theo cấp (CORPSE_TIERS ở 10c_status): nhỏ = khối chữ nhật gọn (dơi xếp cánh / rắn cuộn) · vừa = thân + đầu · to = khối nặng, gần vuông, có đầu
@@ -5015,10 +5021,11 @@ const CORPSE_COL2 = { siren: ['#6fd0ca', 'back', '#9d92d2'], slug: ['#787bcd', '
 
 // ----- Lần 31: quái ÁM MÀU theo vùng (Dan: quái hầm mỏ / rừng / tuyết cần khác nhau chút) -----
 //   Vẽ quái vào canvas phụ rồi phủ màu vùng bằng 'source-atop' (chỉ phủ lên chính hình quái), rồi dán lại. Hầm mỏ giữ màu gốc. Boss, chủ tiệm không ám.
-const ZONE_TINT = { cave: ['#8fa8e0', 0.24], deep: ['#4fd0c0', 0.30], amethyst: ['#c070ff', 0.32], forest: ['#6ed24e', 0.30], crystal: ['#dff4ff', 0.27], snow: ['#dff4ff', 0.36], ruins: ['#ff8a4a', 0.32], magma: ['#ff6a2a', 0.34] };
+const ZONE_TINT = { cave: ['#8fa8e0', 0.24], deep: ['#4fd0c0', 0.15], amethyst: ['#c070ff', 0.32], forest: ['#6ed24e', 0.075], crystal: ['#dff4ff', 0.27], snow: ['#dff4ff', 0.36], ruins: ['#ff8a4a', 0.32], magma: ['#ff6a2a', 0.34] };
 let _tintCv = null, _tintCx = null;
 function entTint(e) {
-    if (!(e instanceof Enemy) || e.isBoss || e.kind === 'shopkeeper') return null;
+    const corpse = typeof Corpse !== 'undefined' && e instanceof Corpse && e.srcKind && e.srcKind !== 'shopkeeper' && !(ENEMY_DEFS[e.srcKind] && ENEMY_DEFS[e.srcKind].name);          // v1.6-126 (Dan): xác quái ám màu giống lúc còn sống
+    if (!corpse && (!(e instanceof Enemy) || e.isBoss || e.kind === 'shopkeeper')) return null;
     const L = game.level; return L ? ZONE_TINT[L.themeName] || null : null;
 }
 // Băng bọc quái đang đóng băng (v0.39): khối xanh trong suốt phủ hộp thân, viền sáng, vết nứt khi sắp tan
@@ -5625,32 +5632,32 @@ function drawHunterHp(b, ctx, alpha) {
     if (st === 'dash_rec' || st === 'leap_rec') hpStars(q, ox + Wh / 2, top - 16, t, 20);
 }
 
-function drawMageHp(b, ctx, alpha) {
+function drawMageHp(b, ctx, alpha) {          // v1.6-126 (Dan): áo / đèn / mắt đổi sang xanh ngọc phát quang — đúng màu đặc trưng Vực sâu (trước: xanh lá)
     const xc = b.drawX(alpha), yc = b.drawY(alpha), { q, P, U } = hpPen(ctx, xc, yc, b.w, 1), Wh = b.w * 2, Hh = b.h * 2, st = b.st, t = b.t, f = b.facing, B = BOSS_MAGE;
     const flash = b.flashT > 0, sleep = st === 'sleep', wind = st === 'orb_wind' || st === 'pil_wind' || st === 'slam_wind';
     const k = st === 'orb_wind' ? clamp(b.stT / b.ph(B.orbW), 0, 1) : st === 'pil_wind' ? clamp(b.stT / b.ph(B.pilW), 0, 1) : st === 'slam_wind' ? clamp(b.stT / B.slamW, 0, 1) : 0;
     if (st === 'tele_out' && b.dest) {
         const dx = Math.round((b.dest.x - xc + b.w / 2) * 2), dy = Math.round((b.dest.y - yc + b.h / 2) * 2), kk = clamp(b.stT / B.teleOut, 0, 1), g = ctx.globalAlpha;
-        ctx.globalAlpha = 0.25 + 0.6 * kk; hpRing(q, dx - 20, dy - 28, 40, 56, '#b8f090'); hpRing(q, dx - 12, dy - 20, 24, 40, '#b8f090'); ctx.globalAlpha = g;
+        ctx.globalAlpha = 0.25 + 0.6 * kk; hpRing(q, dx - 20, dy - 28, 40, 56, '#8ae8d8'); hpRing(q, dx - 12, dy - 20, 24, 40, '#8ae8d8'); ctx.globalAlpha = g;
     }
     if (st === 'slam_wind') { const lx = Math.round((b.lockX + b.w / 2 - xc) * 2), fy = Math.round((b.floor(game.level) - yc) * 2), blink = B.slamW - b.stT < 0.25 && Math.floor(b.stT * 30) % 2; hpPillar(q, lx, Hh, 20, fy - Hh, k, blink); }
     const fade = st === 'tele_out' ? 1 - clamp(b.stT / B.teleOut, 0, 1) : st === 'tele_in' ? clamp(b.stT / B.teleIn, 0, 1) : 1;
     const shake = (wind && k > 0.5 ? (Math.floor(t * 40) % 2 ? 1 : -1) : st === 'roar' ? (Math.floor(t * 40) % 2 ? 2 : -2) : 0) * 2;
     const cx = (Wh >> 1) + shake, sway = Math.round(Math.sin(t * 3) * 3);
     ctx.globalAlpha = Math.max(0.05, fade);
-    const out = '#0c2010', robe = flash ? '#ffffff' : sleep ? '#2a4a2a' : '#3a8a30', robe2 = flash ? '#ffffff' : sleep ? '#1c3a1c' : '#2a6424', trim = flash ? '#ffffff' : '#a8f070';
+    const out = '#061a1c', robe = flash ? '#ffffff' : sleep ? '#1e3a3c' : '#2a7a72', robe2 = flash ? '#ffffff' : sleep ? '#16302e' : '#1e5a58', trim = flash ? '#ffffff' : '#7affd0';
     const rows = Hh - 12;
     for (let j = 0; j < rows; j++) { const wd = 10 + Math.round(j * 0.42), sw = j > 28 ? sway : 0; q(cx - wd - 1 + sw, 16 + j, wd * 2 + 2, 1, out); }
     for (let j = 0; j < rows - 1; j++) { const wd = 10 + Math.round(j * 0.42), sw = j > 28 ? sway : 0; q(cx - wd + sw, 16 + j, wd * 2, 1, (j % 10) >= 8 ? robe2 : robe); }
     for (let i = -2; i <= 2; i++) { const bx = cx + i * 8 + sway, by = Hh + 2 + ((Math.floor(t * 6) + i) % 2) * 2; P(bx - 2, by - 6, 4, 6, robe2, out); }
     q(cx - 1, 22, 2, Hh - 28, trim); for (let j = 0; j < 4; j++) q(cx - 4 + j * 2 + sway * (j > 1 ? 1 : 0), 40 + j * 16, 2, 2, trim);
     U([[cx - 12, 2, 24, 20], [cx - 14, 8, 28, 12]], robe, out); q(cx - 12, 2, 24, 4, trim); q(cx - 14, 8, 2, 12, robe2); q(cx + 12, 8, 2, 12, robe2);
-    q(cx - 8, 8, 16, 12, '#04140a');
-    const eye = flash ? '#fff' : sleep ? '#2a4a2a' : (wind || st === 'slam') ? '#ff5a5a' : '#c8f8a0', o = f > 0 ? 2 : 0;
+    q(cx - 8, 8, 16, 12, '#041416');
+    const eye = flash ? '#fff' : sleep ? '#1e3a3c' : (wind || st === 'slam') ? '#ff5a5a' : '#b0fff0', o = f > 0 ? 2 : 0;
     q(cx - 6 + o, 12, 4, 4, eye); q(cx + 2 + o, 12, 4, 4, eye);
     const lx = cx + (f > 0 ? 24 : -26) + sway, ly = 24 + Math.round(Math.sin(t * 2.6) * 4);
-    P(lx - 5, ly - 5, 10, 10, flash ? '#fff' : '#7fe05a', out); q(lx - 3, ly - 3, 4, 4, '#d4ffb8'); q(lx - 2, ly - 2, 2, 2, '#fff');
-    if (wind) for (let i = 0; i < 5; i++) { const a = t * 5 + i * TAU / 5, r = (20 + 6 * k) * 2; q(Math.round(cx + Math.cos(a) * r) - 2, Math.round(Hh / 2 + Math.sin(a) * r) - 2, 4, 4, st === 'slam_wind' ? '#ff8a8a' : '#7fe05a'); }
+    P(lx - 5, ly - 5, 10, 10, flash ? '#fff' : '#5ad8c0', out); q(lx - 3, ly - 3, 4, 4, '#c8fff0'); q(lx - 2, ly - 2, 2, 2, '#fff');
+    if (wind) for (let i = 0; i < 5; i++) { const a = t * 5 + i * TAU / 5, r = (20 + 6 * k) * 2; q(Math.round(cx + Math.cos(a) * r) - 2, Math.round(Hh / 2 + Math.sin(a) * r) - 2, 4, 4, st === 'slam_wind' ? '#ff8a8a' : '#5ad8c0'); }
     if (st === 'stuck') hpStars(q, cx, -12, t, 24);
     ctx.globalAlpha = 1;
 }
@@ -6115,7 +6122,8 @@ function pet2Draw(ctx, cx, by, f, kind, name) {
 
 const CHUNK_W = 10, CHUNK_H = 8;       // khối vẽ = cỡ một phòng mẫu (160×128 px)
 
-const DUST_COL = { mines: '#9a6a44', cave: '#8a97ad', forest: '#7a8f4e', deep: '#4f8f8a', ruins: '#9a8a6a', magma: '#8a5a48', crystal: '#9ad0e0', snow: '#e4f0fa', amethyst: '#9a78b8' };
+const DUST_COL = { mines: '#9a6a44', cave: '#8a97ad', forest: '#7a8f4e', deep: '#4f8f8a', ruins: '#7a7290', magma: '#8a5a48', crystal: '#9ad0e0', snow: '#e4f0fa', amethyst: '#9a78b8' };
+const RUN_DUST = { forest: 0, crystal: 0, cave: 0.5, ruins: 0.5 };          // v1.6-126 (Dan): bụi chân khi CHẠY theo vùng (tỉ lệ bước có bụi) — chạy trên cỏ / pha lê không bụi; Tàn tích bụi xám màu gạch
 class Level {
     // def = { id, name, theme, map: [chuỗi 40 ký tự × 32 dòng] } (TEST_LEVEL ở 02_data; GĐ2: bộ sinh level trả về cùng dạng)
     constructor(def) {
@@ -7859,7 +7867,7 @@ class Player extends Thing {
         if (this.onGround) this.setState(down && this.whipT < 0 ? 'duck' : Math.abs(this.vx) > 1 ? 'run' : 'stand');
         else this.setState('air');
         // v1.18 (Dan): nhịp bước chân khi chạy — mỗi ~11 px một nhịp bụi (v1.18x: không còn phát tiếng)
-        if (this.onGround && this.state === 'run' && !this.dead) { this.stepD = (this.stepD || 0) + Math.abs(this.vx) * dt; if (this.stepD >= 9) { this.stepD = 0; if (!level.inWater(this)) { level.spawnDust(this.cx - this.facing * 6, this.y + this.h, 2, 34, 9); level.spawnDust(this.cx - this.facing * 2, this.y + this.h, 1, 28, 8); } } }          // v1.18zt: bụi chạy ≈ 1/2 bụi nhảy · // v1.18x (Dan): BỎ tiếng bước chân khi chạy (giữ bụi chân) else if (!this.onGround) this.stepD = 8;
+        if (this.onGround && this.state === 'run' && !this.dead) { this.stepD = (this.stepD || 0) + Math.abs(this.vx) * dt; if (this.stepD >= 9) { this.stepD = 0; if (!level.inWater(this) && game.rngFx.next() < (RUN_DUST[level.themeName] === undefined ? 1 : RUN_DUST[level.themeName])) { level.spawnDust(this.cx - this.facing * 6, this.y + this.h, 2, 34, 9); level.spawnDust(this.cx - this.facing * 2, this.y + this.h, 1, 28, 8); } } }          // v1.18zt: bụi chạy ≈ 1/2 bụi nhảy · // v1.18x (Dan): BỎ tiếng bước chân khi chạy (giữ bụi chân) else if (!this.onGround) this.stepD = 8;
         if (this.state === 'run') this.runAcc = (this.runAcc || 0) + dt; else if (this.state === 'stand') { if (this.runAcc > 3 && !(this.panT > 0)) this.panT = 2.2; this.runAcc = 0; }          // v1.18: chạy > 3 s rồi dừng → thở dốc 2,2 s (mồ hôi)
         if (this.panT > 0) { this.panT -= dt; if (this.state !== 'stand') this.panT = 0; else if ((this.sweatT = (this.sweatT || 0) - dt) <= 0) { this.sweatT = 0.45; level.spawnBurst(this.cx + this.facing * 5, this.y + 3, 1, '#bfe9ff', 12); } }
         // Bám mép (trên không, đang ép vào tường) · bò qua mép thành bám (đang ngồi, ép ra mép)
@@ -10089,7 +10097,8 @@ function statusDrawHud(y) {
 //   w,h = hitbox xác (px) · mass: 0 nhẹ / 1 vừa / 2 nặng (mass 2: cầm thì không leo/bám mép, xem 09_player) · impactDmg: sát thương khi ném trúng quái
 //   throwMul: nhân lực ném ngang (to ném ngắn hơn) · harmless: xác bật lại KHÔNG làm đau người chơi (vẫn giết quái)
 //   Quái không có trong CORPSE_TIER (quái mới thêm sau) mặc định cấp M. Hình vẽ 3 khuôn: drawCorpseHp (06c_sprites).
-const CORPSE_TIER = { bat: 'S', snake: 'S', walker: 'M', chaser: 'M', rusher: 'M', hopper: 'M', diver: 'M', spider: 'M', flyer: 'M', shooter: 'L', mortar: 'L', monkey: 'M', imp: 'M', spitter: 'L', guard: 'L', magmite: 'M', vent: 'L', wisp: 'S', frog: 'S', gnat: 'S', icebat: 'S', venomling: 'S', eel: 'S', mushroom: 'S', spark: 'S', frostling: 'S', listener: 'M', geode: 'M', necro: 'M', mimic: 'M' };
+const CORPSE_TIER = { swapper: 'S', bat: 'S', snake: 'S', walker: 'M', chaser: 'M', rusher: 'M', hopper: 'M', diver: 'M', spider: 'M', flyer: 'M', shooter: 'L', mortar: 'L', monkey: 'M', imp: 'M', spitter: 'L', guard: 'L', magmite: 'M', vent: 'L', wisp: 'S', frog: 'S', gnat: 'S', icebat: 'S', venomling: 'S', eel: 'S', mushroom: 'S', spark: 'S', frostling: 'S', listener: 'M', geode: 'M', necro: 'M', mimic: 'M' };
+const CORPSE_LOOK = { wisp: { col: '#e8662a', eye: '#a83a10' }, swapper: { col: '#ece4fa' } };          // v1.6-127 (Dan): màu xác riêng — ma lửa cam (mắt × cam đậm, không giống cục vàng) · ma hoán hồn trắng phớt tím, xác nhỏ (cấp S)
 const CORPSE_TIERS = {
     S: { w: 9, h: 6, mass: 0, impactDmg: 1, throwMul: 1, harmless: true },
     M: { w: 12, h: 9, mass: 1, impactDmg: 1, throwMul: 1, harmless: false },
@@ -13217,8 +13226,8 @@ class Mage extends Boss {
         if (this.st === 'orb_wind') return { r: 20 + 28 * k(B.orbW), col: '#7fe05a', a: 0.2 + 0.5 * k(B.orbW) };
         if (this.st === 'pil_wind') return { r: 18 + 20 * k(B.pilW), col: '#6fd84a', a: 0.2 + 0.5 * k(B.pilW) };
         if (this.st === 'slam_wind') return { r: 18 + 26 * k(B.slamW), col: '#ff5a5a', a: 0.2 + 0.5 * k(B.slamW) };
-        if (this.st === 'tele_out' || this.st === 'tele_in') return { r: 24, col: '#b8f090', a: 0.4 };
-        return { r: 24, col: '#4fb83a', a: 0.3 };
+        if (this.st === 'tele_out' || this.st === 'tele_in') return { r: 24, col: '#8ae8d8', a: 0.4 };
+        return { r: 24, col: '#3ab8a0', a: 0.3 };
     }
     pickDest(level, p, slam) {
         const B = BOSS_MAGE, R = game.rngPlay;
@@ -13862,6 +13871,7 @@ function corpseAvoidGold(col) {
 class Corpse extends Thing {
     // tier: 'S' nhỏ / 'M' vừa / 'L' to (CORPSE_TIERS ở 10c_status): quyết định hitbox, mass, sát thương ném, lực ném, hình vẽ. srcKind: loại quái gốc, chỉ để vẽ chi tiết đặc trưng (drawCorpseHp)
     constructor(cx, bottom, col, tier, srcKind) {
+        if (typeof CORPSE_LOOK !== 'undefined' && CORPSE_LOOK[srcKind] && CORPSE_LOOK[srcKind].col) col = CORPSE_LOOK[srcKind].col;
         col = corpseAvoidGold(col);
         const T = CORPSE_TIERS[tier] || CORPSE_TIERS.M, f = CORPSE_SCALE[srcKind] || 1, cw = Math.max(4, Math.round(T.w * f)), ch = Math.max(3, Math.round(T.h * f));
         super(cx - cw / 2, bottom - ch, cw, ch, { kind: 'corpse', carryable: true, hurtsOnImpact: true, impactDmg: T.impactDmg, mass: T.mass, col: col, dmgFrom: [] });
@@ -17581,15 +17591,15 @@ function decoDraw(g, cx, cy, L, pass) {          // pass 0 = lớp DƯỚI nền
 //   · cluster = cụm tinh thể · drift = gò tuyết + cỏ khô · spike = măng đá · basalt = đá bazan nứt đỏ · roots = rễ cây.
 const FG = { on: true, step: 40, par: 1.3, maxTop: 50, maxBot: 38, alpha: 0.95, dens: 0.5 };
 const FG_TH = {
-    mines:    { top: 'roots', bot: 'rubble', c: ['#2e1a10', '#4e301c', '#6e4a2c', '#e0a840'] },
+    mines:    { top: 'roots', bot: null, c: ['#2e1a10', '#4e301c', '#6e4a2c', '#e0a840'] },
     forest:   { top: 'vine',  bot: 'bush',   c: ['#123018', '#24582c', '#3c8442', '#e8e870'] },
-    cave:     { top: 'stal',  bot: 'spike',  c: ['#181c30', '#2c3450', '#46507a', '#6ff0d0'] },
-    crystal:  { top: 'xtal',  bot: 'cluster', c: ['#0e4a56', '#1a7482', '#3aa8b4', '#e6fffd'] },
+    cave:     { top: 'stal',  bot: 'spike', topK: 0.5, botK: 0.5,  c: ['#181c30', '#2c3450', '#46507a', '#6ff0d0'] },
+    crystal:  { top: 'xtal',  bot: 'cluster', topK: 0.5, botK: 0.5, c: ['#0e4a56', '#1a7482', '#3aa8b4', '#e6fffd'] },
     ruins:    { top: 'vine',  bot: 'rubble', c: ['#2a2238', '#4a425e', '#6a6084', '#6aa048'], leaf: ['#4a7a34', '#6aa048'], stem: '#3a4a2a' },
-    snow:     { top: 'ice',   bot: 'drift',  c: ['#2a4460', '#4a6c8c', '#a8c8e4', '#e8f4ff'] },
-    amethyst: { top: 'xtal',  bot: 'cluster', c: ['#2a1646', '#4a2c80', '#7e56c4', '#ecd8ff'] },
+    snow:     { top: 'ice',   bot: 'drift', topK: 0.5, botK: 0.75,  c: ['#2a4460', '#4a6c8c', '#a8c8e4', '#e8f4ff'] },
+    amethyst: { top: 'xtal',  bot: 'cluster', topK: 0.5, botK: 0.5, c: ['#2a1646', '#4a2c80', '#7e56c4', '#ecd8ff'] },
     deep:     { top: 'moss',  bot: 'kelp',   c: ['#0c2226', '#1a4648', '#2e7060', '#7affd0'] },
-    magma:    { top: 'stal',  bot: 'basalt', c: ['#1e1010', '#3a201c', '#5a322c', '#ff8a3a'] }
+    magma:    { top: 'stal',  bot: 'basalt', topK: 0.5, botK: 0.5, c: ['#1e1010', '#3a201c', '#5a322c', '#ff8a3a'] }
 };
 function fgDraw(g, cx, L) {
     const T = FG_TH[L.themeName]; if (!T || game.title) return;
@@ -17603,7 +17613,7 @@ function fgDraw(g, cx, L) {
         const sx = i * FG.step + decoHash(i, 3, 'fx') * (FG.step - 14) - off, r1 = decoHash(i, 9, 'l'), r2 = decoHash(i, 11, 'h'), wind = ART.grass && typeof windAt === 'function' ? windAt(i * FG.step + cx, t, L) : 0;
         const sw = Math.sin(t * 0.9 + i) * 1.2 + wind * 3;
         if (u < FG.dens * 0.5) {          // ---- mép TRÊN
-            const len = 12 + r1 * (FG.maxTop - 12), kind = T.top;
+            const len = (12 + r1 * (FG.maxTop - 12)) * (T.topK || 1), kind = T.top; if (!kind) continue;          // v1.6-126 (Dan): topK / botK = rút ngắn que nhọn theo vùng
             if (kind === 'vine' || kind === 'roots' || kind === 'moss') {
                 const n = kind === 'roots' ? 2 : 1 + (r2 < 0.5 ? 1 : 0);
                 for (let s = 0; s < n; s++) {
@@ -17621,9 +17631,9 @@ function fgDraw(g, cx, L) {
                 const n = 2 + (r2 < 0.5 ? 1 : 0); for (let s = 0; s < n; s++) prism(sx + s * 4 - 4, 0, 3 + (s === 1 ? 1.5 : 0), len * (s === 1 ? 0.75 : 0.45), false, C[2], C[1], C[3]);
             }
         } else {          // ---- mép DƯỚI
-            const h = 10 + r1 * (FG.maxBot - 10), yb = VIEW_H, kind = T.bot;
-            if (kind === 'bush') {          // bụi lá tròn chồng nhau + vài lá dương xỉ cong
-                for (let b = 0; b < 4; b++) { const bx = sx + (b - 1.5) * 5 + decoHash(i, 20 + b, 'b') * 3, r = 3 + decoHash(i, 30 + b, 'r') * 4, by = yb - r * 0.6 - decoHash(i, 40 + b, 'y') * h * 0.35; blob(bx, by, r, C[2], C[1], C[0], sw * 0.4, true); }
+            const h = (10 + r1 * (FG.maxBot - 10)) * (T.botK || 1), yb = VIEW_H, kind = T.bot; if (!kind) continue;
+            if (kind === 'bush') {          // bụi lá tròn chồng nhau (v1.6-126: thấp hơn) + vài lá dương xỉ cong
+                for (let b = 0; b < 4; b++) { const bx = sx + (b - 1.5) * 5 + decoHash(i, 20 + b, 'b') * 3, r = 2.5 + decoHash(i, 30 + b, 'r') * 3, by = yb - r * 0.5 - decoHash(i, 40 + b, 'y') * h * 0.15; blob(bx, by, r, C[2], C[1], C[0], sw * 0.4, true); }
                 for (let f = -1; f <= 1; f++) { const fx = sx + f * 6, fh = h * (0.8 + 0.2 * Math.abs(f)); for (let k = 0; k < fh; k += 0.5) { const q = k / fh, x = fx + (f * 3 + sw) * q * q; hp(x, yb - k, 0.5, 0.5, C[1]); if ((k % 2) === 1) { hp(x - 1.5 + q, yb - k, 1.5 - q, 0.5, C[2]); hp(x + 0.5, yb - k + 0.5, 1.5 - q, 0.5, C[1]); } } }
                 if (r2 > 0.7) hp(sx + 2 + sw * 0.4, yb - h * 0.6, 1, 1, C[3]);          // một bông nhỏ
             } else if (kind === 'kelp') {
@@ -17718,10 +17728,11 @@ function hlampTint(p, alpha) {
         const S = 44, cv = _hlTintCv || (_hlTintCv = makeCanvas(S * RES, S * RES)), g = cv.getContext('2d'), ox = Math.round(p.drawX(alpha) + p.w / 2 - S / 2), oy = Math.round(p.drawY(alpha) + p.h - S + 8);
         g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false;
         g.setTransform(RES, 0, 0, RES, -ox * RES, -oy * RES); p.draw(g, alpha);
-        g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 1;
-        const a = 0.38 * Math.min(1, Math.sqrt(k) * 1.1),          // v1.6-94 (Dan: gần đèn ám quá đậm): đường căn bậc hai — ở xa giữ như cũ (~0,2), sát đèn chỉ lên ~0,38 (trước 0,66)
+        g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'soft-light'; g.globalAlpha = 1;          // v1.6-126 (Dan: gần đèn quần áo bị bạc màu): pha 'soft-light' — chỉ ấm lên / sáng nhẹ, giữ sắc áo; rồi cắt lại theo hình nhân vật (destination-in)
+        const a = 0.75 * Math.min(1, Math.sqrt(k) * 1.1),          // v1.6-94 (Dan: gần đèn ám quá đậm): đường căn bậc hai — ở xa giữ như cũ (~0,2), sát đèn chỉ lên ~0,38 (trước 0,66)
              right = lx >= p.cx, gr = g.createLinearGradient(right ? cv.width * 0.7 : cv.width * 0.3, 0, right ? cv.width * 0.3 : cv.width * 0.7, 0);
         gr.addColorStop(0, 'rgba(255,200,96,' + a.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,176,72,' + (a * 0.45).toFixed(3) + ')'); g.fillStyle = gr; g.fillRect(0, 0, cv.width, cv.height);
+        g.globalCompositeOperation = 'destination-in'; g.setTransform(RES, 0, 0, RES, -ox * RES, -oy * RES); p.draw(g, alpha); g.setTransform(1, 0, 0, 1, 0, 0);
         g.globalCompositeOperation = 'source-over';
         ctx.drawImage(cv, ox, oy, S, S);
     } catch (e) { }
@@ -17832,7 +17843,7 @@ function lightList(L, cx, cy) {
         else if (typeof e.light === 'function') { const l = e.light(); if (l) out.push({ x: e.cx, y: e.cy, r: l.r, col: l.col, a: l.a }); }
     }
     for (const b of game.blasts) out.push({ x: b.x, y: b.y, r: 40, col: '#ffcf70', a: 0.7 * (1 - b.t / 0.3) });
-    if (typeof shroomLights === 'function') shroomLights(L, cx, cy, out); heroActionLights(game.player, out); if (typeof hlampLights === 'function') hlampLights(L, cx, cy, out);
+    if (typeof shroomLights === 'function') shroomLights(L, cx, cy, out); heroActionLights(game.player, out); if (typeof hlampLights === 'function') { const n0 = out.length; hlampLights(L, cx, cy, out); for (let i = n0; i < out.length; i++) out[i].soft = true; }          // v1.6-126: đèn treo đánh dấu soft (ám màu dịu, không làm bạc màu)
     { const pl = game.player; if (pl && !pl.dead && gearHas(pl, 'lamp')) out.push({ x: pl.cx, y: pl.y - 6, r: 16, col: '#ffe08a', a: 0.6 + 0.08 * Math.sin(game.time * 9) }); }          // đèn mỏ: quầng ấm trên đầu
     return out;
 }
@@ -17878,9 +17889,9 @@ function drawLights(L, cx, cy) {
         for (const l of heroActionLights(game.player)) fxGlow(l.x, l.y, l.r, l.col, l.a * Math.min(1, 0.6 + ambientOf(L) * 1.5));
         for (const e of game.entities) { if (!e.alive) continue; if (e.fused) fxGlow(e.cx, e.cy, ATMOS.bombR, '#ff9a4a', (0.4 + 0.2 * Math.sin(game.time * 20)) * 0.4); else if (typeof e.light === 'function') { const l = e.light(); if (l) fxGlow(e.cx, e.cy, l.r, l.col, l.a * 0.35); } }
         for (const b of game.blasts) fxGlow(b.x, b.y, 40, '#ffcf70', 0.7 * (1 - b.t / 0.3) * 0.5);
-        if (typeof hlampLights === 'function') for (const l of hlampLights(L, cx, cy, [])) fxGlow(l.x, l.y, l.r, l.col, l.a * 0.5);          // đèn treo: ám vàng cả ở màn sáng
+        if (typeof hlampLights === 'function') { ctx.globalCompositeOperation = 'soft-light'; for (const l of hlampLights(L, cx, cy, [])) fxGlow(l.x, l.y, l.r, l.col, l.a * 0.8); ctx.globalCompositeOperation = 'lighter'; }          // đèn treo: ám vàng cả ở màn sáng — v1.6-126 (Dan: gần đèn quần áo bị bạc màu): pha 'soft-light' giữ sắc vật, chỉ ấm lên
         ctx.globalCompositeOperation = old; return; }          // level sáng: chỉ ánh chém / lướt của hero
-    for (const l of lightList(L, cx, cy)) fxGlow(l.x, l.y, l.r, l.col, l.a * 0.6);
+    for (const l of lightList(L, cx, cy)) { ctx.globalCompositeOperation = l.soft ? 'soft-light' : 'lighter'; fxGlow(l.x, l.y, l.r, l.col, l.soft ? l.a * 0.9 : l.a * 0.6); }
     ctx.globalCompositeOperation = old;
 }
 
@@ -18084,6 +18095,60 @@ function kelpDraw(ctx, L, cx, cy) {
         }
     }
     _hpFlush(ctx, B);
+}
+// HẠT DUNG NHAM BÁM GẠCH (v1.6-126, Núi lửa): [kiểu 0 = giọt treo dưới gờ / 1 = vệt chảy dọc mép tường, x, y, phía, pha]. Nửa điểm, nhấp nháy sáng / tối chậm;
+//   giọt treo phồng dần rồi rơi xuống một đoạn và tắt, lặp lại theo chu kỳ riêng; vệt chảy bò xuống chậm rồi đọng thành hạt.
+function lavaDripDraw(ctx, L, cx, cy) {
+    if (!ART.grass || !L || !L.lavad || !L.lavad.size) return;
+    const t = game.time || 0, [c0, c1, r0, r1] = _view(cx, cy);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+        const D = L.lavad.get(r * L.w + c); if (!D) continue;
+        if (!T_IS_SOLID[L.tile(c, r)]) { L.lavad.delete(r * L.w + c); continue; }
+        for (const [k, x, y, sd, ph] of D) {
+            const glow = 0.5 + 0.5 * Math.sin(t * 2.4 + ph), hot = glow > 0.5 ? '#ffd070' : '#ff8a3a';
+            if (k === 0) {          // giọt treo: phồng 0 → 1 trong chu kỳ, rồi rơi
+                const per = 2.6 + (ph % 1.5), u = ((t + ph) % per) / per;
+                if (T_IS_SOLID[L.tile(c, r + 1)]) continue;
+                if (u < 0.75) { const s = u / 0.75; ctx.fillStyle = '#c8401a'; ctx.fillRect(x, y, 1, 0.5); ctx.fillStyle = hot; ctx.fillRect(x, y + 0.5, s > 0.5 ? 1 : 0.5, s > 0.4 ? 1 : 0.5); if (s > 0.8) { ctx.fillStyle = '#fff0b0'; ctx.fillRect(x, y + 1, 0.5, 0.5); } }
+                else { const f = (u - 0.75) / 0.25; ctx.globalAlpha = 1 - f; ctx.fillStyle = hot; ctx.fillRect(x, y + 1 + f * 10, 0.5, 1); ctx.globalAlpha = 1; ctx.fillStyle = '#c8401a'; ctx.fillRect(x, y, 1, 0.5); }
+            } else {          // vệt chảy dọc mép tường
+                const fx = sd < 0 ? x - 0.5 : x, len = 3 + Math.sin(t * 0.6 + ph) * 1.5;
+                for (let j = 0; j < len; j += 0.5) { ctx.fillStyle = j > len - 1 ? hot : '#b83a18'; ctx.fillRect(fx, y + j, 0.5, 0.5); }
+                ctx.fillStyle = hot; ctx.fillRect(fx - (sd < 0 ? 0.5 : 0), y + len, 1, 1);
+            }
+        }
+    }
+}
+// MƯA (v1.6-126, Dan: «nghe tiếng mưa và sấm thì nên có vệt mưa và nước bắn trên mặt cỏ»): cùng quy tắc với tiếng mưa (04b_ambience ambEnvFor: màn có mưa cố định theo màn;
+//   mưa đủ 45 s đầu rồi nhỏ dần 15 s và tạnh). Vệt mưa nửa điểm xiên theo gió (toạ độ màn hình) · nước bắn lên trên mặt cỏ / mặt đất đang thấy · chớp sáng khi có sấm (game.thunderFlash).
+const RAIN = { n: 140, len: 5, speed: 260, splash: 34 };
+function rainLevel(L) {
+    if (!L || typeof ambEnvFor !== 'function') return 0;
+    if (L._rainy === undefined) { try { L._rainy = ambEnvFor(L).rainy || 0; } catch (e) { L._rainy = 0; } }
+    if (L._rainT0 === undefined) L._rainT0 = game.time || 0;
+    const rs = (game.time || 0) - L._rainT0; return L._rainy * (rs < 45 ? 1 : Math.max(0, 1 - (rs - 45) / 15));
+}
+function rainDraw(ctx, L, cx, cy) {          // gọi trong toạ độ thế giới (sau thực thể)
+    if (!ART.grass) return; const k = rainLevel(L); if (k <= 0.01) return;
+    const t = game.time || 0, wv = windAt(cx + VIEW_W / 2, t, L), dx = 0.35 + wv * 0.6, n = Math.round(RAIN.n * k);
+    ctx.fillStyle = '#c4d8ec'; ctx.globalAlpha = 0.5;
+    for (let i = 0; i < n; i++) {
+        const h1 = hash1(i * 3.17 + 0.5), h2 = hash1(i * 7.31 + 2.1), sp = RAIN.speed * (0.8 + 0.4 * h2), y = ((h2 * (VIEW_H + 40) + t * sp) % (VIEW_H + 40)) - 20, x = ((h1 * (VIEW_W + 60) + y * dx) % (VIEW_W + 60)) - 30;
+        for (let j = 0; j < RAIN.len * 2; j++) ctx.fillRect(Math.round((cx + x + j * dx * 0.5) * 2) / 2, Math.round((cy + y + j * 0.5) * 2) / 2, 0.5, 0.5);
+    }
+    ctx.globalAlpha = 1;
+    const [c0, c1, r0, r1] = _view(cx, cy), m = Math.round(RAIN.splash * k); let cnt = 0;          // nước bắn: mỗi ô mặt đất đang thấy có xác suất nhỏ nổi một tia bắn ngắn, lệch theo thời gian
+    for (let r = r0; r <= r1 && cnt < m; r++) for (let c = c0; c <= c1 && cnt < m; c++) {
+        if (!T_IS_SOLID[L.tile(c, r)] || T_IS_SOLID[L.tile(c, r - 1)]) continue;
+        const ph = hash1(c * 13.7 + r * 3.1), per = 0.9 + ph * 0.8, u = ((t + ph * 5) % per) / per; if (u > 0.22) continue;
+        cnt++; const x = c * TILE + 2 + hash1(c * 5.3 + r + Math.floor((t + ph * 5) / per)) * 12, y = r * TILE, f = u / 0.22;
+        ctx.globalAlpha = 0.75 * (1 - f); ctx.fillStyle = '#d8ecff';
+        ctx.fillRect(x - 0.5 - f * 1.5, y - 0.5 - f * 1.5, 0.5, 0.5); ctx.fillRect(x + 0.5 + f * 1.5, y - 0.5 - f * 1.5, 0.5, 0.5); ctx.fillRect(x, y - 0.5 - f * 2, 0.5, 0.5);
+    }
+    ctx.globalAlpha = 1;
+}
+function thunderFlashDraw(ctx) {          // toạ độ màn hình, sau bóng tối
+    if (!(game.thunderFlash > 0)) return; ctx.globalAlpha = Math.min(0.28, game.thunderFlash * 0.8); ctx.fillStyle = '#e8f0ff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; game.thunderFlash -= 1 / 60;
 }
 
 // 15_profile — HỒ SƠ NGƯỜI CHƠI lưu giữa các ván (localStorage): số ván, kỷ lục, thống kê, nguyên nhân chết (roadmap D5).
@@ -20199,7 +20264,7 @@ function renderFrame(alpha) {
     ctx.translate(-cx - sx, -cy - sy);
     drawExit(L); drawLava(ctx, L, cx, cy); drawCrumbleWarn(ctx, L); drawTrapWarn(ctx, L);
     decoDraw(ctx, cx + sx, cy + sy, L, 0);          // v1.2: xương / nấm nằm dưới lớp nền
-    drawLevel(L, cx + sx, cy + sy); grassDraw(ctx, L, cx + sx, cy + sy); hangDraw(ctx, L, cx + sx, cy + sy); glintDraw(ctx, L, cx + sx, cy + sy); driftDraw(ctx, L, cx + sx, cy + sy); ivyDraw(ctx, L, cx + sx, cy + sy); shroomDraw(ctx, L, cx + sx, cy + sy); kelpDraw(ctx, L, cx + sx, cy + sy);          // v1.6-107: cỏ động theo gió (14b_wind)
+    drawLevel(L, cx + sx, cy + sy); grassDraw(ctx, L, cx + sx, cy + sy); hangDraw(ctx, L, cx + sx, cy + sy); glintDraw(ctx, L, cx + sx, cy + sy); driftDraw(ctx, L, cx + sx, cy + sy); ivyDraw(ctx, L, cx + sx, cy + sy); shroomDraw(ctx, L, cx + sx, cy + sy); kelpDraw(ctx, L, cx + sx, cy + sy); lavaDripDraw(ctx, L, cx + sx, cy + sy);          // v1.6-107: cỏ động theo gió (14b_wind)
     drawRopes(L, cx + sx, cy + sy);
     decoDraw(ctx, cx + sx, cy + sy, L, 1);          // v1.18zz4: chi tiết kể chuyện (xương, đầu lâu, nấm…)
     hlampDraw(ctx, L, cx + sx, cy + sy); if (L.def.tut) tutRoomDraw(ctx, cx + sx, cy + sy);          // v1.6-61: đèn treo (trên nền, dưới nhân vật) · biển chỉ dẫn phòng tập
@@ -20212,12 +20277,13 @@ function renderFrame(alpha) {
     SPR_SEL = false;      // quái ám màu theo vùng (06c_sprites)
     if (game.exitAnim) exitAnimDraw(p, ctx, alpha); else if (!((game.trans && game.trans.inDoor) || (game.won && game.inDoor))) { p.draw(ctx, alpha); if (typeof cfxPetDraw === 'function') cfxPetDraw(p); if (p.frozenT > 0) drawFrozen(p, ctx, alpha); hlampTint(p, alpha); pogoDraw(ctx, alpha); alchDraw(ctx, alpha); statusDrawHero(alpha); }
     for (const e of game.entities) if (e.holder) drawEntity(e, ctx, alpha);          // vật đang cầm vẽ trước mặt người chơi
+    rainDraw(ctx, L, cx + sx, cy + sy);          // v1.6-126: mưa (Rừng sâu, theo tiếng mưa)
     drawWater(ctx, L, cx, cy); drawBlasts(); drawLights(L, cx, cy); boltsDraw(ctx);
     drawFx(L); foeAiDraw(ctx); critDraw(ctx);
     if (typeof dbgDrawWorld === 'function') dbgDrawWorld(ctx, alpha);
     ctx.restore();
     dmgPopDraw(cx + sx, cy + sy); goldPopDraw(cx + sx, cy + sy);          // v0.87: số sát thương yếu / kháng
-    drawWeather(L, cx, cy); drawDarkness(L, cx + sx, cy + sy); if (FG.on) fgDraw(ctx, cx + sx, L); if (!slotScreenOn()) drawHud();
+    drawWeather(L, cx, cy); drawDarkness(L, cx + sx, cy + sy); thunderFlashDraw(ctx); if (FG.on) fgDraw(ctx, cx + sx, L); if (!slotScreenOn()) drawHud();
     if (game.whiteT > 0) { game.whiteT -= 1 / 60; ctx.globalAlpha = Math.min(0.3, game.whiteT * 2.5); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     if (game.fade > 0) { ctx.globalAlpha = game.fade; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); ctx.globalAlpha = 1; }
     if (game.won && game.wonT > 0.5) drawWinPanel();
