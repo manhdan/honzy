@@ -467,8 +467,8 @@ const THEMES = {
     mines: {
         tint: '#c07a4a', weather: 'dust', ground: null, style: 'mines', wind: { base: 0.3, gust: 0.55, speed: 22, len: 200, dir: -1 },          // v1.6-108: gió lùa hầm, chậm
         sky: ['#141216', '#1c181c'], layers: [],
-        back: ['#18172a', '#201e34', '#29263f', '#100f1c'],          // v1.6-120 (Dan chọn C): tường nền lạnh xanh tím than — đất ấm nổi lên (trước: ['#1a171b', '#221e23', '#2b262c', '#121013'])
-        dirt: { base: ['#6e3a22', '#76402a', '#683620'], dark: '#3e1f12', mid: '#8a4c2c', light: '#a8653a', rim: '#c27a46', pebble: '#9a5a34', crack: '#2e160c', root: ['#7c4b2c', '#6a3d23', '#b07a44'] },
+        back: ['#1a171b', '#221e23', '#2b262c', '#121013'],
+        dirt: { base: ['#753a24', '#7e412a', '#6e3521'], dark: '#441e21', mid: '#95522c', light: '#b6703a', rim: '#d18849', pebble: '#a55f34', crack: '#2c1318', root: ['#7c4b2c', '#6a3d23', '#b07a44'] },
         solid: ['#6e3a22', '#76402a'], edge: '#3e1f12', top: '#c27a46', plat: ['#b08a4e', '#7a5c30']
     },
     cave: {
@@ -4150,7 +4150,7 @@ function drawHearts(hp, maxHp, x, y, blink) {
 //   Màu cố định theo kiểu đất, chỉ ngả nhẹ theo màu ám của phòng (th.tintCol, xem 15c_zones). Ô nứt / cổng chốt / gai / nền rơi vẫn vẽ ở 06_render theo màu theme.
 const GROUND = {
     rock: { plat: 'wood', body: ['#55536e', '#4d4b66'], dark: '#2e2648', light: '#747090', strata: '#3c3656', cap: '#a49cbc', cap2: '#7a7298', edge: '#221c38', glint: '#c8c0dc' },          // v1.6-122 (Dan chọn A): đá xám tím, bóng / viền chàm, mặt trên oải hương — lệch tông với nền hang xanh than
-    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], grassFringe: '#3c8a3c', edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff'] },
+    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], grassFringe: '#3c8a3c', grassTop: '#5cac48', edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff'] },
     moss: { plat: 'wood', body: ['#2c3a4e', '#263446'], dark: '#16223a', light: '#3e526e', moss: ['#4aa888', '#8ad8a0', '#26706a'], edge: '#0e1628', glow: '#9ff0d0', cap: '#6fd0ff', stem: '#cfe9f5' },          // v1.6-112: rêu mặt trên sáng hơn; v1.6-125 (Dan chọn A): đá xanh than lạnh, rêu lệch tông (gốc xanh ngọc, ngọn vàng lục)
     brick: { plat: 'slab', body: ['#776d90', '#6d6386', '#80789b'], mortar: '#3a3447', dark: '#443c57', light: '#9c92b8', cap: '#b8aed4', cap2: '#7d7398', edge: '#2c2638', rune: '#ffb06a' },          // v1.6-112: Tàn tích — gạch sáng hơn, nền xa tối hơn (70% về bản đề xuất)
     // BỘ MÀU CŨ (v0.28, đất tối hơn nền; để dùng lại nếu cần): crystal: { plat: 'crystal', body: ['#237a84', '#1f7079'], facet: '#37a0a8', light: '#55c4cc', cap: '#a0fff8', cap2: '#45d0d8', gem: '#e6fffd', glow: '#5ff2ec', edge: '#10424a' },
@@ -4220,7 +4220,7 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
         if (N(26) < 0.3) { const a = 2 + Math.floor(N(27) * 9), b = 5 + Math.floor(N(28) * 6); for (let j = 0; j < 4; j++) _gpx(g, T(P.root), x + a + (j >> 1), y + b + j, 1, 1); }
         if (up) {                                  // cỏ phủ: 3 hàng xanh + vạt tua, ngọn cỏ lên trên mặt, thỉnh thoảng có hoa
             _gpx(g, T(P.grass[0]), x, y, TILE, 3);
-            for (let i = 0; i < TILE; i++) { _gpx(g, T(N(30 + i) > 0.5 ? (P.grassFringe || P.grass[2]) : P.grass[0]), x + i, y + 3, 1, 1 + (N(50 + i) > 0.55 ? 1 : 0)); if (N(70 + i) < 0.5) _gpx(g, T(P.grass[1]), x + i, y, 1, 1); }
+            for (let i = 0; i < TILE; i++) { _gpx(g, T(N(30 + i) > 0.5 ? (P.grassFringe || P.grass[2]) : P.grass[0]), x + i, y + 3, 1, 1 + (N(50 + i) > 0.55 ? 1 : 0)); if (N(70 + i) < 0.5) _gpx(g, T(P.grassTop || P.grass[1]), x + i, y, 1, 1); }
             if (typeof ART !== 'undefined' && ART.grass && _grassSink) {          // v1.6-107 (Roadmap_Celeste B): ngọn cỏ + hoa sang lớp động 14b_wind (ngả theo gió, đổi sắc, rẽ khi có người đi qua) — cùng vị trí / chiều cao như bản vẽ chết
                 const bl = [];
                 for (let i = 0; i < TILE; i += 2) if (N(90 + i) < 0.7) { const h = 1 + Math.floor(N(110 + i) * 3), bc = N(130 + i) > 0.5 ? P.grass[1] : P.grass[0]; bl.push([i, h, T(bc), T(P.grassHi || '#a6e070'), T(P.grass[2]), null]); }
@@ -4373,7 +4373,7 @@ function paintGroundRound(g, room, th, c, r, x, y, style) {
     // MÉP PHỦ LỒI (Dan): rừng / tuyết — lớp cỏ / tuyết trên mặt trùm cong ra ngoài mép 1–2 px (như gối) thay vì bị cắt tròn cùng khối đất
     const mossy = style === 'moss' && room.themeName === 'deep';          // v1.6-62 (Dan): Vực sâu cũng có mép rêu trùm ra ngoài (½ tuyết); rừng giảm còn ~75 %; pha lê bo góc nhẹ hơn (K 0,6)
     if ((style === 'grass' || style === 'snow' || mossy) && up && (lf || rt)) {
-        const snowy = style === 'snow', main = _gtint(th, snowy ? P.snow : mossy ? P.moss[0] : P.grass[0]), hi = _gtint(th, snowy ? P.snow : mossy ? P.moss[1] : P.grass[1]), sh = _gtint(th, snowy ? P.snowSh : mossy ? P.moss[2] : P.grass[2]);
+        const snowy = style === 'snow', main = _gtint(th, snowy ? P.snow : mossy ? P.moss[0] : P.grass[0]), hi = _gtint(th, snowy ? P.snow : mossy ? P.moss[1] : (P.grassTop || P.grass[1])), sh = _gtint(th, snowy ? P.snowSh : mossy ? P.moss[2] : P.grass[2]);
         const off = snowy ? [0, 1, 2, 2, 2, 1] : mossy ? [0, 1] : [0, 1, 1, 1];          // v1.6-63: rừng / vực sâu trùm ra ít hơn nữa (~75 %)
         const lip = (side, rad) => {
             for (let dy = 0; dy < off.length; dy++) {
@@ -4407,7 +4407,7 @@ function paintGroundRound(g, room, th, c, r, x, y, style) {
         else { const cy = y + TILE - 1, iy = y + TILE - 2; g.clearRect(x + t, cy, L, 1); _gpx(g, edge, x + t, iy, L, 1); _gpx(g, edge, x + t - 1, cy, 1, 1); _gpx(g, edge, x + t + L, cy, 1, 1); }
     };
     if (lf && !up && !dn) chip(true, -1, 0); if (rt && !up && !dn) chip(true, 1, 1); if (dn && !lf && !rt) chip(false, 0, 2);
-    if (up && style !== 'rock' && style !== 'brick') groundBump(g, c, x, y, lf, rt, _gtint(th, style === 'grass' ? P.grass[1] : style === 'moss' ? P.moss[1] : style === 'snow' ? P.snow : P.edge), style === 'grass' || style === 'snow' || style === 'moss' ? 2 : 1);
+    if (up && style !== 'rock' && style !== 'brick') groundBump(g, c, x, y, lf, rt, _gtint(th, style === 'grass' ? (P.grassTop || P.grass[1]) : style === 'moss' ? P.moss[1] : style === 'snow' ? P.snow : P.edge), style === 'grass' || style === 'snow' || style === 'moss' ? 2 : 1);
 }
 // v1.6-62 (Dan): MẶT ĐẤT GỢN — mép trên ô đất lõm xuống 1 px (cỏ / tuyết / rêu: tới 2 px) theo sóng liền mạch qua các ô (tính theo toạ độ thế giới), chỉ là hình (va chạm vẫn phẳng). Không áp cho nền đá / gạch (vùng 3, 5, 9).
 function groundBump(g, c, x, y, lf, rt, col, amp) {
@@ -17937,6 +17937,7 @@ function grassDraw(ctx, L, cx, cy) {
             const h = b[1], n = h * 2, bend = Math.max(-2, Math.min(2, wv * (h >= 3 ? 1.6 : 1.1) + 0.25 * Math.sin(t * 5.1 + x * 0.9) + G.d[i]));
             const lean = Math.abs(bend), lit = lean >= 0.6 ? (bend * (wv || bend) >= 0 ? b[3] : b[4]) : b[2];          // ngả xuôi gió: ngọn bắt sáng · bị rẽ ngược gió: ngọn tối
             let ox = 0;
+            _hpPut(B, b[2], x, by, 1); _hpPut(B, b[2], x, by + HP, 1);          // v1.6-128 (Dan): chân ngọn cắm xuống lớp cỏ 1 điểm — không còn khe tối giữa ngọn và mặt cỏ
             for (let j = 0; j < n; j++) {          // từng nửa điểm từ gốc lên ngọn: gốc dày 1 điểm, nửa trên mảnh 0,5; lệch dần theo đường cong (bình phương) → ngọn cong mềm
                 const f = j / (n - 1); ox = rh(bend * f * (0.4 + 0.6 * f)); const top = j >= n - 2 || (lean >= 1.4 && j >= n - 3);
                 _hpPut(B, top ? lit : b[2], x + ox, by - HP - j * HP, j < n / 2 && j < 3 ? 1 : HP);
