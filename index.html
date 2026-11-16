@@ -3213,13 +3213,13 @@ const MT_C = { bpm: 78, steps: 8, name: 'C',
 //   Âm lượng đi theo thanh «Nhạc nền» (SND.music) và công tắc tắt tiếng; AMB.vol chỉnh chung. Phòng boss: nhỏ đi, không có sự kiện. Math.random chỉ dùng cho âm thanh, không đụng rng chơi.
 const AMB = { waves: false, lake: false, lava: false, vol: 1.5, S: null, lv: null, env: null, wk: 0, lk: 0, sampleT: 0, stats: { birds: 0, crickets: 0, frogs: 0, owls: 0, plops: 0, thunders: 0 } };
 const AMB_PROF = {
-    mines:    { wind: 0.85, gust: 0.9, drip: 1.3, windK: 0.1, crickets: 0.6, owl: 0.75 },          // v1.18m (Dan): gió / hú của Hầm mỏ to hơn nhạc nền → còn 10% (windK nhân vào âm lượng gió + hú)
+    mines:    { caw: 0.8, wind: 0.85, gust: 0.9, drip: 1.3, windK: 0.1, crickets: 0.6, owl: 0.75 },          // v1.18m (Dan): gió / hú của Hầm mỏ to hơn nhạc nền → còn 10% (windK nhân vào âm lượng gió + hú)
     forest:   { wind: 0.30, birds: 1, crickets: 0.6, frogs: 0.3, drip: 0.15, rain: 0.4 },
     cave:     { wind: 0.35, drip: 1, rumble: 1 },
-    crystal:  { wind: 0.20, drip: 0.45, waves: 0.4, crickets: 0.5 },
-    ruins:    { drip: 0.2 },          // v1.18zi (Dan): Tàn tích bỏ gió / hú / mưa (nhiễu trắng nghe nhức đầu) — chỉ còn giọt nước
+    crystal:  { birds: 0.4, wind: 0.20, drip: 0.45, waves: 0.4, crickets: 0.5 },
+    ruins:    { drip: 0.2, caw: 0.6 },          // v1.18zi (Dan): Tàn tích bỏ gió / hú / mưa (nhiễu trắng nghe nhức đầu) — chỉ còn giọt nước
     snow:     { wind: 0.9, gust: 1, windK: 0.25, vol: 0.45 },          // v1.6-41 (Dan): gió Núi tuyết to quá → còn 25% (windK nhân vào gió + hú)
-    amethyst: { wind: 0.30, drip: 0.75, crickets: 0.3 },
+    amethyst: { birds: 0.35, wind: 0.30, drip: 0.75, crickets: 0.3 },
     deep:     { wind: 0.40, owl: 0.8, frogs: 0.6, crickets: 0.3, drip: 0.4, waves: 1, rumble: 1, vol: 0.7 },
     magma:    { wind: 0.35, rumble: 1, crickets: 0.5, drip: 0.4, owl: 0.2 }
 };
@@ -3263,6 +3263,15 @@ function ambFrog(S, t, vol, pan) {          // 2–4 tiếng "ộp" trầm
         o.type = 'sawtooth'; o.frequency.setValueAtTime(base * 1.25, s); o.frequency.exponentialRampToValueAtTime(base * 0.85, s + 0.09); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 3;
         g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(vol * (1 - i * 0.12), s + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.1);
         o.connect(lp); lp.connect(g); g.connect(_apan(S, pan)); o.start(s); o.stop(s + 0.14);
+    }
+}
+function ambCaw(S, t, vol, pan) {          // v1.6-130: quạ "quạ… quạ" — hai ba tiếng khàn, hạ giọng
+    const ac = S.ac, n = 2 + Math.floor(_ar() * 2), base = 330 + _ar() * 70;
+    for (let i = 0; i < n; i++) {
+        const s = t + i * (0.34 + _ar() * 0.06), o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(base * 1.12, s); o.frequency.exponentialRampToValueAtTime(base * 0.8, s + 0.22); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 2;
+        g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(vol * (1 - i * 0.1), s + 0.03); g.gain.linearRampToValueAtTime(0.0001, s + 0.24);
+        o.connect(lp); lp.connect(g); g.connect(_apan(S, pan)); o.start(s); o.stop(s + 0.28);
     }
 }
 function ambOwl(S, t, vol, pan) {          // "hú… hu-hu" mềm ~400 Hz
@@ -3325,6 +3334,7 @@ function ambTick(S, now, E) {
     if (boss) return;          // phòng boss: chỉ còn nền
     const calm = (1 - _asm(0.02, 0.15, r)) * (1 - _asm(0.5, 1.0, w)), L = typeof sndLog === 'function' ? sndLog : null, st = AMB.stats;
     if ((p.birds || 0) > 0 && calm > 0.4 && now >= S.birdT) { ambBird(S, now + 0.05, 0.035 * (0.7 + 0.3 * calm)); st.birds++; if (L) L('amb_birds', 'env'); S.birdT = now + (5 + _ar() * 11) / (0.5 + p.birds); }
+    if ((p.caw || 0) > 0 && calm > 0.5 && now >= (S.cawT || 0)) { ambCaw(S, now + 0.05, 0.02 * p.caw, (_ar() - 0.5) * 1.2); if (L) L('amb_caw', 'env'); S.cawT = now + 14 + _ar() * 24; }          // v1.6-130
     if ((p.crickets || 0) > 0 && calm > 0.3 && now >= S.crT) { ambCricket(S, now + 0.05, 0.016 * Math.min(1, p.crickets * (E.dark ? 1.6 : 1)), AMB_CRICKET[Math.floor(_ar() * 3)] * (0.99 + _ar() * 0.02), (_ar() - 0.5) * 1.2); st.crickets++; S.crT = now + (0.8 + _ar() * 1.6) / (0.3 + p.crickets); }
     if ((p.frogs || 0) > 0 && calm > 0.3 && now >= S.frogT) { ambFrog(S, now + 0.05, 0.03 * (0.4 + 0.6 * Math.max(p.frogs, E.wk)), (_ar() - 0.5) * 1.4); st.frogs++; if (L) L('amb_frog', 'env'); S.frogT = now + (2 + _ar() * 5) / (0.3 + p.frogs); }
     if ((p.owl || 0) > 0 && calm > 0.5 && now >= S.owlT) { ambOwl(S, now + 0.05, 0.03 * p.owl, (_ar() - 0.5) * 1.2); st.owls++; if (L) L('amb_owl', 'env'); S.owlT = now + 16 + _ar() * 26; }
@@ -3692,7 +3702,7 @@ function paintMinesDirt(g, level, th, c, r, x, y, hard) {
     if (dn) {
         g.fillStyle = D.dark; g.fillRect(x, y + TILE - 2, TILE, 2); g.fillStyle = D.crack; g.fillRect(x, y + TILE - 1, TILE, 1);
         if (ART.grass && _grassSink && D.root) {          // v1.6-108: rễ rủ từ trần, đung đưa (14b_wind hangDraw)
-            const st = []; for (let k = 0; k < 3; k++) if (N(110 + k) < 0.4) { const len = 4 + Math.floor(N(113 + k) * 9); if (len >= 8 && N(131 + k) < 0.25) continue; const sub = len >= 6 && N(116 + k) < 0.6 ? 2 + Math.floor(N(119 + k) * (len - 4)) : 0; st.push([1 + Math.floor(N(122 + k) * 14), len, N(125 + k) < 0.5 ? D.root[0] : D.root[1], D.root[2], sub, N(128 + k) < 0.5 ? -1 : 1]); }
+            const st = []; for (let k = 0; k < 3; k++) if (N(110 + k) < 0.2) { const len = 4 + Math.floor(N(113 + k) * 9); if (len >= 8 && N(131 + k) < 0.25) continue; const sub = len >= 6 && N(116 + k) < 0.6 ? 2 + Math.floor(N(119 + k) * (len - 4)) : 0; st.push([1 + Math.floor(N(122 + k) * 14), len, N(125 + k) < 0.5 ? D.root[0] : D.root[1], D.root[2], sub, N(128 + k) < 0.5 ? -1 : 1]); }
             if (st.length) hangRecord(_grassSink, c, r, st);
         }
         for (let k = 0; k < 2; k++) if (N(70 + k) < 0.45) {            // thạch nhũ nhỏ
@@ -4150,7 +4160,7 @@ function drawHearts(hp, maxHp, x, y, blink) {
 //   Màu cố định theo kiểu đất, chỉ ngả nhẹ theo màu ám của phòng (th.tintCol, xem 15c_zones). Ô nứt / cổng chốt / gai / nền rơi vẫn vẽ ở 06_render theo màu theme.
 const GROUND = {
     rock: { plat: 'wood', body: ['#55536e', '#4d4b66'], dark: '#2e2648', light: '#747090', strata: '#3c3656', cap: '#a49cbc', cap2: '#7a7298', edge: '#221c38', glint: '#c8c0dc' },          // v1.6-122 (Dan chọn A): đá xám tím, bóng / viền chàm, mặt trên oải hương — lệch tông với nền hang xanh than
-    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], grassFringe: '#3c8a3c', grassTop: '#5cac48', edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff'] },
+    grass: { plat: 'log', body: ['#624430', '#583b2b'], dark: '#3a2230', light: '#80583e', pebble: '#8a7966', root: '#45263a', grass: ['#4a9a40', '#8ac64e', '#26684a'], grassFringe: '#3c8a3c', grassTop: '#5cac48', edge: '#2a1622', flower: ['#f2d35a', '#f08fb0', '#a8d4ff', '#f4f0e6', '#e8643c', '#c49aff', '#ffb04c'] },
     moss: { plat: 'wood', body: ['#2c3a4e', '#263446'], dark: '#16223a', light: '#3e526e', moss: ['#4aa888', '#8ad8a0', '#26706a'], edge: '#0e1628', glow: '#9ff0d0', cap: '#6fd0ff', stem: '#cfe9f5' },          // v1.6-112: rêu mặt trên sáng hơn; v1.6-125 (Dan chọn A): đá xanh than lạnh, rêu lệch tông (gốc xanh ngọc, ngọn vàng lục)
     brick: { plat: 'slab', body: ['#776d90', '#6d6386', '#80789b'], mortar: '#3a3447', dark: '#443c57', light: '#9c92b8', cap: '#b8aed4', cap2: '#7d7398', edge: '#2c2638', rune: '#ffb06a' },          // v1.6-112: Tàn tích — gạch sáng hơn, nền xa tối hơn (70% về bản đề xuất)
     // BỘ MÀU CŨ (v0.28, đất tối hơn nền; để dùng lại nếu cần): crystal: { plat: 'crystal', body: ['#237a84', '#1f7079'], facet: '#37a0a8', light: '#55c4cc', cap: '#a0fff8', cap2: '#45d0d8', gem: '#e6fffd', glow: '#5ff2ec', edge: '#10424a' },
@@ -4225,7 +4235,9 @@ function paintGroundSolid(g, room, th, c, r, x, y, style) {
                 const bl = [];
                 for (let i = 0; i < TILE; i += 2) if (N(90 + i) < 0.7) { const h = 1 + Math.floor(N(110 + i) * 3), bc = N(130 + i) > 0.5 ? P.grass[1] : P.grass[0]; bl.push([i, h, T(bc), T(P.grassHi || '#a6e070'), T(P.grass[2]), null]); }
                 for (let i = 1; i < TILE; i += 2) if (N(170 + i) < 0.45) bl.push([i, 1 + (N(190 + i) < 0.4 ? 1 : 0), T(P.grass[0]), T(P.grassHi || '#a6e070'), T(P.grass[2]), null]);          // thêm ngọn ngắn xen kẽ cho thảm cỏ dày hơn
-                if (N(150) < 0.1) { const fx = 3 + Math.floor(N(151) * 9); bl.push([fx, 3, T(P.grass[2]), T(P.grass[0]), T(P.grass[2]), T(P.flower[Math.floor(N(152) * 3)])]); }
+                const nF = P.flower.length, fS = T(P.grass[2]), fT = T(P.grass[0]);          // v1.6-129 (Dan): nhiều hoa hơn — chỗ 1 bông, chỗ cụm 3–5 bông, màu và độ cao khác nhau
+                if (N(150) < 0.2) { const fx = 2 + Math.floor(N(151) * 12); bl.push([fx, 2 + Math.floor(N(153) * 4), fS, fT, fS, T(P.flower[Math.floor(N(152) * nF)])]); }
+                if (N(154) < 0.13) { const cn = 3 + Math.floor(N(155) * 3), f0 = Math.floor(N(156) * (TILE - 2 * cn)); for (let k = 0; k < cn; k++) bl.push([1 + f0 + k * 2 + (k % 2), 2 + Math.floor(N(157 + k) * 4), fS, fT, fS, T(P.flower[Math.floor(N(162 + k) * nF)])]); }
                 grassRecord(_grassSink, c, r, bl);
             } else {
                 for (let i = 0; i < TILE; i += 2) if (N(90 + i) < 0.7) { const h = 1 + Math.floor(N(110 + i) * 3); _gpx(g, T(N(130 + i) > 0.5 ? P.grass[1] : P.grass[0]), x + i, y - h, 1, h); }
@@ -5767,10 +5779,12 @@ function drawLavaHp(ctx, L, cx, cy) {
             }
             ctx.fillStyle = '#fff0a0'; ctx.fillRect(x + ((c * 3 + Math.floor(t * 4)) & 7) * 2, y + 5.5, 2, 0.5);
         } else { ctx.fillStyle = k > 0.5 ? '#e0501a' : '#c63e12'; ctx.fillRect(x, y, TILE, TILE); }
-        ctx.fillStyle = '#ff9a2e'; const bx = x + 2 + ((c * 5 + r) & 3), by = y + 9 + Math.floor(k * 3);
-        ctx.fillRect(bx, by, 5, 1.5); ctx.fillRect(bx + 0.5, by - 0.5, 4, 0.5); ctx.fillRect(x + 9, y + 12 - Math.floor(k * 2), 4, 1.5);
-        ctx.fillStyle = '#8a2a0a'; ctx.fillRect(x + 11 - ((c + r) & 3), y + 8 + ((c * 3 + r) & 1), 1.5, 1); ctx.fillRect(x + 3 + ((c * 7 + r) & 3), y + 13, 1, 0.5);
-        ctx.fillStyle = '#ffe08a'; ctx.fillRect(x + 6 + ((c + r * 3) & 3), by + 0.5, 1, 0.5);
+        if (!top && L.tile(c, r - 2) === T_LAVA) { ctx.fillStyle = 'rgba(90,20,6,0.16)'; ctx.fillRect(x, y, TILE, TILE); }          // v1.6-130: lớp sâu sẫm dần
+        for (let j = 0; j < 3; j++) {          // cục dung nham trôi: vị trí, kích cỡ theo nửa điểm, bo tròn bằng 3 lớp thu hẹp, đỉnh sáng · đáy tối
+            const h0 = (c * 7 + r * 13 + j * 5) % 11, bx = x + 1 + hpr(h0 + Math.sin(t * 0.8 + j * 2 + c) * 1.5), by = y + (top ? 8 : 2) + hpr(j * 4.5 + Math.sin(t * 1.1 + j * 2.3 + r) * 1.2), w = 3 + ((h0 + j) % 3);
+            ctx.fillStyle = '#c24a14'; ctx.fillRect(bx, by + 1.5, w, 0.5); ctx.fillStyle = '#ff9a2e'; ctx.fillRect(bx - 0.5, by + 0.5, w + 1, 1); ctx.fillRect(bx + 0.5, by, w - 1, 0.5); ctx.fillStyle = '#ffd070'; ctx.fillRect(bx + 1, by, Math.max(1, w - 2.5), 0.5); ctx.fillStyle = '#ffe9a8'; ctx.fillRect(bx + 1.5 + (j & 1), by, 0.5, 0.5);
+        }
+        ctx.fillStyle = '#8a2a0a'; for (let j = 0; j < 4; j++) ctx.fillRect(x + hpr(1 + ((c * 3 + r * 5 + j * 4) % 13)), y + hpr(2 + ((c + r * 7 + j * 3) % 12)), 1 + ((j & 1) ? 0.5 : 0), 0.5);          // đốm tối nửa điểm
         if (top && game.rngFx.next() < 0.01) L.fx.push({ x: x + 8, y: y + 6, vx: (game.rngFx.next() - 0.5) * 20, vy: -30, life: 0.5, max: 0.5, size: 2, col: '#ffb040' });
     }
 }
@@ -5823,7 +5837,11 @@ function drawWaterHp(ctx, L, cx, cy) {
         } else {
             ctx.fillStyle = 'rgba(38,112,205,' + al + ')'; ctx.fillRect(x, y, TILE, TILE);
             if (depth >= 2) { ctx.fillStyle = 'rgba(10,40,110,' + (0.05 * Math.min(depth, 5)).toFixed(3) + ')'; ctx.fillRect(x, y, TILE, TILE); }
-            if ((Math.floor(t * 1.5 + c * 3 + r * 5) & 7) === 0) { ctx.fillStyle = 'rgba(190,235,255,0.3)'; ctx.fillRect(x + 3 + ((c * 5 + r) & 7), y + 4 + ((r * 3 + c) & 5), 4, 0.5); }
+            for (let j = 0; j < 2; j++) {          // v1.6-130: vệt sáng loang (caustic) trôi chậm, vẽ theo nửa điểm: một đoạn 3 nấc + điểm chói
+                const h0 = (c * 7 + r * 3 + j * 5) % 10, sx = x + 1 + hpr(h0 + Math.sin(t * 0.9 + j * 2 + c) * 1.5), sy = y + hpr(3 + j * 6 + Math.sin(t * 0.7 + r + j) * 1), a2 = 0.16 + 0.1 * Math.sin(t * 1.6 + h0 + j * 3);
+                ctx.fillStyle = 'rgba(190,235,255,' + a2.toFixed(3) + ')'; ctx.fillRect(sx, sy, 3, 0.5); ctx.fillRect(sx + 0.5, sy + 0.5, 2, 0.5); ctx.fillRect(sx - 0.5, sy - 0.5, 1, 0.5);
+                ctx.fillStyle = 'rgba(240,252,255,' + (a2 * 1.4).toFixed(3) + ')'; ctx.fillRect(sx + 1, sy, 0.5, 0.5);
+            }
             const bt = (t * 0.6 + (c * 37 + r * 11) % 10) % 6;
             if (((c * 13 + r * 7) % 9) === 0 && bt < 1) { const bx = x + 4 + (c * 3 % 8), by = y + TILE - bt * TILE; ctx.fillStyle = 'rgba(220,245,255,0.75)'; ctx.fillRect(hpr(bx), hpr(by), 1, 1); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(hpr(bx), hpr(by), 0.5, 0.5); }
         }
@@ -15587,7 +15605,9 @@ class Boomerang extends Thing {
         if (!p || p.dead || this.age > BOOM.life) { this.finish(); return; }
         if (!this.back) { this.sp -= decel * dt; if (this.sp <= 0) { this.sp = 0; this.back = true; if (!M) this.hit.clear(); } else { this.vx = this.dx * this.sp; this.vy = this.dy * this.sp; } }          // v1.18zd: bay theo hướng ngắm (dx, dy) — ngang · lên · chéo
         if (this.back) { const dx = p.cx - this.cx, dy = (p.cy - (M ? 8 : 0)) - this.cy, d = Math.hypot(dx, dy) || 1; this.vx = dx / d * BOOM.back; this.vy = dy / d * BOOM.back; if (Math.hypot(p.cx - this.cx, p.cy - this.cy) < BOOM.catchR) { this.finish(); return; } }          // v0.95: vòng về nhắm cao hơn tâm người 1/2 ô → quái cao 1 ô cũng dính
-        physMove(level, this, dt);
+        const ghost = this.mode === 'far';          // v1.6-130 (Dan): đòn ném GIỮ xuyên tường (đi lẫn về); chỉ dừng khi ra ngoài bản đồ
+        if (ghost) { this.x += this.vx * dt; this.y += this.vy * dt; this.hitL = this.hitR = this.hitU = this.onGround = false; const gc = Math.floor(this.cx / TILE), gr = Math.floor(this.cy / TILE); if (!level.inside(gc, gr)) { if (!this.back) this.back = true; } else if (level.solidAt(this.cx, this.cy) && ((this._gs = (this._gs || 0) + 1) % 3 === 0)) level.spawnBurst(this.cx, this.cy, 1, this.el ? elemCol(this.el) : '#e0a84a', 30); }
+        else physMove(level, this, dt);
         { const tr = this.trail || (this.trail = []); tr.unshift({ x: this.cx, y: this.cy }); if (tr.length > 9) tr.pop(); }          // v1.2: lịch sử vị trí để vẽ vệt mờ
         if (this.el === 'fire' && ((this._ft = (this._ft || 0) + 1) % 2 === 0)) fireTrailIgnite(level, p, this.cx, this.cy);          // v1.04: boomerang hệ lửa châm dầu / mạng nhện dưới đường bay
         if (this.el === 'ice' && this.mode === 'far') { this.iceB = this.iceB || { left: CW_ICE.tiles, side: 36 }; this.iceB.sameRow = this.back; iceFreezeNear(level, p, this.cx, this.cy, this.iceB); }          // v1.10: boomerang băng xa đóng băng nước dọc đường bay
@@ -16784,11 +16804,11 @@ function dmgPopDraw(camX, camY) {
 }
 
 // 13x_classweapon — VŨ KHÍ CHÍNH THEO LỚP (v0.95, DESIGN_CLASSES_v3.md). Nút Tròn (attack):
-//   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3, mang hệ).
+//   Kiếm Sĩ = kiếm (09_player, không đổi) · Giả Kim = GẬY PHÉP (đạn vật lý yếu ngang / lên; GIỮ nạp → đạn hệ có lan) · Thợ Săn = BOOMERANG (gần nhanh, không xuyên; GIỮ nạp → xa, xuyên ≤ 3 quái, XUYÊN TƯỜNG, mang hệ).
 //   Vào từ Player.whipStart (non-sword gọi classAttack). Hệ nhân vật: elemOf(p) = p.blade || 'fire' (mặc định Lửa; nhặt / mua kiếm hệ thì đổi hệ).
 const CW = {
     staff: { v: 250, life: 0.248, dmg: 1, upMul: 0.7, cd: 0.55, cdP: 1.2, vP: 250, lifeP: 0.312, size: 6, spread: 0.14, stun: 1, close: 14, closeUp: 18, iceExtra: 16 },          // v1.17 (Dan): stun = đạn trúng thì quái đứng im 1 s (không áp lên boss); close = quét cận chiến khi bắn (quái sát người / dơi trên đầu cũng trúng)
-    boomN: { v: 174, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 40 px (v1.07: −½ ô, Dan; trước 48)
+    boomN: { v: 188, decel: 380, dmg: 1, stun: 0.5, cd: 0.35, pierce: 1 },          // quãng ≈ v² / 2·decel ≈ 46 px (v1.6-130: +6 px, Dan; v1.07: 40)
     boomF: { v: 226, decel: 400, dmg: 2, stun: 0.8, cd: 2.5, pierce: 3 },          // quãng ≈ 64 px (v1.07: −½ ô; trước 72) (đòn nạp, xuyên 3, hồi 2,5 s)
     boomBossMul: 0.5                                                                // khống chế lên boss yếu hơn
 };
@@ -17281,6 +17301,15 @@ function paDeco(g, d, L, x, y, t) {
 }
 
 // ---- SINH VẬT NHỎ (critDraw gọi paCrit) ----
+const PA_BIRD = {          // v1.6-130: chim theo vùng — rows: hàng 0–1 là đầu (mổ thì hạ xuống), legs: chân (ẩn khi bay), wing: bề rộng cánh khi bay
+    forest: { ax: 4, wing: 2, rows: ['....aaa.', '...aaakY', '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..'], legs: '..l..l..', pal: { a: '#6a4a32', b: '#a07c58', k: '#1a1410', Y: '#d8a030', l: '#4a3624' } },
+    snow: { ax: 4, wing: 2, rows: ['....aaa.', '...aaakY', '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..'], legs: '..l..l..', pal: { a: '#dfe6f2', b: '#f4f7fc', k: '#1a1410', Y: '#d8a030', l: '#4a3624' } },
+    mines: { ax: 5, wing: 3, rows: ['.....aaa..', '....aaakYY', '..aaaaaaa.', '.aaaaaaaa.', 'aaaabbbba.', '.aaabbbb..', '..aaaaa...'], legs: '..l.l.....', pal: { a: '#27242f', b: '#4a455c', k: '#d8d0b8', Y: '#80798a', l: '#2e2a3a' } },
+    ruins: { ax: 5, wing: 3, rows: ['.....aaa..', '....aaakY.', '...aaaaaa.', '.aaaaaaaaa', 'aaaabbbbaa', '.aaabbbba.', '..aaaaaa..'], legs: '...l..l...', pal: { a: '#7c8498', b: '#b8c0d0', k: '#2a1c1c', Y: '#d89a6a', l: '#6a7084' } },
+    crystal: { ax: 4, wing: 2, rows: ['....aaa.', '...aaakY', '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..'], legs: '..l..l..', glow: '#6ff0ff', pal: { a: '#46a8b8', b: '#cdf8fc', k: '#10282e', Y: '#ffd070', l: '#2e7c8c' } },
+    amethyst: { ax: 4, wing: 2, rows: ['....aaa.', '...aaakY', '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..'], legs: '..l..l..', glow: '#c490ff', pal: { a: '#8a62c8', b: '#e4d4ff', k: '#201030', Y: '#ffd070', l: '#5a3c90' } },
+    magma: { ax: 4, wing: 2, rows: ['....aaa.', '...aaakY', '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..'], legs: '..l..l..', glow: '#ff8a3a', pal: { a: '#3c2428', b: '#ee7430', k: '#ffe080', Y: '#ffc040', l: '#2a1418' } }
+};
 function paCrit(c, q, t, L) {
     const x = q.x, y = q.y !== undefined ? q.y : q.y0, f = q.d, fl = f < 0, k = q.k, A = 0.92 * (q.fade !== undefined ? q.fade : 1);
     const S = (key, rows, pal, ax, ay, ox, oy, flip) => paDraw(c, paSpr('crit|' + key, rows, pal), x + (ox || 0), y + (oy || 0), ax, ay, flip === undefined ? fl : flip, A);
@@ -17311,11 +17340,16 @@ function paCrit(c, q, t, L) {
     } else if (k === 'fish') {
         const fr = Math.floor(t * 8 + q.x * 0.2) % 2;
         S('fish' + fr + q.col[0], [fr ? '...aaaa...' : '...aaaa...', fr ? 'a.aaaaaaa.' : '..aaaaaaa.', 'aaabbbbaak', fr ? 'a.aaaaaaa.' : '..aaaaaaa.', '...aaaa...'], { a: q.col[0], b: q.col[1], k: '#15131c' }, 5, 2);
+    } else if (k === 'bat') {
+        const pal = { a: '#4c3c5e', b: '#74628a', k: '#ff7a60' };
+        if (q.st === 'hang') S('bath', ['.a..a.', 'aaaaaa', '.abba.', '.akka.', '..aa..'], pal, 3, 0, 0, 0, false);
+        else { const fr = Math.floor(t * 14 + q.x) % 2; S('batf' + fr, fr ? ['....a..a....', '..aaaaaaaa..', '.aaaakkaaaa.', 'aa..abba..aa', 'a....aa....a'] : ['a..........a', 'aa.a....a.aa', '.aaaakkaaaa.', '..aaabbaaa..', '....a..a....'], pal, 6, 2); }
     } else if (k === 'bird') {
-        const fl2 = q.st === 'fly' ? Math.floor(t * 14 + q.x) % 2 : 0, peck = q.st === 'perch' && Math.floor(t * 2 + q.x) % 3 === 0 ? 1 : 0, snow = L.themeName === 'snow';
-        const pal = { a: snow ? '#dfe6f2' : '#6a4a32', b: snow ? '#f4f7fc' : '#a07c58', k: '#1a1410', Y: '#d8a030', l: '#4a3624' };
-        S('bird' + (snow ? 's' : 'b') + peck, [peck ? '........' : '....aaa.', peck ? '....aaa.' : '...aaakY', peck ? '...aaakY' : '.aaaaaaa', '.aaaaaaa', 'aaaabbba', '.aaabbb.', '..aaaa..', fl2 || q.st === 'fly' ? '........' : '..l..l..'], pal, 4, 8, 0, 0);
-        if (q.st === 'fly') { const wy = fl2 ? -11 : -6; paRect(c, x, y, -4, wy, 2, 4, pal.l); paRect(c, x, y, 2, wy, 2, 4, pal.l); }
+        const th = L.themeName, lk = PA_BIRD[th] || PA_BIRD.forest, fl2 = q.st === 'fly' ? Math.floor(t * 14 + q.x) % 2 : 0, peck = q.st === 'perch' && Math.floor(t * 2 + q.x) % 3 === 0 ? 1 : 0, R0 = lk.rows;
+        const legs = fl2 || q.st === 'fly' ? '.'.repeat(R0[0].length) : lk.legs, body = R0.concat([legs]), rows = peck ? ['.'.repeat(R0[0].length), body[0], body[1]].concat(body.slice(3)) : body;
+        if (lk.glow && typeof fxGlow === 'function') { const old = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter'; fxGlow(x, y - 4, 7, lk.glow, 0.22 + 0.06 * Math.sin(t * 5 + q.x)); c.globalCompositeOperation = old; }
+        S('bird' + th + peck + (q.st === 'fly' ? 'f' : ''), rows, lk.pal, lk.ax, 8, 0, 0);
+        if (q.st === 'fly') { const wy = fl2 ? -11 : -6, ww = lk.wing; paRect(c, x, y, -ww - 2, wy, ww, 4, lk.pal.l); paRect(c, x, y, 2, wy, ww, 4, lk.pal.l); }
     } else if (k === 'leaf') {
         const s = Math.floor(t * 4 + q.x) % 2;
         S('leaf' + s + q.col, s ? ['aa.', '.aa'] : ['.aa', 'aa.'], { a: q.col }, 1, 1, 0, 0, false);
@@ -17364,7 +17398,8 @@ function paBraz(g, x, y, lit, near, T) {
 //   Chỉ sinh trong khung nhìn (±CRIT.margin px), tối đa CRIT.cap con cùng lúc, biến mất khi ra xa / hết đời. Loài theo theme (CRIT_TH). Né người chơi (chuột / gián chạy, nhện thu tơ, bướm bay tránh).
 //   Dòng ngẫu nhiên: game.rngFx (không ảnh hưởng ván chơi). critStep(L, dt) gọi ở stepGame, critDraw(c, alpha) gọi trong renderFrame (toạ độ thế giới).
 const CRIT = { cap: 3, every: 1.5, margin: 48, life: 30, fleeR: 56, ratV: 26, ratFlee: 70, roachV: 34, roachFlee: 90 };
-const CRIT_TH = { mines: ['rat', 'roach', 'spider', 'ant', 'fish'], cave: ['rat', 'roach', 'spider', 'fish', 'fish', 'ant'], ruins: ['roach', 'rat', 'spider', 'ant', 'bird', 'fish'], forest: ['butterfly', 'butterfly', 'leaf', 'roach', 'bird', 'bird', 'ant', 'fish'], crystal: ['moth', 'fish'], amethyst: ['moth', 'fish'], deep: ['spider', 'roach', 'fish', 'fish'], snow: ['hare', 'hare', 'owlet', 'bird', 'fish'], magma: ['newt', 'ember'] };          // snow: thỏ tuyết nhảy · cú con đậu nhấp nháy mắt (chim nhỏ bay lượn) · magma: kỳ nhông lửa bò trên sàn · đom đóm lửa phát sáng
+const CRIT_TH = { mines: ['rat', 'roach', 'spider', 'ant', 'fish', 'bird', 'bird'], cave: ['rat', 'roach', 'spider', 'fish', 'fish', 'ant', 'bat', 'bat'], ruins: ['roach', 'rat', 'spider', 'ant', 'bird', 'bird', 'fish'], forest: ['butterfly', 'butterfly', 'leaf', 'roach', 'bird', 'bird', 'ant', 'fish'], crystal: ['moth', 'fish', 'bird'], amethyst: ['moth', 'fish', 'bird'], deep: ['spider', 'roach', 'fish', 'fish'], snow: ['hare', 'hare', 'owlet', 'bird', 'fish'], magma: ['newt', 'ember', 'bird'] };          // v1.6-130 (Dan): mỗi vùng có chim riêng — Hầm mỏ quạ · Tàn tích bồ câu xám · Hang pha lê / thạch anh sẻ lấp lánh · Núi lửa chim tro · Hang ngầm có dơi treo trần
+          // snow: thỏ tuyết nhảy · cú con đậu nhấp nháy mắt (chim nhỏ bay lượn) · magma: kỳ nhông lửa bò trên sàn · đom đóm lửa phát sáng
 function critWater(L, x, y) { const c = Math.floor(x / TILE), r = Math.floor(y / TILE); if (!L.inside(c, r)) return false; if (L.tile(c, r) === T_WATER) return true; return !!(L.amt && L.amtT[r * L.w + c] === 1 && L.amt[r * L.w + c] >= FLOW.thr); }
 // v1.2 (Dan): chuột / gián KHÔNG chạy lung tung — chỉ ló ra từ mép tường trên một dải sàn Ở TRÊN và XA người chơi, chạy ra một đoạn rồi chạy vào tường và biến mất (hoặc khi có bom nổ: ló ra ở chỗ cao trong phòng đó, sợ nên chạy ra chạy vào nhanh hơn)
 function critRunSpawn(L, kind, scared, bx, by) {
@@ -17403,6 +17438,11 @@ function critSpawn(L) {
             if (!L.inside(c, rr + 1) || !L.isSolid(c, rr + 1) || L.tile(c, rr) === T_SPIKE || L.tile(c, rr + 1) === T_SPIKE) continue;
             const x = (c + R.next()) * TILE, y = (rr + 1) * TILE; if (onScreen && Math.abs(x - cam.x - VIEW_W / 2) < VIEW_W / 2 - 8 && Math.abs(y - cam.y - VIEW_H / 2) < VIEW_H / 2 - 8 && R.next() < 0.7) continue;
             L.crit.push({ k: kind, x, y, d: R.sign(), t: 0, life: CRIT.life * R.range(0.6, 1), pause: 0, food: kind === 'ant' && R.next() < 0.5, st: 'perch' }); return;
+        }
+        if (kind === 'bat') {          // dơi treo trần, giật mình bay đi khi người tới gần
+            let rr = r; while (rr > r - 8 && L.inside(c, rr - 1) && !L.isSolid(c, rr - 1)) rr--;
+            if (!L.isSolid(c, rr - 1)) continue;
+            L.crit.push({ k: 'bat', x: (c + 0.2 + R.next() * 0.6) * TILE, y: rr * TILE, y0: rr * TILE, d: R.sign(), t: R.next() * 6, a: 0, st: 'hang', life: CRIT.life * R.range(0.8, 1.4) }); return;
         }
         if (kind === 'spider') {          // thả tơ từ trần
             let rr = r; while (rr > r - 8 && L.inside(c, rr - 1) && !L.isSolid(c, rr - 1)) rr--;
@@ -17451,6 +17491,9 @@ function critStep(L, dt) {
         } else if (q.k === 'bird') {
             if (q.st === 'perch') { if (near || (L.crit.length > 0 && R.next() < dt * 0.03)) { q.st = 'fly'; q.d = dx > 0 ? -1 : 1; q.vy = -60; } else if (R.next() < dt * 0.6) q.d = -q.d; }
             else { q.x += q.d * 70 * dt; q.vy -= 10 * dt; q.y += q.vy * dt; if (q.y < cam.y - CRIT.margin - 30) arr.splice(i, 1); }
+        } else if (q.k === 'bat') {
+            if (q.st === 'hang') { if (near || R.next() < dt * 0.015) { q.st = 'fly'; q.a = near ? Math.atan2(-dy, -dx) : -Math.PI / 2 + R.range(-1, 1); q.d = Math.cos(q.a) >= 0 ? 1 : -1; q.y = q.y0 + 3; } }
+            else { q.a += R.range(-5, 5) * dt; const v = 36 + Math.sin(q.t * 7) * 10, nx = q.x + Math.cos(q.a) * v * dt, ny = q.y + Math.sin(q.a) * v * dt * 0.8 + Math.sin(q.t * 11) * 0.3; if (L.solidAt(nx, ny)) q.a += Math.PI * 0.75; else { q.x = nx; q.y = ny; } q.d = Math.cos(q.a) >= 0 ? 1 : -1; }
         } else if (q.k === 'ant') {
             if (near) q.pause = 0; if (q.pause > 0) { q.pause -= dt; continue; } else if (R.next() < dt * 0.4) { q.pause = R.range(0.3, 1); continue; }
             const nx = q.x + q.d * 9 * dt, ahead = nx + q.d * 2; if (L.solidAt(ahead, q.y - 2) || !L.solidAt(ahead, q.y + 2)) { q.d = -q.d; continue; } q.x = nx;
@@ -19646,7 +19689,7 @@ function tutIdAdd(id) { if (!tutIdsHas(id)) { PROF.tutIds = (PROF.tutIds ? PROF.
 function tutCoreSteps() {
     const k = a => inp.label(a, 1), c = clsOf(game.cls);
     const atk = { sword: 'Chém', alch: 'Bắn gậy phép', hunt: 'Ném boomerang' }[c] || 'Tấn công';
-    const chargeL = { sword: 'Giữ ' + k('attack') + ' rồi thả = chém nạp (mạnh hơn)', alch: 'Giữ ' + k('attack') + ' rồi thả = đạn phép 3 tia', hunt: 'Giữ ' + k('attack') + ' rồi thả = boomerang xa, xuyên quái' }[c];
+    const chargeL = { sword: 'Giữ ' + k('attack') + ' rồi thả = chém nạp (mạnh hơn)', alch: 'Giữ ' + k('attack') + ' rồi thả = đạn phép 3 tia', hunt: 'Giữ ' + k('attack') + ' rồi thả = boomerang xa, xuyên quái và xuyên tường' }[c];
     const S = [
         { id: 'move', l: ['Đi trái / phải: ← →', 'Giữ ' + k('run') + ' để chạy nhanh'], ok: (p, st) => Math.abs(p.x - st.x0) > 28 },
         { id: 'jump', l: ['Nhảy: bấm ' + k('jump'), 'Giữ lâu = nhảy cao hơn'], ok: () => inp.pressed('jump') }
@@ -19817,7 +19860,7 @@ const TUT_ROOM = {
     midRow: 9, ledgeRow: 13, lamps: [[6, 2, 40], [21, 2, 44], [19, 10, 44], [33, 10, 40]],
     exit2: [7, 16]          // cửa thứ hai (bên phải cửa «Bắt đầu game»): sang phòng KỸ THUẬT NÂNG CAO (TUT_ADV)
 };
-// ---- v1.6-75 (Dan): PHÒNG KỸ THUẬT NÂNG CAO — đi từ cửa «Hướng dẫn nâng cao» của phòng tập. Tầng trên: đòn giữ (rắn bên kia hố) → đánh xuyên tường (rắn trong hộp; Thợ Săn: gắn bom phá tường)
+// ---- v1.6-75 (Dan): PHÒNG KỸ THUẬT NÂNG CAO — đi từ cửa «Hướng dẫn nâng cao» của phòng tập. Tầng trên: đòn giữ (rắn bên kia hố) → đánh xuyên tường (rắn trong hộp; v1.6-130: Thợ Săn cũng xuyên tường bằng boomerang giữ)
 //   (đứng bên PHẢI hộp, quay trái) → bẫy tên (nạp lại 3 s — def.trapRearm; cúi ↓ cho tên bay qua, rồi leo thang qua cột) → giếng rộng tới tường (sắp chạm đất thì nhảy đôi / lướt / lượn để không mất máu; thang sát mép giếng chạm sàn để leo lên thử lại). Tầng dưới ngắn: cửa ra ngay cạnh.
 const TUT_ADV = {
     id: 'test', tut: true, adv: true, name: 'Kỹ thuật nâng cao', theme: 'mines',
@@ -19886,7 +19929,7 @@ function tutRoomText(id) {
         top: ['Tốt lắm!', 'Nhảy xuống và đi tiếp tới cửa ra'],
         exit: ['Bấm ↑ ở cửa để vào', 'Trái: chơi luôn · Phải: kỹ thuật nâng cao'],
         good: ['Tốt lắm!', 'Đi tiếp sang phải'],
-        thru: c === 'sword' ? ['Giữ ' + k('attack') + ' khoảng 1 giây rồi thả = đòn mạnh, chém XUYÊN bục đất', 'Đứng sát bục, diệt con rắn nấp phía sau'] : c === 'alch' ? ['Giữ ' + k('attack') + ' khoảng 1 giây rồi thả = đạn tụ lực bay XUYÊN bục đất', 'Bắn con rắn nấp phía sau bục'] : ['Boomerang không xuyên được bục đất', 'Nhảy qua bục rồi ném vào con rắn'],
+        thru: c === 'sword' ? ['Giữ ' + k('attack') + ' khoảng 1 giây rồi thả = đòn mạnh, chém XUYÊN bục đất', 'Đứng sát bục, diệt con rắn nấp phía sau'] : c === 'alch' ? ['Giữ ' + k('attack') + ' khoảng 1 giây rồi thả = đạn tụ lực bay XUYÊN bục đất', 'Bắn con rắn nấp phía sau bục'] : ['Giữ ' + k('attack') + ' khoảng 1 giây rồi thả = boomerang bay XUYÊN bục đất', 'Ném vào con rắn nấp phía sau bục'],
         thruOk: ['Tốt lắm!', 'Nhảy qua bục và đi tiếp'],
         ladderFast: ['Đang leo thang: giữ ↑ và bấm ' + k('jump') + ' liên tục', 'Mỗi lần bấm là một cú bật, leo nhanh hơn hẳn'],
         arrow: ['Bẫy tên phía trước! Lại gần thì giữ ↓ để cúi', 'Tên bay qua đầu (bẫy nạp lại sau 3 giây)'],
