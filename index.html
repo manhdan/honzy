@@ -4582,6 +4582,16 @@ function crushArt(q, zone, c, r) {
 //   pine = cây thông · bush = bụi cây · hang = nhũ đá treo từ trần · vine = dây leo rủ · shroom = nấm khổng lồ · ruin = cột đền (có cột gãy) · spire = tháp pha lê · cluster = chùm thạch anh nghiêng.
 //   drawBackground (06_render) gọi drawBackdropShape cho kind lạ; trả false thì rơi về 'col' cũ. Mỗi hình chỉ là vài đa giác/hình chữ nhật cùng một màu L.col (bóng đổ xa), vẽ mỗi khung như hai kiểu cũ.
 //   Hình dạng/cao thấp lấy theo chỉ số cột i qua hash1 → cố định, không nhấp nháy khi cuộn. Hình mọc từ đáy (y = đỉnh hình, kéo xuống VIEW_H) trừ hang/vine treo từ trần (y = 0).
+// v1.18zz15: SƯƠNG MÙ nền xa — pha màu mỗi lớp parallax về màu chân trời (sky[1]) của vùng; lớp càng xa (f nhỏ) càng nhạt. theme.fogK (tuỳ chọn) nhân hệ số, 0 = tắt vùng đó.
+//   drawBackground (06_render) gọi: ctx.fillStyle = typeof bdFogCol === 'function' ? bdFogCol(th, L) : L.col;  Kết quả cache trên L (mỗi lớp tính 1 lần).
+const BD_FOG = { max: 0.32, slope: 0.8, base: 0.38 };          // mix = clamp(base − f·slope, 0, max) · fogK
+function _bdHex(c) { const m = /^#([0-9a-f]{6})$/i.exec(c || ''); return m ? [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4), 16)] : null; }
+function bdFogCol(th, L) {
+    if (L._fogFor === th && L._fog) return L._fog;
+    let out = L.col; const a = _bdHex(L.col), b = th && th.sky && _bdHex(th.sky[1]), k = Math.max(0, Math.min(BD_FOG.max, BD_FOG.base - (L.f || 0) * BD_FOG.slope)) * (th && th.fogK !== undefined ? th.fogK : 1);
+    if (a && b && k > 0) out = '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join('');
+    L._fogFor = th; L._fog = out; return out;
+}
 // Một hoặc nhiều đa giác trong MỘT đường vẽ và MỘT lệnh fill (ít lệnh canvas hơn mỗi khung so với mỗi đa giác một fill)
 function _bdPolys(g, polys) { g.beginPath(); for (const pts of polys) { g.moveTo(Math.round(pts[0][0]), Math.round(pts[0][1])); for (let k = 1; k < pts.length; k++) g.lineTo(Math.round(pts[k][0]), Math.round(pts[k][1])); g.closePath(); } g.fill(); }
 // g: canvas để vẽ (mặc định ctx của game; test truyền bộ ghi lệnh vào)
@@ -5798,6 +5808,7 @@ function drawLavaHp(ctx, L, cx, cy) {
             ctx.fillStyle = '#c24a14'; ctx.fillRect(bx, by + 1.5, w, 0.5); ctx.fillStyle = '#ff9a2e'; ctx.fillRect(bx - 0.5, by + 0.5, w + 1, 1); ctx.fillRect(bx + 0.5, by, w - 1, 0.5); ctx.fillStyle = '#ffd070'; ctx.fillRect(bx + 1, by, Math.max(1, w - 2.5), 0.5); ctx.fillStyle = '#ffe9a8'; ctx.fillRect(bx + 1.5 + (j & 1), by, 0.5, 0.5);
         }
         ctx.fillStyle = '#8a2a0a'; for (let j = 0; j < 4; j++) ctx.fillRect(x + hpr(1 + ((c * 3 + r * 5 + j * 4) % 13)), y + hpr(2 + ((c + r * 7 + j * 3) % 12)), 1 + ((j & 1) ? 0.5 : 0), 0.5);          // đốm tối nửa điểm
+        if (top && typeof fxGlow === 'function') { const o = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; fxGlow(x + 8, y + 3, 22, '#ff6a1a', 0.16 + 0.05 * k); ctx.globalCompositeOperation = o; }          // v1.18zz15: dung nham toả quầng cam nhẹ lên vách / không khí phía trên
         if (top && game.rngFx.next() < 0.01) L.fx.push({ x: x + 8, y: y + 6, vx: (game.rngFx.next() - 0.5) * 20, vy: -30, life: 0.5, max: 0.5, size: 2, col: '#ffb040' });
     }
 }
@@ -5886,6 +5897,7 @@ function drawDoorHp(x, y, isExit) {
 function drawBlastsHp() {
     for (const b of game.blasts) {
         const k = b.t / 0.3, R = ITEM.blastR * (0.6 + 0.6 * k), a = clamp(1 - k, 0, 1);
+        if (typeof fxGlow === 'function') { const o = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; fxGlow(b.x, b.y, ITEM.blastR * 3.4, '#ff8a2a', a * 0.55); fxGlow(b.x, b.y, ITEM.blastR * 1.8, '#ffe9a8', a * 0.6); ctx.globalCompositeOperation = o; }          // v1.18zz15: quầng sáng cộng dồn quanh vụ nổ (tắt dần theo a)
         for (const [rr, col, al] of [[R, k < 0.3 ? '#fff6d0' : '#ffb347', 0.8], [R * 0.7, '#ffe9a8', 0.8], [R * 0.4, '#ffffff', 0.9]]) {
             ctx.globalAlpha = a * al; ctx.fillStyle = col;
             for (let dy = -rr; dy <= rr; dy += 0.5) { const hw = Math.sqrt(Math.max(0, rr * rr - dy * dy)); ctx.fillRect(hpr(b.x - hw), hpr(b.y + dy), hpr(hw * 2), 0.5); }
@@ -9665,6 +9677,7 @@ function explode(level, x, y) {
     } }
     for (const o of oilCellList(level)) { const nx = clamp(x, o.x, o.x + o.w), ny = clamp(y, o.y, o.y + o.h); if ((nx - x) * (nx - x) + (ny - y) * (ny - y) < R * R) oilIgnite(o); }          // v0.82: dầu theo ô trong vùng nổ bén lửa
     // 2. Mọi Thing chạm vùng nổ: sát thương + văng. Bom khác: châm ngòi ngắn (nổ dây chuyền)
+    let kills = 0;          // v1.18zz15: đếm quái chết trong cú nổ → slow-mo khi dọn được ≥ 3 con
     for (const e of game.entities) {
         if (!e.alive) continue;
         const nx = clamp(x, e.x, e.x + e.w), ny = clamp(y, e.y, e.y + e.h);
@@ -9672,9 +9685,16 @@ function explode(level, x, y) {
         const dir = e.cx < x ? -1 : 1, kv = ITEM.blastKnockVx * game.rngPlay.range(0.67, 1);
         if (e.holder) e.release();
         if (e instanceof Bomb) { e.chain(); e.knock(dir * kv, ITEM.blastKnockVy); continue; }
+        const foe = e.creature && e !== game.player;
         e.hurt({ kind: DMG.EXPLOSION, dmg: e.creature ? (e === game.player ? ITEM.blastDmg : 30) : 99, x, y });
-        if (e.alive) { e.knock(dir * kv, ITEM.blastKnockVy); if (e === game.player && !e.dead) e.stun(100 / 30); }
+        if (foe && !e.alive) kills++;
+        if (e.alive) {
+            let f = 1;          // v1.18zz15: lực nổ giảm dần theo khoảng cách (gần tâm ×1,25 → mép ×0,5); vật nặng (mass ≥ 2) ×0,7. Người chơi + boss giữ nguyên như cũ
+            if (e !== game.player && !e.boss && !e.isBoss) { f = 1.25 - 0.75 * Math.min(1, Math.hypot(e.cx - x, e.cy - y) / R); if (e.mass >= 2) f *= 0.7; }
+            e.knock(dir * kv * f, ITEM.blastKnockVy * f); if (e === game.player && !e.dead) e.stun(100 / 30);
+        }
     }
+    if (kills >= 3 && SETTINGS.hitstop !== false) { game.slowT = Math.max(game.slowT || 0, 0.22); game.whiteT = Math.max(game.whiteT || 0, 0.1); }
     // 3. Hình + tiếng
     level.spawnBurst(x, y, 18, '#ffb347', 220); level.spawnBurst(x, y, 10, '#ffe9a8', 140); level.spawnBurst(x, y, 8, '#6a6a6a', 90);
     level.spawnSmoke(x, y, 8, { col: '#4a464c', rise: 26, life: 0.75, size: 6, a: 0.3, spread: 12, drift: 20, grow: 1.4 });          // v1.14/15: khói mịn hơn (hạt nhỏ, mờ) + bụi kiểu bụi nhảy
@@ -9878,6 +9898,7 @@ function carryableFoe(e) { return e instanceof Enemy && e.kind !== 'shopkeeper' 
 function carryPick(p, t) {
     if (!t || t.holder) return false;
     if (t.openable) { t.open(p); return true; }          // v0.44: thùng gỗ không nhấc nữa — ↓ + Tròn mở thẳng (chém vào thùng vẫn hất đi như xác quái)
+    if (typeof subPickup === 'function' && subPickup(p, t)) return true;          // v1.18zz5 (Dan): bình rơi ngoài đường nạp thẳng vào kho (13r_subitem)
     p.hold = t; t.holder = p; t.thrower = null; t.vx = t.vy = 0; t.hitSet = null; p.poseK = 'pick'; p.poseT = 0.25;          // v0.68: khung cúi nhặt
     if (t.onPicked) t.onPicked(p);
     if (t.kind === 'princess') sndPlay('petWrap2', { x: p.cx }); else if (t.kind === 'key') sndPlay('keyPickup3', { x: p.cx }); else sndPlay('ui', { x: p.cx });          // v1.14: nhặt công chúa / thú cưng = tiếng gói
@@ -10981,7 +11002,7 @@ class Mushroom extends Foe {
         const d = this.def; this.vx = 0;
         if (this.st === 'walk') { if ((this.cd -= dt) <= 0 && this.sees(level, false)) { this.st = 'warn'; this.t = d.windup; this.warnOn(); } }
         else if (this.st === 'warn') {
-            if ((this.t -= dt) <= 0) { poisonCloudAt(this.cx, this.y - 8, 40, 30, 4, { dot: false }); sndPlay('crumbleFall', { x: this.cx, vol: 0.4, p: 1.6 }); level.spawnBurst(this.cx, this.y, 8, '#9af06a', 80); this.st = 'walk'; this.cd = d.cooldown; }
+            if ((this.t -= dt) <= 0) { poisonCloudAt(this.cx, this.y - 8, 40, 30, 4, { dot: true }); sndPlay('crumbleFall', { x: this.cx, vol: 0.4, p: 1.6 }); level.spawnBurst(this.cx, this.y, 8, '#9af06a', 80); this.st = 'walk'; this.cd = d.cooldown; }          // v1.18zz6 (Dan, thử): bào tử độc cả quái khác (dot: true), không chỉ người chơi
         }
     }
 }
@@ -11026,6 +11047,14 @@ class Frog extends Foe {
 
 // KẺ LẮNG NGHE (Hang ngầm, hệ chậm): MÙ (tầm nhìn rất ngắn) nhưng tai thính — nghe thấy khi người chơi CHẠY, LƯỚT, CHÉM, NHẢY, bắn súng, huýt sáo trong tầm def.hear. Nghe thấy → tai dựng (báo) → lao tới CHỖ phát ra tiếng
 //   (không phải chỗ hiện tại của người chơi); tới nơi mà không thấy gì thì dừng nghỉ. Đi khẽ (đi bộ chậm, cúi, đứng yên) thì lách qua được.
+// v1.18zz6 (Dan): TIẾNG ĐỘNG TỪ ĐỒ VẬT — đá / bình / bom rơi hoặc nổ gọi noiseAt(x, y); Kẻ Lắng Nghe trong tầm def.hear lao tới CHỖ PHÁT TIẾNG (không phải chỗ người chơi). Sự kiện sống 1 s, mỗi con chỉ nghe một lần.
+let NOISE_ID = 0;
+function noiseAt(x, y) { const t = game.time || 0; game.noises = (game.noises || []).filter(n => n.t <= t && t - n.t < 1); game.noises.push({ x, y, t, id: ++NOISE_ID }); }
+function noiseHeard(e) {
+    const hear = e.def.hear; let best = null;
+    for (const n of game.noises || []) if (n.id > (e.noiseSeen || 0) && Math.abs(n.x - e.cx) <= hear && Math.abs(n.y - e.cy) <= 70) best = n;
+    if (best) e.noiseSeen = NOISE_ID; return best;
+}
 function listenerLoud(p) {
     if (!p || p.dead) return false;
     return p.dashT > 0 || p.whipT >= 0 || (p.onGround && Math.abs(p.vx) > PHYS.walkMax + 8) || (!p.onGround && p.vy < -120);
@@ -11037,10 +11066,11 @@ class Listener extends Foe {
         const d = this.def, p = game.player;
         if (this.st === 'walk') {
             if (this.onGround) this.patrol(level, d.speed);
-            if (this.onGround && (this.hears(p) || this.sees(level, true))) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.tx = p.cx; this.warnOn(); }
-        } else if (this.st === 'warn') { this.vx = 0; this.tx = p.cx; if ((this.t -= dt) <= 0) { this.st = 'hunt'; this.t = d.giveUp; } }
+            if (this.onGround && (this.hears(p) || this.sees(level, true))) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.tx = p.cx; this.lure = false; this.warnOn(); }
+            else if (this.onGround) { const n = noiseHeard(this); if (n) { this.st = 'warn'; this.t = d.windup; this.vx = 0; this.tx = n.x; this.lure = true; this.warnOn(); } }
+        } else if (this.st === 'warn') { this.vx = 0; if (!this.lure || this.hears(p)) { this.tx = p.cx; this.lure = false; } else { const n = noiseHeard(this); if (n) this.tx = n.x; } if ((this.t -= dt) <= 0) { this.st = 'hunt'; this.t = d.giveUp; } }
         else if (this.st === 'hunt') {
-            if (this.hears(p) || this.sees(level, false)) this.tx = p.cx;
+            if (this.hears(p) || this.sees(level, false)) { this.tx = p.cx; this.lure = false; } else { const n = noiseHeard(this); if (n) { this.tx = n.x; this.lure = true; this.t = d.giveUp; } }
             const dx = this.tx - this.cx; this.facing = dx < 0 ? -1 : 1;
             if (Math.abs(dx) < 6 || this.edgeAhead(level) && this.onGround || (this.t -= dt) <= 0) { this.st = 'rest'; this.t = d.rest; this.vx = 0; }
             else if (this.onGround) this.vx = this.facing * d.chaseSpeed;
@@ -13720,6 +13750,7 @@ function finSilhouette(q, Wh, Hh, k) {          // bóng vệ binh đá thoáng 
 
 class Rock extends Thing {
     constructor(x, y) { super(x, y, 8, 8, { kind: 'rock', carryable: true, hurtsOnImpact: true, impactDmg: 1, mass: 1, col: '#8a8f9e', dmgFrom: [] }); }      // đá không vỡ: nổ chỉ hất văng
+    onLand(level, v) { if (v > 60) noiseAt(this.cx, this.cy); }          // v1.18zz6: đá rơi = tiếng động (dụ Kẻ Lắng Nghe, 11c)
     draw(ctx, alpha) {
         if (ITEM_HP) { drawRockHp(this, ctx, alpha); return; }
         const x = Math.round(this.drawX(alpha)), y = Math.round(this.drawY(alpha));
@@ -13733,7 +13764,7 @@ class Pot extends Thing {
     onWall(level, v) { if (Math.abs(v) > 90) this.shatter(level); }          // SC: |xVel| > 3
     onLand(level, v) { if (v > 90) this.shatter(level); }                     // SC: yVel > 3
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) {
         const L = game.level, R = game.rngPlay, x = this.cx, y = this.cy;
         L.spawnBurst(x, y, 8, '#b8743a', 100); L.spawnShards(x, y, 5, '#b8743a', 120, this.oil ? 4 : 0, '#7a4a24'); sndPlay('crumble', { x });
@@ -13766,7 +13797,7 @@ class ShockFlask extends Thing {
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) {
         const L = game.level, x = this.cx, y = this.cy; L.spawnBurst(x, y, 8, '#9fd8ff', 100); sndPlay('crumble', { x });
         if (L.inWater(this)) { shockWater(L, this, 1, FLASK_SHOCK.stun, 1); return; }
@@ -13830,7 +13861,7 @@ class FrostFlask extends Thing {
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) { this.res = frostBurst(game.level, this.cx, this.cy, FROST.r, this); }
     draw(ctx, alpha) { drawFlaskWorld(this, ctx, alpha, 'frost'); }          // v0.74: bình có biểu tượng riêng (06d.drawFlaskHp)
 }
@@ -13842,7 +13873,7 @@ class PoisonFlask extends Thing {
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) {
         const L = game.level, x = this.cx, y = this.cy; L.spawnBurst(x, y, 10, '#7be06a', 100); sndPlay('crumble', { x }); this.res = { cloud: null, water: 0 };
         if (L.inWater(this)) {
@@ -13904,7 +13935,7 @@ class Bomb extends Thing {
     onPicked(p) { this.stuck = null; }
     onWall(level, v) { if (this.safeT > 0) this.vx = 0; }          // lần 29: vừa ném đã đụng tường (ném sát vách) => rơi xuống ngay chân tường, không nảy ngược ra
     light() { this.fused = true; this.fuseT = 0; }          // v0.92: tiếng đặt / ném do người chơi phát (placeBomb / throwBomb)
-    onLand(level, v) { if (v > 70) sndPlay('rock', { x: this.cx, vol: 0.6 }); }          // v0.92 (Dan): bom rơi xuống = tiếng hòn đá rơi
+    onLand(level, v) { if (v > 70) { sndPlay('rock', { x: this.cx, vol: 0.6 }); noiseAt(this.cx, this.cy); } }          // v0.92 (Dan): bom rơi xuống = tiếng hòn đá rơi
     chain() { if (!this.fused) this.light(); this.fuseT = Math.max(this.fuseT, ITEM.bombFuse + ITEM.bombFuse2 - 0.1); }
     update(level, dt) {
         super.update(level, dt);
@@ -13917,7 +13948,7 @@ class Bomb extends Thing {
         }
         if (this.fuseT >= ITEM.bombFuse + ITEM.bombFuse2) {
             this.alive = false; if (this.holder) this.release();
-            game.halfBlast = !!this.swapBomb; explode(level, this.cx, this.cy); game.halfBlast = false;          // v1.6-71: bom «ma tinh nghịch» đặt khi hoán hồn: nổ lúc nào cũng chỉ ½ sát thương
+            game.halfBlast = !!this.swapBomb; noiseAt(this.cx, this.cy); explode(level, this.cx, this.cy); game.halfBlast = false;          // v1.6-71: bom «ma tinh nghịch» đặt khi hoán hồn: nổ lúc nào cũng chỉ ½ sát thương
         }
     }
     draw(ctx, alpha) {
@@ -16527,6 +16558,20 @@ const SUB_FLASK_OF = { fire: 'oil', ice: 'frost', shock: 'shock', poison: 'poiso
 const SUB_LIST = ['water', 'oil'];
 function subGive0(p, id) { if (!SUB[id]) return false; p.sub = { id, n: SUB[id].n }; p.sel = 'sub'; return true; }
 function subGive(p, id) { return typeof alchGiveFlask === 'function' ? alchGiveFlask(p, id) : subGive0(p, id); }          // mua / nhặt xong tự chọn món mới
+// v1.18zz5 (Dan): NHẶT bình rơi ngoài đường = nạp thẳng vào kho (không cầm tay nữa). Giả Kim luôn nạp: khác loại thì đổi sang loại mới và CỘNG DỒN số bình (9 dầu + bình sét = 19 sét nếu đã mở khóa 20, chưa mở thì tối đa 10); Kiếm Sĩ / Thợ Săn cũng nạp, tối đa 10.
+//   Bình do người chơi ném / đặt (dropByPlayer) và bình nước của Giả Kim (không có trong vòng chọn) vẫn cầm tay như cũ. Cùng loại mà kho đã đầy thì cũng cầm tay (không bỏ phí).
+const SUB_WORLD_FLASK = { oilflask: 'oil', shockflask: 'shock', frostflask: 'frost', poisonflask: 'poison', waterflask: 'water' };
+function subPickup(p, t) {
+    const id = t && SUB_WORLD_FLASK[t.kind]; if (!id || t.dropByPlayer || !p || p.dead) return false;
+    const alch = p.cls === 'alch'; if (alch && id === 'water') return false;
+    const cap = alch && typeof subCap === 'function' ? subCap() : 10, old = subHas(p) ? p.sub.n : 0;
+    if (subHas(p) && p.sub.id === id && old >= cap) return false;
+    p.sub = { id, n: Math.min(cap, old + SUB[id].n) }; p.sel = 'sub';
+    if (typeof alchSyncBlade === 'function') alchSyncBlade(p);
+    t.alive = false; if (t.holder) t.release();
+    game.level.spawnBurst(t.cx, t.cy, 5, SUB[id].col, 60); sndPlay('ui', { x: p.cx }); game.pickupMsg = { t: 0, text: '+' + SUB[id].name + ' (' + p.sub.n + ')' };
+    return true;
+}
 function subHas(p) { return !!(p && p.sub && SUB[p.sub.id] && p.sub.n > 0); }
 function subSanitize(s, cls) { return s && typeof s === 'object' && SUB[s.id] && Number.isFinite(s.n) && s.n > 0 ? { id: s.id, n: Math.min((cls || (typeof game !== 'undefined' && game.cls)) === 'alch' ? 20 : 10, Math.round(s.n)) } : null; }
 function subThrow(p, up, down, aim) {          // dùng 1 lần: tạo bình, ném như bom
@@ -16542,7 +16587,7 @@ class WaterFlask extends Thing {
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) { waterSplash.call(this); }          // cùng hiệu ứng thùng nước (WBARREL.r)
     draw(ctx, alpha) { drawFlaskWorld(this, ctx, alpha, 'water'); }          // v0.74: bình có biểu tượng riêng (06d.drawFlaskHp)
 }
@@ -16551,7 +16596,7 @@ class OilFlask extends Thing {
     onWall(level, v) { this.vx = 0; }          // v0.94 (Dan): bình ném đập tường thì RƠI xuống chân tường, không nổ ngay (chạm đất mới vỡ)
     onLand(level, v) { if (v > 90) this.shatter(level); }
     onHitTarget(level, t) { this.shatter(level); }
-    shatter(level) { if (this.alive) this.die({ kind: DMG.CRUSH, dmg: 1 }); }
+    shatter(level) { if (this.alive) { noiseAt(this.cx, this.cy); this.die({ kind: DMG.CRUSH, dmg: 1 }); } }          // v1.18zz6: bình vỡ = tiếng động (Kẻ Lắng Nghe bị dụ)
     onDie(src) {
         const L = game.level, hot = true;          // v0.76 (Dan): bình dầu ném vỡ là bốc cháy luôn (như các bình nguyên tố khác)
         L.spawnBurst(this.cx, this.cy, 7, '#ff9a3a', 90); sndPlay('crumble', { x: this.cx, p: 1.3 });
