@@ -285,10 +285,10 @@ const SLOT = { n: 5, cur: 0, lastKey: 'honzy_slot_last_v1' };
 //   respawn: 'level' = chơi lại đúng màn đó · 'zone' = về đầu vùng (hoặc ghế nghỉ) · 'start' = về 1-1 (giữ vàng / đồ / năng lực) · 'over' = thua luôn (xoá ván)
 //   ghost = giây ma xuất hiện (cảnh báo trước 30 s) · wantedLevel = truy nã xoá khi qua màn (không thì xoá khi sang vùng mới) · foeMul = mật độ quái · dda = cho phép độ khó thích ứng
 const DIFF = {
-    easy:     { name: 'Dễ',        respawn: 'level', ghost: 210, deathTax: 0.30, wantedLevel: true,  foeMul: 1,    dda: true,  desc: 'Chết: chơi lại màn đó (bản đồ mới) · ma ra sau 3:30 · truy nã xoá khi qua màn · chết mất 30 % vàng (từ $500)' },
-    normal:   { name: 'Thường',    respawn: 'zone',  ghost: 180, deathTax: 0.30, wantedLevel: false, foeMul: 1,    dda: true,  desc: 'Chết: về đầu vùng (hoặc ghế nghỉ), bản đồ mới · ma ra sau 3:00 · truy nã tới hết vùng · chết mất 30 % vàng (từ $500)' },
-    hard:     { name: 'Khó',       respawn: 'start', ghost: 150, deathTax: 0.30, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Chết: về 1-1 (bản đồ mới, giữ vàng, đồ) · ma ra sau 2:30 · quái +25 % · chết mất 30 % vàng (từ $500)' },
-    hardcore: { name: 'Hardcore',  respawn: 'over',  ghost: 150, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Như Khó nhưng chết là THUA — ván bị xoá' }
+    easy:     { name: 'Dễ',        respawn: 'level', ghost: 240, deathTax: 0.30, wantedLevel: true,  foeMul: 1,    dda: true,  desc: 'Chết: chơi lại màn đó (bản đồ mới) · ma ra sau 4:00 · truy nã xoá khi qua màn · chết mất 30 % vàng (từ $500)' },
+    normal:   { name: 'Thường',    respawn: 'zone',  ghost: 210, deathTax: 0.30, wantedLevel: false, foeMul: 1,    dda: true,  desc: 'Chết: về đầu vùng (hoặc ghế nghỉ), bản đồ mới · ma ra sau 3:30 · truy nã tới hết vùng · chết mất 30 % vàng (từ $500)' },
+    hard:     { name: 'Khó',       respawn: 'start', ghost: 180, deathTax: 0.30, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Chết: về 1-1 (bản đồ mới, giữ vàng, đồ) · ma ra sau 3:00 · quái +25 % · chết mất 30 % vàng (từ $500)' },
+    hardcore: { name: 'Hardcore',  respawn: 'over',  ghost: 180, wantedLevel: false, foeMul: 1.25, dda: false, desc: 'Như Khó nhưng chết là THUA — ván bị xoá' }
 };
 // LỚP NHÂN VẬT (v0.95, DESIGN_CLASSES_v3.md): chọn khi tạo ván mới, khoá theo slot. hp = chênh số tim so với mức chuẩn.
 const CLASSES = {
@@ -7262,7 +7262,7 @@ function genTry(R, levelIdx, seedForDark, mul) {
         for (let r = B + 1; r < H + B; r++) for (let c = B; c < W + B; c++) {
             if (!standOK(c, r)) continue;
             if (R.chance(GEN.routeFoe * zl * zr * mul * K)) { const ch = genWeighted(R, zoneTbl(zone.floor, levelIdx)); full[r][c] = ch; extraFoe++; counts[ch === 'S' ? 'snake' : ch === 'x' ? 'rock' : 'foe']++; }
-            else if (R.chance(GEN.routeLoot * zl2 * K)) { const n = R.int(1, 100); full[r][c] = n <= 55 ? 'g' : n <= 72 ? 'G' : n <= 90 ? 'c' : 'o'; extraLoot++; if (n <= 72) counts.gold++; else if (n <= 90) counts.crate++; else counts.pot++; }
+            else if (R.chance(GEN.routeLoot * zl2 * K)) { const n = R.int(1, 100); full[r][c] = n <= 50 ? 'g' : n <= 66 ? 'G' : n <= 90 ? 'c' : 'o'; extraLoot++; if (n <= 66) counts.gold++; else if (n <= 90) counts.crate++; else counts.pot++; }
         }
         // thạch nhũ (cơ chế vùng Hang ngầm): treo ở trần phía trên sàn ĐI TỚI ĐƯỢC, cột trống ≥ 4 ô, không sát cửa / phòng đặc biệt
         let drip = 0;
@@ -7464,7 +7464,7 @@ function genTry(R, levelIdx, seedForDark, mul) {
         const put = (c, r) => {
             if (n >= GEN.dropLootMax || c <= B || c >= W + B - 1 || full[r][c] !== '.' || full[r + 1][c] !== '#' || inShop(c, r) || nearDoor(c, r)) return;
             if (!R.chance(pp)) return;
-            const k = R.int(1, 100); full[r][c] = k <= 45 ? 'o' : k <= 65 ? 'x' : k <= 80 ? 't' : 'c'; n++; counts.dropLoot = (counts.dropLoot || 0) + 1;
+            const k = R.int(1, 100); full[r][c] = k <= 40 ? 'o' : k <= 58 ? 'x' : k <= 72 ? 't' : 'c'; n++; counts.dropLoot = (counts.dropLoot || 0) + 1;
         };
         // (v0.76, Dan) ĐỒ DỤ DƯỚI BẪY: bình / thùng / hũ hay nằm ngay dưới nhũ đá (q) và bẫy đè (Z) — chỗ người chơi hay dừng lại nhặt đồ; càng về cuối vùng càng nhiều (lừa người chơi)
         const bait = (c, r) => {
@@ -13803,8 +13803,10 @@ class Crate extends Thing {
         if (!this.alive) return;
         this.alive = false; if (this.holder) this.release();
         const L = game.level; L.spawnBurst(this.cx, this.cy, 8, '#9a6a3a', 90); sndPlay('crumble', { x: this.cx });
-        if (game.rngPlay.chance(0.15)) { const id = SUB_LIST[game.rngPlay.int(0, SUB_LIST.length - 1)]; subGive(p, id); game.pickupMsg = { t: 0, text: '+' + SUB[id].name }; }
-        else if (game.rngPlay.int(1, 100) <= 65) { p.ropes += 3; game.pickupMsg = { t: 0, text: '+3 móc' }; }          // v1.2 (Dan): thùng cho nhiều móc hơn bom — còn lại: 15 % bình · 55 % móc (65 % của phần dư) · 30 % bom, vẫn +3
+        const pm = L.meta && L.meta.pit, inPit = !!pm && Math.floor((Math.floor(this.cx / TILE) - LVL.border) / LVL.roomW) === pm.rx && Math.floor((Math.floor(this.cy / TILE) - LVL.border) / LVL.roomH) === pm.ry;          // v1.6-141 (Dan): thùng trong hố rắn luôn cho +3 bom (trước: ngẫu nhiên, hay ra móc)
+        if (inPit) { p.bombs += 3; game.pickupMsg = { t: 0, text: '+3 bom' }; }
+        else if (game.rngPlay.chance(0.15)) { const id = SUB_LIST[game.rngPlay.int(0, SUB_LIST.length - 1)]; subGive(p, id); game.pickupMsg = { t: 0, text: '+' + SUB[id].name }; }
+        else if (game.rngPlay.int(1, 100) <= 40) { p.ropes += 3; game.pickupMsg = { t: 0, text: '+3 móc' }; }          // v1.2 (Dan): thùng cho nhiều móc hơn bom — còn lại: 15 % bình · 34 % móc (40 % của phần dư) · 51 % bom, vẫn +3 (v1.6-141: tăng bom)
         else { p.bombs += 3; game.pickupMsg = { t: 0, text: '+3 bom' }; }
         if (game.rngPlay.chance(SALMON.dropCrate * ddaHealMul(game.player ? game.player.hp : 99))) spawnSalmon(this.cx, this.cy);          // cá hồi: rất hiếm, rơi thêm bên cạnh dây / bom
         sndPlay('ui', { x: this.cx, p: 1.4 });
@@ -18309,13 +18311,13 @@ const PROF_STORE = 'honzy_profile_v1', PROF_VER = 1;
 const PROF = {};
 const TUT_VER = 3;
 const DEV_STORE = 'honzy_device_v1', DEV_KEYS = ['tutDone', 'tutIds', 'hintItem', 'hintPrin', 'hintThrow', 'tutV', 'tipJump', 'tipAtk', 'tipRope'];          // v1.18zq (Dan): hướng dẫn + số lần nhắc lưu theo MÁY (không theo slot): chơi slot mới không phải làm lại
-function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, loreDeaths: {}, heroName: '', deathAt: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER, seen: '' }; }
+function profBlank() { return { v: PROF_VER, runs: 0, wins: 0, bestDepth: 0, bestGold: 0, bestTime: 0, kills: 0, rescued: 0, princessLost: 0, bought: 0, stolen: 0, goldTotal: 0, deaths: {}, loreDeaths: {}, loreRead: {}, heroName: '', deathAt: {}, top: [], tutDone: false, tutIds: '', hintItem: 0, hintPrin: 0, hintThrow: 0, tutV: TUT_VER, seen: '' }; }
 function profMigrate(o) {
     if (!o || typeof o !== 'object') return profBlank();
     const b = profBlank();
     for (const k in b) if (typeof b[k] === typeof o[k]) b[k] = o[k];       // chỉ nhận trường đúng kiểu; trường mới giữ giá trị mặc định
     if ((b.tutV | 0) < TUT_VER) { b.tutDone = false; b.tutIds = ''; b.hintItem = 0; b.hintPrin = 0; b.hintThrow = 0; b.tutV = TUT_VER; }          // v1.18zm: hướng dẫn cũ chưa hoàn chỉnh → làm lại
-    b.v = PROF_VER; b.deaths = (o.deaths && typeof o.deaths === 'object') ? o.deaths : {};
+    b.v = PROF_VER; b.loreRead = (o.loreRead && typeof o.loreRead === 'object' && !Array.isArray(o.loreRead)) ? o.loreRead : {}; b.deaths = (o.deaths && typeof o.deaths === 'object') ? o.deaths : {};
     b.top = Array.isArray(o.top) ? o.top.filter(x => x && typeof x.score === 'number').slice(0, 5) : [];
     return b;
 }
@@ -19704,7 +19706,7 @@ function loreDraw() {
 function loreZoneHint(def) {          // gọi từ levelFeeling: trả thời gian câu lore sẽ chiếm (s), để banner luật vùng hiện sau
     if (!game.level || game.level.id === 'test' || !game.genMeta || def.boss || game.levelIdx % ZONE_LEN !== 0) return 0;
     const z = zoneOf(game.levelIdx), txt = LORE_ZONE[z.id]; if (!txt) return 0;
-    const seen = (game.loreSeen = game.loreSeen || {}); if (seen[z.id]) return 0; seen[z.id] = 1;
+    const seen = (game.loreSeen = game.loreSeen || {}), R = PROF.loreRead || (PROF.loreRead = {}); if (seen[z.id] || R['zone:' + z.id]) return 0; seen[z.id] = 1; R['zone:' + z.id] = 1; try { profSave(); } catch (e) { }          // mỗi câu đầu vùng chỉ nghe một lần cho mỗi người chơi
     return loreSay(txt, LORE.hint);
 }
 function loreBossWake(b) {          // gọi từ Boss.wake: trả thời gian câu thức dậy (0 nếu im lặng)
@@ -19714,8 +19716,10 @@ function loreDeathLine(src) {          // chọn MỘT câu theo mã sát thươ
     if (!src) return null; let k = src.kind;
     if (k === DMG.IMPACT && src.by && src.by.thrower === game.player) k = 'impactSelf';
     else if (k === DMG.BOSS || (k === DMG.BITE && src.by && src.by.isBoss)) k = (src.by && src.by.kind === 'titan') || (game.boss && game.boss.kind === 'titan') ? 'bossTitan' : 'boss';
-    const L = LORE_DEATH[k]; if (!L) return null;
-    const R = game.rngFx; return L[Math.floor((R && R.next ? R.next() : Math.random()) * L.length)];
+    const L0 = LORE_DEATH[k]; if (!L0) return null;
+    const RD = PROF.loreRead || (PROF.loreRead = {}), un = L0.filter(s => !RD['d:' + s]), L = un.length ? un : L0;          // ưu tiên câu chưa nghe; nghe hết rồi mới lặp
+    const R = game.rngFx, s = L[Math.floor((R && R.next ? R.next() : Math.random()) * L.length)];
+    if (!RD['d:' + s]) { RD['d:' + s] = 1; try { profSave(); } catch (e) { } } return s;
 }
 
 // ---- MẮT CANH (Roadmap_Lore.md §5, v1.6-133): dấu khắc trên tường, 1–2 cái mỗi vùng; vị trí tính bằng BĂM (seed ván, vùng, màn) — không dùng RNG sinh màn ----
@@ -19763,22 +19767,38 @@ function loreEyeDraw(ctx, L, cx, cy) {
 // 15j_loreprops — VẬT KỂ CHUYỆN (Roadmap_Lore.md P1, v1.6-134): tường nứt + hốc chuyện A/B · dấu vết theo vùng · muội than · easter egg · phòng thứ 6 của chuỗi bí mật.
 //   Mọi vị trí tính bằng BĂM (seed ván, vùng, màn) sau khi màn dựng xong — KHÔNG dùng RNG sinh màn nên không đổi GEN_VERSION / bản lưu cũ. Dữ liệu ở L.lore = { props: [], crack }.
 //   Vật vẽ trong lớp động (sau 15i loreEyeDraw), tính theo nửa điểm: q(x, y, w, h, màu) với toạ độ nửa điểm (2 điểm = 1 px). Hiện hình chỉ khi lọt khung nhìn.
-const LP = { nearExit: 5, niche: 0.5, say: { fi: 0.5, hold: 3.2, fo: 0.8, y: 100 } };
-const LP_ZONE = { mines: ['mineCart', 'soot'], forest: ['bigRoot', 'mossAltar'], cave: ['chain', 'claws'], crystal: ['wireBattery', 'gearCrystal'], ruins: ['reliefGuard', 'headless'], snow: ['iceGuard', 'soot'], amethyst: ['glyphs', 'shrine'], deep: ['bones', 'shadow'], magma: ['reliefTitan', 'soot'] };
+const LP = { wait: 1, waitShort: 1, nearExit: 5, niche: 0.5, say: { fi: 0.5, hold: 3.2, fo: 0.8, y: 100 } };
+const LP_ZONE = { mines: ['mineCart', 'soot'], forest: ['mossAltar'], cave: ['chain', 'claws'], crystal: ['wireBattery'], ruins: ['reliefGuard', 'headless'], snow: ['iceGuard', 'soot'], amethyst: ['glyphs', 'shrine'], deep: ['bones', 'shadow'], magma: ['reliefTitan', 'soot'] };
 const LP_SOOT = ['Mắt thấy tất cả. Chỉ ai hiến tế mới được nhìn lại.', 'Đừng tin chủ tiệm. Họ biết nhiều hơn họ nói.', 'Dalat không sụp đổ. Nó được giữ lại.', 'Người cuối cùng đi xuống vẫn chưa trở lên.'];
 const LP_BOSSES = ['warden', 'queen', 'hunter', 'mage'], LP_BOSS_COL = { warden: '#8a8fa8', queen: '#7fe0ff', hunter: '#cfe8ff', mage: '#6fd84a' };
 function lpQ(ctx, X, Y) { return (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(X + x / 2, Y + y / 2, w / 2, h / 2); }; }
 function lpEye(q, x, y, R, col, pc) { for (let j = 0; j < R.length; j++) for (let i = 0; i < R[j].length; i++) { const ch = R[j][i]; if (ch !== '.') q(x + i, y + j, 1, 1, ch === 'o' && pc ? pc : col); } }
+function lpMinerBody(q, pick) {          // xác thợ mỏ nằm ngửa 44×18 nửa điểm, đầu bên phải: giày, quần xanh, áo da có Mắt Canh, tay buông, sọ đội mũ có đèn
+    q(1, 16, 42, 2, '#1a1612');
+    q(0, 11, 5, 5, '#3a2c1c'); q(0, 15, 5, 1, '#241a10'); q(5, 12, 10, 4, '#4a5a7a'); q(5, 12, 10, 1, '#6a7a9a'); q(5, 15, 10, 1, '#34425e');
+    q(3, 7, 4, 4, '#3a2c1c'); q(6, 8, 9, 4, '#4a5a7a'); q(6, 8, 9, 1, '#6a7a9a');
+    q(14, 6, 18, 10, '#7a5a34'); q(14, 6, 18, 1, '#9a7a4c'); q(14, 15, 18, 1, '#4e3820'); q(14, 13, 18, 1, '#2a1c10'); q(22, 13, 2, 1, '#c8a85a');
+    lpEye(q, 15, 6, EYE_S, '#2a1a0c');
+    q(11, 13, 8, 3, '#6a4a2a'); q(8, 14, 4, 2, '#d8b890');
+    q(32, 8, 9, 8, '#d8c8a8'); q(32, 8, 9, 1, '#efe4cc'); q(40, 9, 1, 7, '#b0a284'); q(34, 11, 2, 2, '#14100c'); q(38, 11, 2, 2, '#14100c'); q(36, 13, 1, 1, '#14100c'); q(34, 15, 6, 1, '#14100c');
+    q(31, 4, 12, 5, '#8a6a1a'); q(31, 4, 12, 1, '#c8a85a'); q(30, 8, 14, 1, '#6a4e12'); q(41, 2, 3, 4, '#ffd24a'); q(42, 3, 1, 2, '#fff2a0');
+    if (pick) { q(6, 17, 26, 1, '#7e5a30'); q(3, 15, 3, 3, '#8a8a94'); q(3, 15, 3, 1, '#b8b8c4'); }
+}
 // ---- hình vẽ (nửa điểm). w, h = kích thước nửa điểm; kind: floor | wall | ceil ----
 const LP_DEF = {
-    camp: { w: 96, h: 32, kind: 'floor', tw: 3, draw(q, P, ctx) {          // hốc A: trại người đi trước
-        for (const [x, y] of [[6, 24], [10, 26], [15, 27], [21, 27], [26, 26], [30, 24]]) { q(x, y, 4, 3, '#5c5860'); q(x + 1, y, 2, 1, '#827e86'); }
-        q(10, 22, 14, 3, '#28201a'); q(13, 20, 9, 3, '#34221a'); q(11, 23, 14, 1, '#1c1210'); for (let x = 12; x < 24; x += 2) q(x, 25, 1, 1, '#605c5c');
-        for (const [x, y, c] of [[17, 17, '#6e6e76'], [18, 14, '#60606a'], [16, 11, '#505058'], [17, 8, '#424248']]) q(x, y, 2, 2, c);
-        q(46, 12, 22, 18, '#7a6034'); q(48, 10, 18, 3, '#54401f'); q(46, 28, 22, 2, '#54401f'); q(44, 14, 2, 14, '#54401f'); q(68, 14, 2, 14, '#54401f'); q(48, 13, 18, 9, '#a0804a'); q(48, 21, 18, 1, '#54401f'); q(50, 23, 14, 6, '#54401f'); q(52, 24, 10, 1, '#7a6034'); q(52, 18, 2, 5, '#3c3c3c'); q(60, 18, 2, 5, '#3c3c3c');
-        lpEye(q, 49, 12, EYE_S, '#3c2414');
-        for (const rad of [7, 5, 3]) for (let a = 0; a < 360; a += 12) { const x = Math.round(78 + rad * Math.cos(a * Math.PI / 180)), y = Math.round(26 + rad * 0.6 * Math.sin(a * Math.PI / 180)); q(x, y, 1, 1, a < 180 ? '#bea46e' : '#967e50'); }
-        q(70, 26, 3, 1, '#bea46e'); q(83, 28, 6, 1, '#bea46e'); q(32, 22, 10, 7, '#d6c496'); q(34, 24, 5, 1, '#8c6e46'); q(35, 26, 3, 1, '#8c6e46'); q(34, 27, 6, 1, '#8c6e46'); q(37, 25, 1, 1, '#b43228');
+    camp: { w: 96, h: 32, kind: 'floor', tw: 3, draw(q, P, ctx) {          // hốc A: trại người đi trước (lều, đống lửa tàn, ba lô, tờ giấy)
+        const cx = 27, lw = '#5a4224';
+        q(4, 26, 46, 1, '#3a2c1c');
+        for (let j = 0; j < 22; j++) { const hw = 2 + j, y = 4 + j; q(cx - hw, y, hw, 1, '#c0a064'); q(cx, y, hw, 1, '#8e6e3c'); q(cx - hw, y, 1, 1, lw); q(cx + hw - 1, y, 1, 1, lw); }
+        q(cx - 2, 2, 4, 3, lw); q(cx - 1, 0, 2, 3, '#3c2c18'); q(4, 25, 46, 1, lw);
+        for (let j = 12; j < 22; j++) { const hw = Math.round((j - 10) * 0.6); q(cx - hw, 4 + j, hw * 2, 1, '#1c1410'); }
+        q(cx + 9, 18, 6, 5, '#a8884a'); q(cx + 9, 18, 6, 1, lw); q(cx + 9, 22, 6, 1, lw); q(cx + 12, 18, 1, 5, lw);
+        lpEye(q, 10, 19, EYE_S, '#3c2414');
+        q(52, 18, 10, 12, '#6a4a2a'); q(52, 18, 10, 2, '#8a6a3a'); q(54, 22, 6, 5, '#54381e'); q(50, 20, 2, 9, '#54381e'); q(56, 16, 3, 2, '#3a2a18');
+        for (let a = 0; a < 360; a += 30) { const x = Math.round(72 + 9 * Math.cos(a * Math.PI / 180)), y = Math.round(27 + 3.5 * Math.sin(a * Math.PI / 180)); q(x - 1, y - 1, 3, 2, '#7a767e'); q(x - 1, y - 1, 3, 1, '#9a96a0'); }
+        q(65, 26, 14, 3, '#2a2622'); q(66, 24, 12, 2, '#1c1410'); q(68, 21, 2, 5, '#2a1c12'); q(74, 21, 2, 5, '#2a1c12'); q(69, 25, 2, 1, '#e0502a'); q(73, 25, 1, 1, '#ff9a30'); q(71, 24, 1, 1, '#a8341c');
+        for (const [x, y, c] of [[70, 17, '#6e6e76'], [71, 14, '#60606a'], [69, 11, '#505058'], [70, 8, '#424248']]) q(x, y, 2, 2, c);
+        q(84, 22, 10, 8, '#d6c496'); q(86, 24, 5, 1, '#8c6e46'); q(86, 26, 6, 1, '#8c6e46'); q(86, 28, 4, 1, '#8c6e46'); q(90, 25, 1, 1, '#b43228'); q(83, 29, 3, 1, '#bea46e');
     } },
     statue: { w: 36, h: 77, kind: 'floor', tw: 2, draw(q0, P, ctx, t) {          // cao ×0,8 (Dan 16/11): toạ độ y / h co 0,8 theo cùng một phép làm tròn nên không hở nét
         const q = (x, y, w, h, c) => { const a = Math.round(y * 0.8), b = Math.round((y + h) * 0.8); q0(x, a, w, Math.max(1, b - a), c); };          // hốc B: tượng đá 3 ô (một trong 4 boss); mắt sáng trắng khi lại gần; vỡ nứt khi boss đó đã bị hạ
@@ -19791,16 +19811,13 @@ const LP_DEF = {
         if (P.glow > 0) { const g = P.glow; ctx.globalAlpha = 0.25 * g; q(13, 7, 10, 4, '#f0f4ff'); ctx.globalAlpha = 0.95 * g; q(14, 8, 8, 2, '#f5f8ff'); lpEye(q, 2, 28, EYE_F, '#f5f8ff', '#e1e8fa'); ctx.globalAlpha = 1; }
         if (P.crackT > 0) { q(17, 10, 1, 20, K); q(16, 30, 2, 12, K); q(12, 44, 10, 1, K); q(24, 20, 1, 16, K); }
     } },
-    mineCart: { w: 56, h: 28, kind: 'floor', tw: 2, draw(q) {          // Hầm mỏ: xe goòng lật, quặng vãi, đoạn ray cụt
-        q(0, 26, 56, 2, '#4a4038'); for (const x of [4, 20, 36, 50]) q(x, 24, 2, 2, '#6a5a40');
-        q(6, 4, 36, 20, '#5a5048'); q(8, 6, 32, 3, '#7a6e60'); q(6, 4, 2, 20, '#3a322c'); q(40, 4, 2, 20, '#3a322c'); q(10, 12, 28, 10, '#2e2822'); q(6, 22, 36, 2, '#3a322c');
-        q(2, 20, 6, 6, '#26262c'); q(36, 20, 6, 6, '#26262c'); q(3, 21, 4, 4, '#6a6a72'); q(37, 21, 4, 4, '#6a6a72');
-        for (const [x, y, c] of [[44, 22, '#c8883a'], [48, 24, '#ffd24a'], [52, 22, '#c8883a'], [46, 25, '#8a8a92'], [50, 25, '#c8883a']]) q(x, y, 3, 2, c);
-    } },
-    bigRoot: { w: 64, h: 40, kind: 'floor', tw: 2, draw(q) {          // Rừng sâu: rễ lớn tím đậm xuyên đất
-        const c1 = '#3a1a4a', c2 = '#56286e', c3 = '#74399a';
-        for (let i = 0; i < 64; i++) { const y = 28 - Math.round(Math.sin(i / 64 * Math.PI) * 24); q(i, y, 1, 8, c1); q(i, y, 1, 2, c3); q(i, y + 2, 1, 3, c2); }
-        q(0, 32, 10, 8, c1); q(54, 32, 10, 8, c1); q(14, 30, 2, 8, c1); q(46, 30, 3, 8, c1);
+    mineCart: { w: 64, h: 32, kind: 'floor', tw: 2, draw(q) {          // Hầm mỏ: xe goòng lật nghiêng trên ray, quặng vãi
+        const wheel = (cx, cy, r) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const d = dx * dx + dy * dy; if (d <= r * r) q(cx + dx, cy + dy, 1, 1, d > (r - 2) * (r - 2) ? '#26262c' : '#6a6a72'); } q(cx, cy, 1, 1, '#c0c0c8'); q(cx - r + 1, cy, 2 * r - 1, 1, '#4a4a52'); q(cx, cy - r + 1, 1, 2 * r - 1, '#4a4a52'); };
+        for (const x of [2, 18, 34, 50]) q(x, 30, 8, 2, '#5a4028');
+        q(0, 28, 64, 2, '#8a8a94'); q(0, 29, 64, 1, '#4a4a52');
+        for (let j = 0; j < 18; j++) { const o = Math.round((17 - j) * 0.45), y = 8 + j; q(8 + o, y, 34, 1, j < 2 ? '#b0a086' : j > 15 ? '#3c342e' : '#6c5c4e'); q(8 + o, y, 2, 1, '#3c342e'); q(40 + o, y, 2, 1, '#3c342e'); if (j >= 2 && j < 7) q(10 + o, y, 30, 1, '#1e1812'); if (j === 9 || j === 14) q(10 + o, y, 30, 1, '#4c4038'); if (j === 11 || j === 16) { q(12 + o, y, 1, 1, '#a8a8b0'); q(36 + o, y, 1, 1, '#a8a8b0'); } }
+        wheel(14, 24, 5); wheel(36, 21, 5);
+        for (const [x, y, c] of [[44, 12, '#c8883a'], [46, 17, '#ffd24a'], [49, 21, '#8a8a92'], [47, 25, '#c8883a'], [52, 26, '#8a8a92'], [55, 25, '#ffd24a'], [58, 27, '#c8883a'], [51, 28, '#c8883a'], [60, 28, '#6a6a72']]) { q(x, y, 4, 3, c); q(x, y, 4, 1, '#d8d0b8'); }
     } },
     mossAltar: { w: 32, h: 24, kind: 'floor', tw: 1, draw(q) {          // Rừng sâu: bàn thờ nhỏ rêu phủ, Mắt Canh mờ
         q(2, 8, 28, 16, '#5a5a60'); q(4, 4, 24, 6, '#74747c'); q(2, 20, 28, 4, '#44444a'); q(2, 8, 28, 2, '#3e6a3a'); q(6, 5, 8, 2, '#3e6a3a'); q(20, 6, 6, 2, '#4e8a46');
@@ -19815,15 +19832,19 @@ const LP_DEF = {
         q(0, 14, 24, 2, '#b8743a'); q(0, 15, 24, 1, '#7a4a24'); const pu = 0.6 + 0.4 * Math.sin(t * 2);
         q(24, 6, 14, 18, '#3a4a78'); q(26, 4, 10, 4, '#5a78c8'); ctx.globalAlpha = 0.3 + 0.3 * pu; q(26, 8, 10, 14, '#9fe8ff'); ctx.globalAlpha = 1; q(28, 10, 2, 8, '#d8f8ff');
     } },
-    gearCrystal: { w: 40, h: 36, kind: 'floor', tw: 2, draw(q) {          // Hang pha lê: cỗ máy bánh răng bị pha lê đâm xuyên
-        q(4, 12, 24, 22, '#4a4650'); q(4, 12, 24, 3, '#6a6672'); for (let a = 0; a < 360; a += 30) { const x = Math.round(16 + 10 * Math.cos(a * Math.PI / 180)), y = Math.round(22 + 10 * Math.sin(a * Math.PI / 180)); q(x - 1, y - 1, 3, 3, '#8a8692'); }
-        q(12, 18, 8, 8, '#2a2630'); q(22, 2, 6, 30, '#7a68d8'); q(24, 0, 3, 8, '#c8b8ff'); q(28, 10, 5, 22, '#5a48b0'); q(30, 6, 3, 8, '#a898f0');
-    } },
     reliefGuard: { w: 28, h: 30, kind: 'wall', tw: 1, draw(q) {          // Tàn tích: phù điêu Vệ binh đá
         q(2, 2, 24, 26, '#4a4658'); q(2, 2, 24, 1, '#6a6678'); q(10, 5, 8, 6, '#7a7688'); q(9, 11, 10, 3, '#7a7688'); q(6, 14, 16, 12, '#6a6678'); q(12, 7, 4, 1, '#34303e'); q(22, 4, 1, 22, '#7a7688');
     } },
-    headless: { w: 32, h: 44, kind: 'floor', tw: 1, draw(q) {          // Tàn tích: tượng vệ binh gãy đầu
-        q(2, 36, 28, 8, '#4e4a5a'); q(6, 14, 20, 24, '#7a7688'); q(6, 14, 1, 24, '#9a96a8'); q(25, 14, 1, 24, '#4e4a5a'); q(2, 12, 28, 6, '#7a7688'); q(10, 8, 12, 4, '#6a6678'); q(14, 4, 4, 4, '#54505e'); q(0, 40, 8, 4, '#5a5668'); q(24, 41, 6, 3, '#6a6678');
+    headless: { w: 32, h: 56, kind: 'floor', tw: 1, draw(q) {          // Tàn tích: tượng vệ binh gãy đầu (đầu lăn dưới chân, tay chống kiếm)
+        q(0, 50, 32, 6, '#4e4a5a'); q(0, 50, 32, 1, '#6a6678'); q(2, 48, 28, 2, '#5a566a');
+        q(8, 38, 6, 11, '#7a7688'); q(18, 38, 6, 11, '#7a7688'); q(8, 38, 1, 11, '#9a96a8'); q(23, 38, 1, 11, '#4e4a5a'); q(6, 47, 10, 2, '#5a566a'); q(16, 47, 10, 2, '#5a566a');
+        q(6, 16, 20, 22, '#7a7688'); q(6, 16, 1, 22, '#9a96a8'); q(25, 16, 1, 22, '#4e4a5a'); q(14, 16, 4, 16, '#6a6678'); q(6, 34, 20, 3, '#4a4658'); q(14, 34, 4, 3, '#c8a85a');
+        q(2, 12, 10, 7, '#8a869a'); q(20, 12, 10, 7, '#8a869a'); q(2, 12, 10, 1, '#a8a4b8'); q(20, 12, 10, 1, '#a8a4b8'); q(2, 18, 10, 1, '#4e4a5a'); q(20, 18, 10, 1, '#4e4a5a');
+        q(2, 19, 4, 12, '#6a6678'); q(26, 19, 4, 12, '#6a6678'); q(6, 29, 6, 3, '#6a6678'); q(20, 29, 6, 3, '#6a6678'); q(12, 28, 8, 5, '#8a869a');
+        q(15, 22, 2, 2, '#c8a85a'); q(15, 24, 2, 5, '#5a3e22'); q(10, 33, 12, 2, '#c8a85a'); q(15, 35, 2, 14, '#b8bcc8'); q(15, 35, 1, 14, '#e0e4ec');
+        q(11, 9, 10, 7, '#6a6678'); q(11, 8, 3, 2, '#5c586a'); q(15, 6, 3, 4, '#5c586a'); q(19, 8, 3, 2, '#5c586a'); q(16, 10, 1, 6, '#2c283a'); q(12, 14, 8, 1, '#4e4a5a');
+        q(19, 41, 12, 8, '#8a869a'); q(19, 41, 12, 1, '#a8a4b8'); q(19, 48, 12, 1, '#4e4a5a'); q(21, 45, 8, 1, '#1c1824'); q(30, 42, 1, 6, '#4e4a5a'); q(24, 39, 2, 3, '#a8341c');
+        q(10, 46, 2, 2, '#6a6678'); q(0, 48, 3, 2, '#7a7688'); q(13, 12, 2, 2, '#6a6678');
     } },
     grave: { w: 28, h: 34, kind: 'floor', tw: 1, draw(q) {          // Tàn tích: bia mộ Dalat (chữ hiện khi lại gần)
         q(4, 6, 20, 28, '#7a7688'); q(6, 2, 16, 6, '#7a7688'); q(8, 0, 12, 4, '#7a7688'); q(4, 6, 1, 28, '#9a96a8'); q(23, 6, 1, 28, '#54505e'); for (const y of [10, 14, 18]) q(8, y, 12, 1, '#4a4658'); q(10, 22, 8, 1, '#4a4658'); q(2, 32, 24, 2, '#54505e');
@@ -19855,8 +19876,8 @@ const LP_DEF = {
         const k = P.burn || 0; if (k < 1) { ctx.globalAlpha = 1 - k; q(3, 3, 26, 26, '#0c0a0a'); q(2, 8, 4, 16, '#0c0a0a'); q(26, 6, 4, 18, '#0c0a0a'); q(6, 1, 18, 3, '#0c0a0a'); ctx.globalAlpha = 1; }
         const a = Math.min(1, k * 1.4); if (a > 0) { ctx.globalAlpha = a * 0.85; for (let row = 0; row < 3; row++) for (let i = 0; i < 4; i++) { const x = 5 + i * 6, y = 6 + row * 8; q(x, y, 4, 1, '#e8c890'); q(x, y, 1, 5, '#e8c890'); if ((i + row) % 2) q(x + 3, y, 1, 5, '#e8c890'); } ctx.globalAlpha = 1; }
     } },
-    miner: { w: 36, h: 14, kind: 'floor', tw: 2, draw(q) {          // easter egg: xác thợ mỏ, áo có Mắt Canh
-        q(2, 11, 32, 3, '#26201c'); q(4, 6, 20, 6, '#6a5a3a'); q(4, 6, 20, 1, '#8a7a56'); q(24, 7, 8, 5, '#4a4040'); q(28, 3, 6, 5, '#d8c8a8'); q(26, 2, 8, 3, '#8a6a1a'); q(30, 5, 1, 1, '#14100c'); q(8, 7, 12, 4, '#54482c'); lpEye(q, 6, 7, EYE_S, '#241a10'); q(0, 10, 4, 3, '#4a4040');
+    miner: { w: 44, h: 18, kind: 'floor', tw: 2, draw(q) {          // easter egg: xác thợ mỏ nằm ngửa, áo có Mắt Canh, cuốc chim bên cạnh
+        lpMinerBody(q, true);
     } },
     skullShroom: { w: 20, h: 26, kind: 'floor', tw: 1, draw(q, P, ctx, t) {          // easter egg Rừng sâu: nấm đầu lâu
         const wob = P.near ? Math.round(Math.sin(t * 30)) : 0; q(7, 14, 6, 12, '#d8cfb8'); q(1 + wob, 2, 18, 14, '#d8cfb8'); q(3 + wob, 0, 14, 4, '#d8cfb8'); q(1 + wob, 14, 18, 2, '#b8ae98'); q(4 + wob, 6, 4, 4, '#1a1618'); q(12 + wob, 6, 4, 4, '#1a1618'); q(9 + wob, 11, 2, 2, '#1a1618');
@@ -19968,7 +19989,8 @@ function loreBuild(L) {          // gọi sau spawnObjects khi vào màn (16_gam
     }
     lp2Build(L, used);
 }
-function lpMake(L, k, used, salt) { const P = lpPlace(L, k, used, salt + 10 * 0); if (P && k === 'soot') { P.burn = 0; P.text = LP_SOOT[lpHash(game.seed, game.levelIdx, 33) % LP_SOOT.length]; } return P; }
+function lpMake(L, k, used, salt) { if (!k) return null; const P = lpPlace(L, k, used, salt + 10 * 0); if (P && k === 'soot') { P.burn = 0; const R = (typeof PROF !== 'undefined' && PROF.loreRead) || {}, un = LP_SOOT.filter(s => !R['soot:' + s]), pool = un.length ? un : LP_SOOT; P.text = pool[lpHash(game.seed, game.levelIdx, 33) % pool.length]; }          // ưu tiên câu chưa nghe
+    return P; }
 function loreBuildSecret(L2, def) {          // phòng thứ 6 của chuỗi bí mật: hốc A / B ở đầu phòng (rương ở cuối)
     L2.lore = { props: [], crack: null }; if (!def.story) return;
     const kind = LP2_KIND[def.story.kind] || 'camp', d = LP_DEF[kind], c = def.story.c + LVL.border, r = def.story.r + LVL.border;          // r = hàng đứng (trên sàn)
@@ -19976,35 +19998,56 @@ function loreBuildSecret(L2, def) {          // phòng thứ 6 của chuỗi bí
     if (kind === 'statue') { P.boss = LP_BOSSES[lpHash(game.seed, game.levelIdx, 89) % 4]; P.waitT = 0; P.glow = 0; P.x = c * TILE + 24; }
     L2.lore.props.push(P);
 }
+function loreOnce(P, key, text, opt) {          // chữ lore chỉ hiện MỘT LẦN cho mỗi người chơi (lưu PROF.loreRead); đọc rồi thì lần sau im lặng
+    P.said = true; const R = PROF.loreRead || (PROF.loreRead = {}); if (R[key]) return false; R[key] = 1; try { profSave(); } catch (e) { } loreSay(text, opt); return true;
+}
 function lpNear(p, P, dx, dy) { const d = LP_DEF[P.k], cx = P.x + d.w / 4, cy = P.y + d.h / 4; return p && !p.dead && Math.abs(p.cx - cx) <= dx && Math.abs(p.cy - cy) <= dy; }
 function loreStep(L, p) {
     const lo = L.lore; if (!lo || !p) return; const dt = STEP;
     for (const P of lo.props) {
         P.t += dt; const k = P.k;
-        if (k === 'camp') { if (lpNear(p, P, 24, 18) && !P.said) { P.said = true; loreSay('Ai đó đã từng ở đây.', LP.say); } }
+        if (k === 'camp') { if (lpNear(p, P, 24, 18) && !P.said) { P.said = true; loreOnce(P, 'camp', 'Ai đó đã từng ở đây.', LP.say); } }
         else if (k === 'statue') {
             if (P.broken) continue; const near = lpNear(p, P, 30, 28); P.glow += ((near ? 1 : 0) - P.glow) * Math.min(1, dt * 3); P.near = near;
-            if (near && !P.said) { P.waitT += dt; if (P.waitT >= 6) { P.said = true; const last = ENEMY_DEFS[P.boss] && ENEMY_DEFS[P.boss].last; if (last) loreSay(last, { fi: 0.7, hold: 4.2, fo: 1, y: 96, col: '#e6eeff' }); P.crackT = game.stats && game.stats.bossDown && game.stats.bossDown[P.boss] ? 4.5 : 0; } } else if (!near && !P.said) P.waitT = 0;
+            if (near && !P.said) { P.waitT += dt; if (P.waitT >= LP.wait) { P.said = true; const last = ENEMY_DEFS[P.boss] && ENEMY_DEFS[P.boss].last; if (last) loreOnce(P, 'statue:' + P.boss, last, { fi: 0.7, hold: 4.2, fo: 1, y: 96, col: '#e6eeff' }); P.crackT = game.stats && game.stats.bossDown && game.stats.bossDown[P.boss] ? 4.5 : 0; } } else if (!near && !P.said) P.waitT = 0;
             if (P.said && P.crackT > 0) { P.crackT -= dt; if (P.crackT <= 3.5 && P.crackT > 0) { /* vết nứt hiện */ } if (P.crackT <= 0) { P.broken = true; P.crackT = 0; const d = LP_DEF.statue; L.spawnBurst(P.x + 9, P.y + 24, 18, '#9a96a8', 120); L.spawnDust(P.x + 9, P.y + 46, 10, 60, 20); sndPlay('wallBreak', { x: P.x + 9, vol: 0.6 }); fxShake(1.2, 0.2); } else P.crackT = P.crackT; }
         }
-        else if (k === 'heroGrave') { if (lpNear(p, P, 14, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT > 0.8 && !P.said && P.hero) { P.said = true; const h = P.hero; loreSay(h.name.toUpperCase() + ' — ngã ' + h.n + ' lần ở đây. ' + (HERO_HINT[h.cause] || 'Chưa ai biết điều gì đã giết người này.'), { fi: 0.5, hold: 5, fo: 0.8, y: 100 }); } } else P.waitT = 0; }
-        else if (k === 'grave') { if (lpNear(p, P, 12, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT > 0.8 && !P.said) { P.said = true; loreSay('DALAT — 700 NĂM.', LP.say); } } else P.waitT = 0; }
+        else if (k === 'heroGrave') { if (lpNear(p, P, 14, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.waitShort && !P.said && P.hero) { P.said = true; const h = P.hero; loreOnce(P, 'hg:' + h.s + ':' + h.name, h.name.toUpperCase() + ' — ngã ' + h.n + ' lần ở đây. ' + (HERO_HINT[h.cause] || 'Chưa ai biết điều gì đã giết người này.'), { fi: 0.5, hold: 5, fo: 0.8, y: 100 }); } } else P.waitT = 0; }
+        else if (k === 'grave') { if (lpNear(p, P, 12, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.waitShort && !P.said) { P.said = true; loreOnce(P, 'grave', 'DALAT — 700 NĂM.', LP.say); } } else P.waitT = 0; }
         else if (k === 'skullShroom') { P.near = lpNear(p, P, 14, 16); if (P.near) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= 3 && !P.fired) { P.fired = true; L.spawnSmoke(P.x + 10, P.y + 4, 8, { col: '#b8b090', rise: 18, life: 1.2, size: 2, a: 0.5, spread: 6, drift: 10, grow: 1 }); sndPlay('ui', { x: P.x, p: 2.2, vol: 0.7 }); } } else { P.waitT = 0; if (P.fired) P.cool = (P.cool || 0) + dt; if (P.cool > 6) { P.fired = false; P.cool = 0; } } }
-        else if (k === 'oldCat') { if (!P.gone && lpNear(p, P, 14, 22)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= 8) { P.gone = true; loreSay('Ngươi cũng nghe thấy tiếng gọi từ dưới sâu, phải không?', { fi: 0.7, hold: 4.2, fo: 1, y: 96, col: '#e6eeff' }); L.spawnSmoke(P.x + 14, P.y + 12, 8, { col: '#9a9aa2', rise: 14, life: 1, size: 3, a: 0.5, spread: 6, drift: 8, grow: 1 }); } } else P.waitT = 0; }
+        else if (k === 'oldCat') { if (!P.gone && lpNear(p, P, 14, 22)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.wait) { P.gone = true; loreOnce(P, 'oldCat', 'Ngươi cũng nghe thấy tiếng gọi từ dưới sâu, phải không?', { fi: 0.7, hold: 4.2, fo: 1, y: 96, col: '#e6eeff' }); L.spawnSmoke(P.x + 14, P.y + 12, 8, { col: '#9a9aa2', rise: 14, life: 1, size: 3, a: 0.5, spread: 6, drift: 8, grow: 1 }); } } else P.waitT = 0; }
         else if (k === 'shrine') P.near = lpNear(p, P, 22, 18);
         else if (k === 'shadow') { if (P.sh > 0) P.sh += dt; if (P.sh > 3) { P.sh = -1; } if (!P.sh && lpNear(p, P, 50, 40)) P.sh = 0.01; }
         else if (k === 'soot') {
             if (P.burn < 1) { let hot = false; for (const e of game.entities) if (e.alive && (e.kind === 'fire' || e.kind === 'fireball' || e.kind === 'torch') && Math.abs(e.cx - (P.x + 8)) < 18 && Math.abs(e.cy - (P.y + 8)) < 20) { hot = true; break; } if (hot) { P.burning = true; } if (P.burning) { P.burn = Math.min(1, P.burn + dt * 1.5); if (Math.floor(P.t * 12) % 3 === 0) L.spawnSmoke(P.x + 8, P.y + 8, 1, { col: '#5a5a62', rise: 22, life: 0.8, size: 2, a: 0.4, spread: 5, drift: 6, grow: 1 }); } }
-            else if (!P.said && lpNear(p, P, 24, 24)) { P.said = true; loreSay(P.text, LP.say); }
+            else if (!P.said && lpNear(p, P, 24, 24)) { P.said = true; loreOnce(P, 'soot:' + P.text, P.text, LP.say); }
         }
     }
     lp2Step(L, p);
+}
+function lpKey(P) {          // khoá đã-đọc (PROF.loreRead) của chữ mà vật này sẽ nói; null = vật không nói (hoặc chưa tới lúc nói)
+    switch (P.k) {
+        case 'camp': return 'camp'; case 'grave': return 'grave'; case 'oldCat': return 'oldCat'; case 'nameWall': return 'nameWall'; case 'paper': return 'paper'; case 'minerStatue': return 'miner';
+        case 'statue': return ENEMY_DEFS[P.boss] && ENEMY_DEFS[P.boss].last ? 'statue:' + P.boss : null;
+        case 'heroGrave': return P.hero ? 'hg:' + P.hero.s + ':' + P.hero.name : null;
+        case 'soot': return P.burn >= 1 && P.text ? 'soot:' + P.text : null;          // chưa cháy hết thì chưa có chữ
+        case 'sunk': return P.reveal ? 'sunk' : null;
+    }
+    return null;
+}
+function lpUnread(P) { if (P.said || P.gone || P.broken) return false; const k = lpKey(P); if (!k) return false; const R = PROF && PROF.loreRead; return !(R && R[k]); }
+function lpCue(ctx, P, d, t) {          // dấu "còn chữ chưa đọc": lấp lánh phía trên vật + thanh nhỏ đầy dần khi đang đứng chờ; vật không nói / đã đọc thì không vẽ gì
+    const q = lpQ(ctx, Math.round(P.x + d.w / 4), Math.round(P.y) - 5), c = '#fff4b0', bob = Math.round(Math.sin(t * 2 + P.y) * 2);
+    ctx.globalAlpha = 0.55 + 0.4 * Math.sin(t * 4 + P.x); q(-2, 0, 5, 1, c); q(0, -2, 1, 5, c); q(0, 0, 1, 1, '#ffffff'); q(5, -3 + bob, 1, 1, '#ffe08a'); ctx.globalAlpha = 1;
+    const need = P.k === 'statue' || P.k === 'oldCat' ? LP.wait : LP.waitShort, p = Math.min(1, (P.waitT || 0) / need);
+    if (p > 0) { ctx.globalAlpha = 0.6; q(-8, 5, 16, 1, '#000000'); ctx.globalAlpha = 0.95; q(-8, 5, Math.max(1, Math.round(16 * p)), 1, c); ctx.globalAlpha = 1; }
 }
 function loreDrawProps(ctx, L, cx, cy) {
     const lo = L.lore; if (!lo) return; const t = game.time || 0;
     for (const P of lo.props) {
         if (P.gone) continue; const d = LP_DEF[P.k]; if (P.x + d.w / 2 < cx - 8 || P.x > cx + VIEW_W + 8 || P.y + d.h / 2 < cy - 8 || P.y > cy + VIEW_H + 8) continue;
         d.draw(lpQ(ctx, Math.round(P.x * 2) / 2, Math.round(P.y * 2) / 2), P, ctx, t);
+        if (lpUnread(P)) lpCue(ctx, P, d, t);
     }
 }
 function loreHeartCoin(ctx, e, alpha) {          // easter egg: đồng vàng hình tim (giá trị bình thường)
@@ -20029,8 +20072,17 @@ Object.assign(LP_DEF, {
         q(22, 15, 4, 5, '#d8d0b8'); q(23, 16, 2, 3, '#a8341c'); q(36, 15, 4, 5, '#d8d0b8'); q(37, 16, 2, 3, '#a8341c'); q(28, 8, 4, 12, '#2a5a3a'); q(29, 6, 2, 3, '#2a5a3a'); q(29, 4, 2, 2, '#c8a85a');
         q(42, 14, 2, 6, '#3a7a3a'); q(40, 11, 3, 3, '#e8486a'); q(43, 10, 3, 3, '#e8c84a'); q(41, 8, 3, 3, '#e88a4a'); q(44, 13, 2, 2, '#e8486a');
     } },
-    minerStatue: { w: 32, h: 60, kind: 'floor', tw: 1, draw(q) {          // hầm thợ mỏ: tượng thợ mỏ cầm cuốc
-        q(6, 56, 20, 4, '#4e4a5a'); q(10, 22, 12, 34, '#7a7688'); q(10, 22, 1, 34, '#9a96a8'); q(8, 18, 16, 6, '#8a869a'); q(11, 8, 10, 10, '#7a7688'); q(9, 6, 14, 4, '#8a6a1a'); q(14, 4, 4, 3, '#ffd24a'); q(24, 6, 2, 40, '#6e5a3a'); q(20, 4, 10, 3, '#8a8a94'); lpEye(q, 8, 28, EYE_S, '#3c3848');
+    minerStatue: { w: 40, h: 64, kind: 'floor', tw: 1, draw(q) {          // hầm thợ mỏ: tượng thợ mỏ đội mũ đèn, vác cuốc
+        q(4, 58, 32, 6, '#4e4a5a'); q(4, 58, 32, 1, '#6a6678'); q(6, 56, 28, 2, '#5a566a');
+        q(12, 44, 6, 11, '#6a6678'); q(22, 44, 6, 11, '#6a6678'); q(10, 54, 9, 4, '#3c3848'); q(21, 54, 9, 4, '#3c3848');
+        q(10, 24, 20, 21, '#7a7688'); q(10, 24, 1, 21, '#9a96a8'); q(29, 24, 1, 21, '#4e4a5a');
+        q(14, 24, 2, 17, '#4a4658'); q(24, 24, 2, 17, '#4a4658'); q(10, 40, 20, 3, '#4a4658'); q(18, 40, 4, 3, '#c8a85a');
+        lpEye(q, 12, 28, EYE_S, '#3c3848');
+        q(5, 24, 5, 18, '#6a6678'); q(5, 41, 5, 4, '#8a869a'); q(30, 24, 5, 12, '#6a6678'); q(30, 35, 6, 5, '#8a869a');
+        q(6, 22, 28, 4, '#8a869a'); q(6, 22, 28, 1, '#a8a4b8');
+        q(14, 12, 12, 11, '#8a869a'); q(14, 12, 1, 11, '#a8a4b8'); q(25, 12, 1, 11, '#5c586a'); q(15, 18, 10, 5, '#6a6678'); q(16, 15, 3, 2, '#2c283a'); q(21, 15, 3, 2, '#2c283a'); q(19, 16, 2, 3, '#6a6678');
+        q(12, 7, 16, 6, '#8a6a1a'); q(12, 7, 16, 1, '#c8a85a'); q(11, 12, 18, 2, '#6a4e12'); q(17, 3, 6, 5, '#ffd24a'); q(18, 4, 4, 3, '#fff2a0');
+        q(33, 8, 2, 50, '#7e5a30'); q(33, 8, 1, 50, '#9a7242'); q(28, 6, 12, 3, '#8a8a94'); q(28, 6, 12, 1, '#b8b8c4'); q(28, 8, 2, 4, '#8a8a94'); q(38, 8, 2, 4, '#8a8a94');
     } },
     sunk: { w: 28, h: 14, kind: 'bottom', tw: 1, draw(q, P, ctx, t) {          // vật chìm dưới đáy hồ (mờ cho tới khi đóng băng)
         const a = P.reveal ? 1 : 0.28; ctx.globalAlpha = a; q(2, 10, 24, 4, '#26261e'); q(4, 6, 16, 6, '#8a8a70'); q(18, 4, 8, 6, '#d8d0b0'); q(20, 6, 2, 2, '#14140c'); q(24, 6, 2, 2, '#14140c');
@@ -20046,8 +20098,12 @@ Object.assign(LP_DEF, {
         if (P.done) { ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 3); q(8, 18, 16, 14, '#fff0b0'); ctx.globalAlpha = 1; q(10, 4, 12, 2, '#fff0b0'); }
     } },
     paper: { w: 14, h: 10, kind: 'floor', tw: 1, draw(q) { q(2, 2, 10, 8, '#d6c496'); q(3, 4, 6, 1, '#8c6e46'); q(3, 6, 7, 1, '#8c6e46'); q(3, 8, 4, 1, '#b43228'); q(1, 8, 3, 2, '#d6c496'); } },          // mảnh giấy chủ tiệm
-    slideMiner: { w: 56, h: 14, kind: 'floor', tw: 2, draw(q) {          // Núi tuyết: xác thợ mỏ + vệt trượt trên băng
-        for (const [x, y, w] of [[0, 8, 22], [2, 11, 20], [6, 6, 14]]) q(x, y, w, 1, '#e8f8ff'); q(24, 11, 30, 3, '#26201c'); q(26, 6, 20, 6, '#5a6a8a'); q(26, 6, 20, 1, '#7a8aaa'); q(46, 7, 8, 5, '#4a4040'); q(50, 3, 6, 5, '#d8c8a8'); q(48, 2, 8, 3, '#8a6a1a');
+    slideMiner: { w: 68, h: 20, kind: 'floor', tw: 3, draw(q) {          // Núi tuyết: xác thợ mỏ trượt trên băng, vệt trượt dài phía sau
+        q(0, 18, 68, 2, '#bfe4f4'); q(0, 19, 68, 1, '#e8f8ff');
+        for (const [x, y, w] of [[0, 16, 24], [4, 14, 20], [10, 12, 14], [2, 17, 18]]) { q(x, y, w, 1, '#e8f8ff'); q(x + w, y, 3, 1, '#8ec4dc'); }
+        for (const x of [6, 14, 22]) q(x, 18, 2, 1, '#ffffff');
+        lpMinerBody((x, y, w, h, c) => q(x + 24, y + 1, w, h, c), false);
+        q(60, 3, 2, 1, '#e8f8ff'); q(34, 7, 2, 1, '#e8f8ff');
     } },
     puddle: { w: 36, h: 4, kind: 'floor', tw: 1, draw(q) { q(2, 1, 32, 3, '#2a5a9a'); q(6, 0, 24, 1, '#4a8aca'); } },
 });
@@ -20085,11 +20141,11 @@ function lp2Step(L, p) {          // gọi cuối loreStep
     for (const P of lo.props) {
         const k = P.k;
         if (k === 'chair') { const near = lpNear(p, P, 36, 24); P.swing = (P.swing === undefined ? 1 : P.swing) + ((near ? 0 : 1) - (P.swing === undefined ? 1 : P.swing)) * Math.min(1, dt * 2.5); }
-        else if (k === 'nameWall') { if (P.names === undefined) P.names = Math.min(12, Math.max(3, lp2Total())); if (lpNear(p, P, 24, 24)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT > 1 && !P.said) { P.said = true; loreSay(lp2Names(Math.max(3, lp2Total())).join(' · '), LP.say); } } else P.waitT = 0; }
+        else if (k === 'nameWall') { if (P.names === undefined) P.names = Math.min(12, Math.max(3, lp2Total())); if (lpNear(p, P, 24, 24)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.waitShort && !P.said) { P.said = true; loreOnce(P, 'nameWall', lp2Names(Math.max(3, lp2Total())).join(' · '), LP.say); } } else P.waitT = 0; }
         else if (k === 'party') { if (lpNear(p, P, 30, 24)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= 5 && !P.fired) { P.fired = true; sndPlay('ui', { x: P.x, p: 2.4, vol: 0.5 }); sndPlay('ui', { x: P.x, p: 2.9, vol: 0.4 }); } } else P.waitT = 0; }
         else if (k === 'sunk') {
             if (!P.reveal && (L.tile(P.wc, P.wr) === T_ICE || L.tile(P.wc, P.wr - 1) === T_ICE)) { P.reveal = true; sndPlay('iceMelt', { x: P.x, p: 1.4, vol: 0.5 }); if (lpHash(game.seed, game.levelIdx, 440) % 3 === 0) { const g = entAdd(new Gold(P.x + 4, P.y - 6, 100)); g.vy = -80; } }
-            if (P.reveal && !P.said && lpNear(p, P, 40, 40)) { P.said = true; loreSay('Có thứ đã bị chôn dưới nước từ lâu.', LP.say); }
+            if (P.reveal && !P.said && lpNear(p, P, 40, 40)) { P.said = true; loreOnce(P, 'sunk', 'Có thứ đã bị chôn dưới nước từ lâu.', LP.say); }
         }
         else if (k === 'darkCrystal') {
             if (!P.lit) { for (const b of fxBolts) if (Math.abs(b.x2 - (P.x + 6)) < 28 && Math.abs(b.y2 - (P.y + 10)) < 36 || Math.abs(b.x1 - (P.x + 6)) < 28 && Math.abs(b.y1 - (P.y + 10)) < 36) { P.lit = 0.01; P.dir = lp2Dir(L, P); sndPlay('ui', { x: P.x, p: 1.8, vol: 0.6 }); break; } }
@@ -20099,8 +20155,8 @@ function lp2Step(L, p) {          // gọi cuối loreStep
             if (P.done) continue; const cx = P.x + 8, cy = P.y + 14;
             for (const e of game.entities) if (e.alive && !e.holder && e.kind === P.want && Math.abs(e.cx - cx) < 14 && Math.abs(e.cy - cy) < 18) { e.alive = false; P.done = true; L.spawnBurst(cx, cy, 14, '#fff0b0', 110); sndPlay('unlock', { x: cx }); loreSay(P.want === 'pot' ? 'Họ đã nhận. Họ nhớ những thứ rỗng.' : 'Một phiến đá trở về với đá.', LP.say); for (let i = 0; i < 3; i++) { const g = entAdd(new Gold(cx - 3, cy - 8, 50)); g.vx = (i - 1) * 40; g.vy = -120; } break; }
         }
-        else if (k === 'paper') { if (lpNear(p, P, 14, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT > 0.6 && !P.said) { P.said = true; loreSay('ĐỪNG TIN CHỦ TIỆM. HỌ BIẾT NHIỀU HƠN HỌ NÓI.', LP.say); } } else P.waitT = 0; }
-        else if (k === 'minerStatue') { if (lpNear(p, P, 40, 30)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT > 0.6 && !P.said) { P.said = true; loreSay('Người đã đi xuống và không bao giờ trở lại.', LP.say); } } else P.waitT = 0; }
+        else if (k === 'paper') { if (lpNear(p, P, 14, 14)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.waitShort && !P.said) { P.said = true; loreOnce(P, 'paper', 'ĐỪNG TIN CHỦ TIỆM. HỌ BIẾT NHIỀU HƠN HỌ NÓI.', LP.say); } } else P.waitT = 0; }
+        else if (k === 'minerStatue') { if (lpNear(p, P, 40, 30)) { P.waitT = (P.waitT || 0) + dt; if (P.waitT >= LP.waitShort && !P.said) { P.said = true; loreOnce(P, 'miner', 'Người đã đi xuống và không bao giờ trở lại.', LP.say); } } else P.waitT = 0; }
     }
 }
 
