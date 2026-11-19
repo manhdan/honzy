@@ -14858,12 +14858,13 @@ class Shopkeeper extends Enemy {
         if (this.angry || !this.alive) return;
         this.throwBombs();
         this.angry = true; this.dmg = 1; this.why = why;
-        if (!this.ambush && !game.wanted) { game.wanted = true; game.wantedMsg = 4; }       // bị truy nã: các tiệm khác phục kích ở cửa ra
+        if (why === 'đồ trộm' && !this.ambush && !game.wanted) { game.wanted = true; game.wantedMsg = 4; }       // v1.6-151 (Dan): chỉ TRỘM mới bị truy nã ngay (các tiệm khác phục kích ở cửa ra); bắn / đánh chủ tiệm chưa chết = ông ta đuổi bắn ở màn này thôi, chưa tính truy nã (giết mới tính, xem onDie)
         game.pickupMsg = { t: 0, text: 'Chủ cửa hàng nổi giận!' }; sndPlay('bossRoar', { x: this.cx, vol: 0.6 });
     }
     onHurt(src) { this.throwBombs(); if (byPlayer(src)) this.anger('bị đánh'); }     // lần 29: quái / bẫy tên đánh trúng chủ tiệm KHÔNG làm người chơi bị truy nã
     onDie(src) {
         super.onDie(src);
+        if (!this.ambush && !game.wanted && byPlayer(src)) { game.wanted = true; game.wantedMsg = 4; }          // v1.6-151 (Dan): GIẾT chủ tiệm mới bị truy nã (quái / bẫy giết thì không, như lần 29)
         const armed = this.hasBomb; this.throwBombs();          // chết ngay một đòn (không qua onHurt) vẫn ném
         entAdd(new ShopCorpse(this));          // v1.2 (Dan): xác nằm ngang như xác người chơi, không nhặt được
         for (const o of game.entities) if (o.alive && o.kind === 'princess' && !o.holder && Math.abs(o.cx - this.cx) < 220 && Math.abs(o.cy - this.cy) < 120) { o.scareT = Math.max(o.scareT || 0, 3); o.jumpT = 0; }          // v1.6-105 (Dan): chủ tiệm bị giết → công chúa / thú cưng gần đó HOẢNG SỢ 3 s (trước: vẫn vẫy tay / nhảy mừng như được cứu)
@@ -21607,9 +21608,10 @@ function drawHud() {
     if (game.goldPopT > 0) { game.goldPopT -= 1 / 60; const k = game.goldPopT / 0.3; drawText('' + p.gold, sx + 11, y - 1 - Math.round(2 * Math.sin(k * Math.PI)), k > 0.5 ? '#fff6c0' : '#ffe27a'); } else drawText('' + p.gold, sx + 11, y - 1, '#ffd24a');          // v1.18zz13: số vàng nảy lên khi nhặt
     if (p.whistleCd > 0.05 && game.level.id !== 'test') { ctx.fillStyle = '#3a3f50'; ctx.fillRect(6, y + 12, 24, 1); ctx.fillStyle = '#9fd8ff'; ctx.fillRect(6, y + 12, Math.round(24 * (1 - p.whistleCd / WHISTLE.cd)), 1); }          // hồi chiêu huýt sáo (thanh mảnh)
     if (game.level.id !== 'test') {            // đồng hồ level (góc phải); đỏ khi ma sắp / đã xuất hiện
-        const t = Math.floor(game.levelT), ghostOn = game.levelIdx >= GHOST.fromLevel, col = ghostOn && t >= GHOST.warnT ? '#ff8a8a' : '#cfd6e6';
-        if (!(ghostOn && !game.ghostOut && t >= GHOST.spawnT - 15 && Math.floor(Date.now() / 250) % 2)) drawText(Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2), VIEW_W - 6, 6, col, 'right');          // v1.2 (Dan): 15 s cuối trước khi ma ra thì nhấp nháy
-        { const clk = Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); drawText(game.levelIdx >= FINALE_LEVEL ? 'TRẬN CUỐI' : 'Level ' + (zoneIdx(game.levelIdx) + 1) + '-' + (game.levelIdx % ZONE_LEN + 1), VIEW_W - 6 - 5.3 * clk.length - 7, 6, game.levelIdx >= FINALE_LEVEL ? '#ff9a5a' : '#9aa7c4', 'right'); }          // v1.2 (Dan): cùng hàng, bên trái đồng hồ
+        const t = Math.floor(game.levelT), ghostOn = game.levelIdx >= GHOST.fromLevel, left = ghostOn ? Math.max(0, GHOST.spawnT - t) : t, col = ghostOn && left <= 30 ? '#ff8a8a' : '#cfd6e6';          // v1.6-150 (Dan): đồng hồ ĐẾM LÙI tới lúc ma ra (GHOST.spawnT, vd 5:00 → 0:00), dừng ở 0:00; đỏ từ 0:30 trở xuống. Màn không có ma (dưới GHOST.fromLevel) vẫn đếm tiến
+        const clk = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+        if (!(ghostOn && !game.ghostOut && left <= 15 && left > 0 && Math.floor(Date.now() / 250) % 2)) drawText(clk, VIEW_W - 6, 6, col, 'right');          // v1.2 (Dan): 15 s cuối trước khi ma ra thì nhấp nháy (đứng yên, đỏ, khi đã về 0:00)
+        drawText(game.levelIdx >= FINALE_LEVEL ? 'TRẬN CUỐI' : 'Level ' + (zoneIdx(game.levelIdx) + 1) + '-' + (game.levelIdx % ZONE_LEN + 1), VIEW_W - 6 - 5.3 * clk.length - 7, 6, game.levelIdx >= FINALE_LEVEL ? '#ff9a5a' : '#9aa7c4', 'right');          // v1.2 (Dan): cùng hàng, bên trái đồng hồ
     }
     statusDrawHud(y + 20);
     gearDrawHud();
