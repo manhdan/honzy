@@ -23159,7 +23159,7 @@ function dbgDrawOverview() {
     let hunting = null;
     const killLocked = () => (game.killNeed || 0) > (typeof killsDone === 'function' ? killsDone() : 0);
     B.needHunt = () => (L.arena && !L.arenaOpen) || killLocked();
-    const dm0 = game.demo, chainOn = !!(p.cls === 'alch' && game.combo && game.combo.n > 0 && game.combo.t > 0 && !(DEMO.off && DEMO.off.chain));          // v1.6-52: Wizard đang giữ chuỗi KILL ×N
+    const dm0 = game.demo, chainOn = !!((p.cls === 'alch' || DEMO.chainAll) && game.combo && game.combo.n > 0 && game.combo.t > 0 && !(DEMO.off && DEMO.off.chain));          // v1.6-52: Wizard đang giữ chuỗi KILL ×N
     const PR = DEMO.PERS[p.cls] || DEMO.PERS.sword;
     const exG = dm0 && DEMO.exGset && DEMO.exGset.size ? DEMO.exGset : null;          // v2.8: quái trong 7 ô quanh cửa ra (bot đang ở gần cửa): giết hết rồi mới vào, kể cả quá giờ
     const huntAll0 = !!(dm0 && !(DEMO.off && DEMO.off.hunt) && dm0.f < 60 * DEMO.T_EXIT && (PR.hunt ? dm0.f < 60 * PR.hunt : (PR.huntD && DEMO.mainDone(dm0, p, dm0.f) && dm0.f < 60 * PR.huntD)));          // v1.6-53: Stryker chỉ săn rộng sau khi dọn xong đồ          // tính cách: Knight giết sạch quái (≤ 110 s), Wizard giết khá nhiều (≤ 80 s) kể cả khi cửa đã mở
@@ -24451,6 +24451,7 @@ DEMO.PERS = {
     hunt:  { loot: 340, lootD: 340, close: 80, closeD: 80, gold: 1.4, goldD: 1.4, bomb: 0, bombD: 2, hunt: 0,  huntD: 45, order: ['close', 'gold', 'loot'] },
     sword: { loot: 220, lootD: 220, close: 48, closeD: 48, gold: 1.2, goldD: 1.2, bomb: 2, bombD: 2, hunt: 45, order: ['gold', 'loot', 'close'] },
 };
+DEMO.chainAll = true;          // v2.15: giữ chuỗi KILL ×N cho cả Knight / Stryker (trước chỉ Wizard): có chuỗi thì quái kế tiếp được ưu tiên hơn nhặt đồ
 DEMO.revPenOn = true; DEMO.K_DET = 5;          // v2.14: bật phạt dẫm lại ô (giảm đi đi lại lại) · K_DET: số ô đi vòng chấp nhận cho mỗi điểm giá trị (7 → 5, bớt vòng để nhặt / săn)
 DEMO.T_EXIT = 48;          // giây: từ đây bỏ hết việc phụ, chỉ lo đủ quái + ra cửa
 DEMO.mainDone = function (D, p, f) {          // mục tiêu CHÍNH của class đã xong chưa (cache 0,5 s)
@@ -24467,7 +24468,7 @@ DEMO.pers = function (p) { return DEMO.PERS[p.cls] || DEMO.PERS.sword; };
 // v1.6-67 (Dan: Wizard phải thường xuyên đạt KILL ×5): CHẾ ĐỘ GIỮ CHUỖI của Wizard — đo 20 ván thấy 46/50 lần đứt chuỗi là do HẾT 6 GIÂY (chỉ 4 lần do bị cắn), mà trong 6 giây đó bot đi nhặt vàng quái vừa rơi (đồ «bắt buộc»), đặt bom,
 //   đứng đợi dơi, hoặc bỏ qua con quái lẻ cùng tầng vì «không đáng đường». Nên khi chuỗi đang chạy (combo.n ≥ 1, còn giờ): KHÔNG nhặt đồ / vàng, KHÔNG đặt bom, luôn CHẠY; lộ trình tầng giữ mọi nhóm quái, phạt nặng chặng dài hơn 24 ô
 //   (quá 6 s), kết thúc ở hố xuống mà chỗ đáp gần quái tầng dưới nhất; hết quái trên tầng là lao thẳng xuống. Cờ tắt: off.cw
-DEMO.chainW = function (p) { return !!(p && p.cls === 'alch' && !(DEMO.off && DEMO.off.cw) && game.combo && game.combo.n > 0 && game.combo.t > 0); };
+DEMO.chainW = function (p) { return !!(p && (p.cls === 'alch' || DEMO.chainAll) && !(DEMO.off && DEMO.off.cw) && game.combo && game.combo.n > 0 && game.combo.t > 0); };
 DEMO.mission = function (D, p, f) {
     if (DEMO.off && DEMO.off.mis) { D.mis = null; D.misFoes = null; D.misTgt = null; D.rush = false; return; }
     const B = BOT, n = B.nodeOf(p), fl = DEMO.floorOf(n.r), cls = p.cls;
@@ -25267,7 +25268,11 @@ DEMO.exitG = function (D, p, L, f) {          // v2.8: quái còn sống trong 7
             if (Math.hypot(e.cx - ex, e.cy - ey) <= 7 * 16) (set = set || new Set()).add(e);
         }
     }
-    if (set) { if (!D.exGf0) D.exGf0 = f; if (f - D.exGf0 > 60 * 20) set = null; }          // canh quá 20 s mà chưa dọn xong (quái bay không tới / kẹt) → bỏ
+    if (set) {          // v2.15: canh theo TIẾN TRIỂN — 6 s không giết thêm con nào / không bớt con nào (quái bay không tới / kẹt) → thả hẳn; tổng tối đa 12 s (trước: 20 s cố định, có ván quanh cửa 22 s không vào)
+        const kd = typeof killsDone === 'function' ? killsDone() : 0;
+        if (D.exGdone) set = null;
+        else { if (!D.exGf0) { D.exGf0 = f; D.exGp = f; D.exGn = set.size; D.exGk = kd; } if (set.size < D.exGn || kd > D.exGk) { D.exGp = f; D.exGk = kd; } D.exGn = Math.min(D.exGn, set.size); if (f - D.exGp > 60 * 6 || f - D.exGf0 > 60 * 12) { D.exGdone = true; set = null; BOT.stats.exRelease = (BOT.stats.exRelease | 0) + 1; } }
+    }
     return D.exGs = set;
 };
 DEMO.stoneRetreat = function (p, L, f) {          // v2.8 (Dan): BỌ ĐÁ (kind 'walker', trâu 3 máu, húc hất văng): sau khi vung 2 nhát thì lùi nửa–1 ô (tránh bị húc) rồi quay lại chém tiếp. Tắt: DEMO.off.stone
@@ -25413,8 +25418,8 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     if (!fight && !hooking && !p.hold && !D.bomb && !(DEMO.chg.f > 0 || DEMO.wch.f > 0 || DEMO.bch.f > 0)) { const sr = DEMO.stoneRetreat(p, L, f); if (sr) { B.keys = sr; fight = true; fk = 'K'; } }          // v2.8: bọ đá — chém 2 nhát rồi lùi 1 chút, quay lại chém
     if (!fight && !hooking) { const ck = {}; if (D.hbusy !== f && B.dodge(ck)) { B.keys = ck; fight = true; fk = 'K'; } else { const r = B.combat(ck); if (r === 'air') { if (ck.attack) B.keys.attack = true; if (ck.up) B.keys.up = true; } else if (r) { B.keys = ck; fight = true; } } }
     if (!fight && DEMO.batGuard(D, p, f)) { fight = true; fk = 'C'; }
-    { const lf = DEMO.ledgeFoe(p, L); if (lf) { B.keys = lf; fight = true; fk = 'C'; } }          // quái đậu trên bục cao 1 ô ngay trước mặt: đứng sát mép, nhảy tại chỗ + chém
-    const chain = p.cls === 'alch' && !(DEMO.off && DEMO.off.chain) && game.combo && game.combo.n > 0 && game.combo.t > 0 && nd0 < 1e8 && s.hunting, chainFar = chain && nd0 > 100;          // v1.6-50 (Dan): Wizard giữ chuỗi KILL ×N: quái kế xa → chạy nhanh tới đó, bỏ nhặt đồ; quái gần → đi bình thường
+    { const lf = f > (D.lfOff | 0) ? DEMO.ledgeFoe(p, L) : null; if (lf) { B.keys = lf; fight = true; fk = 'C'; D.lfN = (D.lfN | 0) + 1; D.lfF = f; if (D.lfN > 100) { D.lfOff = f + 420; D.lfN = 0; if (s.huntFoe) (B.ign = B.ign || new Map()).set(s.huntFoe, game.levelT + 10); B.stats.lfGive = (B.stats.lfGive | 0) + 1; } } else if (D.lfF !== undefined && f - D.lfF > 30) D.lfN = 0; }          // v2.16: nhảy tại chỗ chém quái trên bục > 1,7 s mà chưa hạ được → tắt lớp này 7 s + bỏ con đó          // quái đậu trên bục cao 1 ô ngay trước mặt: đứng sát mép, nhảy tại chỗ + chém
+    const chain = (p.cls === 'alch' || DEMO.chainAll) && !(DEMO.off && DEMO.off.chain) && game.combo && game.combo.n > 0 && game.combo.t > 0 && nd0 < 1e8 && s.hunting, chainFar = chain && nd0 > 100;          // v1.6-50 (Dan): Wizard giữ chuỗi KILL ×N: quái kế xa → chạy nhanh tới đó, bỏ nhặt đồ; quái gần → đi bình thường
     if (chainFar && !D.bomb && !(D.sc && D.sc.stage === 'go')) lk = null;
     const lkU = ((fight || foeNear) && !p.hold && !D.bomb) ? null : lk;
     { const q = p, nx = s.path && s.path[s.idx + 1]; if (q.state === 'climb' && nx && !String(nx.et).startsWith('climb') && L.tile(Math.floor(q.cx / 16), Math.floor(q.cy / 16)) !== 4) { B.keys.jump = (f % 6 < 3); const d = nx.c * 16 + 8 - q.cx; B.keys.left = d < -2; B.keys.right = d > 2; B.keys.up = B.keys.down = false; } }
@@ -25430,7 +25435,7 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     if (D.cl && !lk && !D.hk && !D.hs && !p.hook) { const ck = DEMO.climbMacro(D, p, f); if (ck) B.keys = ck; }
     if (D.breK) { D.bre && (D.bre.keep = 1); }
     const chging = (DEMO.chg.f > 0 || DEMO.wch.f > 0 || DEMO.bch.f > 0) && fight;          // v1.6-52: đang nạp đòn giữ thì các lớp sau không được cướp phím (mất nút = hỏng đòn nạp)
-    { const hs = !lkU && !D.hk && !D.cl && !chging ? DEMO.hookSpeed(D, p, f, nd0) : null; if (hs) B.keys = hs; else if (D.hs && !lkU) B.keys = {}; else if (lkU) B.keys = lkU; else DEMO.skill(p, B.keys, f); }
+    { let hs = !lkU && !D.hk && !D.cl && !chging && f > (D.hsOff | 0) ? DEMO.hookSpeed(D, p, f, nd0) : null; if (hs) { if (!D.hsw || Math.abs(p.cx - D.hsw.x) > 40) D.hsw = { f, x: p.cx }; else if (f - D.hsw.f > 80 && !D.hs) { D.hsOff = f + 300; D.hsw = null; hs = null; B.stats.hsGive = (B.stats.hsGive | 0) + 1; } } else D.hsw = null; if (hs) B.keys = hs; else if (D.hs && !lkU) B.keys = {}; else if (lkU) B.keys = lkU; else DEMO.skill(p, B.keys, f); }
     if (chging) B.keys.attack = true;
     if (!lkU && !chging) DEMO.stomp(p, B.keys, L);
     if (!lkU && !D.hk && !D.hs && !D.cl && !D.bomb && !chging && !D.breK) DEMO.hop(p, B.keys);
@@ -25445,12 +25450,13 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
         if (D.shotF && f - D.shotF < 12 && !(DEMO.off && DEMO.off.aim)) { const bad = D.shotDir > 0 ? 'left' : 'right'; if (B.keys[bad]) { B.keys[bad] = false; B.stats.aimLock = (B.stats.aimLock | 0) + 1; } }
     }
     if (D.breK) B.keys = D.breK;          // v1.6-54: đang lùi / đứng đợi dơi: giữ nguyên phím (lớp móc / nhảy / đập không cướp) — chốt gai và né tên bên dưới vẫn được ưu tiên
+    if (D.spF !== undefined && f - D.spF > 3) D.spN = 0;          // v2.16: chốt gai chặn > 18 khung liên tục (đường đi vẫn đòi bước tới đó → bot đứng im) thì bỏ cạnh đường này + lập lại
     {          // v1.6-53 (Dan): CHỐT GAI — sắp bước khỏi mép mà phía dưới (≤ 3 ô) là gai / dung nham thì không bước (các lớp nhặt / né / đánh đi tay không có tìm đường nên hay rơi vào gai: −2 tim mỗi lần)
         const d = B.keys.right ? 1 : B.keys.left ? -1 : 0;
         if (d && p.onGround && !B.keys.jump && !p.hook && !D.cl && !D.hs && !D.hk) {
             const x2 = p.cx + d * 12, c2 = Math.floor(x2 / 16), r0 = Math.floor((p.y + p.h + 2) / 16);
             if (!L.solidAt(x2, p.y + p.h + 2) && L.tile(c2, r0) !== T_ONEWAY) {
-                for (let rr = r0; rr < r0 + 4; rr++) { const tt = L.tile(c2, rr); if (tt === T_SPIKE || tt === T_LAVA) { B.keys[d > 0 ? 'right' : 'left'] = false; B.stats.spGuard = (B.stats.spGuard | 0) + 1; break; } if (T_IS_SOLID[tt]) break; }
+                for (let rr = r0; rr < r0 + 4; rr++) { const tt = L.tile(c2, rr); if (tt === T_SPIKE || tt === T_LAVA) { B.keys[d > 0 ? 'right' : 'left'] = false; B.stats.spGuard = (B.stats.spGuard | 0) + 1; D.spN = (D.spN | 0) + 1; D.spF = f; if (D.spN > 18) { D.spN = 0; const a = s.path && s.path[s.idx], b = s.path && s.path[s.idx + 1]; if (a && b) s.banned.add(a.i + '>' + b.i); s.path = null; B.plan(); B.stats.spBan = (B.stats.spBan | 0) + 1; } break; } if (T_IS_SOLID[tt]) break; }
             }
         }
     }
@@ -25506,9 +25512,15 @@ DEMO.pre = function () {          // trước mỗi bước vật lý (stepGame)
     // v2.14 (Dan: «không trong nhiệm vụ cụ thể thì đứng yên tối đa 2 s, không đi đi lại lại»): LỚP GIÁM SÁT CHẶT, độc lập với bộ cắt v2.13 (bộ đó bỏ qua mọi lúc có quái trong 110 px / đang `pause`… nên vẫn lọt 2–5 s).
     // Việc THẬT = vừa đánh (≤ 25 khung) / nạp đòn · bom · cầm đồ · móc / leo · chờ lửa / thang · choáng · tới cửa đã mở. Ngoài ra người nhúc nhích < 3 px quá 70 khung (1,2 s) → ép làm việc, tăng dần theo số lần (trong 8 s):
     //   lần 1: bỏ quái / đồ đang «đeo bám» + lập lại, nếu đang giữ phím ngang mà không nhích (vướng tường) thì lắc 0,5 s về phía đường đi · lần 2: chọn điểm đi dạo chưa dẫm · lần 3: phạt vùng + lập lại nhẹ · lần ≥ 4: reset. Tắt: DEMO.off.idle3 = 1
+    { const hf = s.hunting && s.huntFoe && s.huntFoe.alive ? s.huntFoe : null, w = D.hw;          // v2.15: săn 1 con > 5,5 s mà bot không nhích (< 3,5 ô) và quái không mất máu → bỏ con đó 15 s (đứng chờ quái bay / đánh không tới)
+      if (!hf) D.hw = null;
+      else if (!w || w.e !== hf) D.hw = { e: hf, x: p.cx, y: p.cy, f, hp: hf.hp };
+      else if (Math.abs(p.cx - w.x) > 56 || Math.abs(p.cy - w.y) > 40 || (hf.hp !== undefined && hf.hp < w.hp) || hf.boss || hf.isBoss) { w.x = p.cx; w.y = p.cy; w.f = f; w.hp = hf.hp; }
+      else if (f - w.f > 330) { (B.ign = B.ign || new Map()).set(hf, game.levelT + 15); s.path = null; D.hw = null; B.stats.huntGive = (B.stats.huntGive | 0) + 1; } }
     if (!(DEMO.off && DEMO.off.idle3)) {
       if (CTL.held.has('attack') || p.whipT >= 0 || p.chargeT >= 0) D.atkF3 = f;
       const real3 = D.bomb || (D.sc && D.sc.stage) || (D.atkF3 && f - D.atkF3 < 25) || p.hook || p.hold || DEMO.waiting(D, f) || p.state === 'stun' || p.state === 'climb' || p.state === 'hang' || p.dead || game.trans || DEMO.chg.f > 0 || DEMO.wch.f > 0 || DEMO.bch.f > 0 || (B.atExit() && !((game.killNeed || 0) > KD()) && (!L.arena || L.arenaOpen)) || D.resetF > f - 20 || D.wig > f || f < 60 || !p.onGround;
+      if (!s.path && !real3 && !D.bomb) { D.np3 = (D.np3 | 0) + 1; if (D.np3 % 10 === 5) B.plan(); if (D.np3 > 30) { D.np3 = 0; if (!s.path && !DEMO.wander(D, p, f)) DEMO.soft(D, f, true); B.stats.noPathFix = (B.stats.noPathFix | 0) + 1; } } else D.np3 = 0;          // v2.16: không có đường đi > 0,5 s mà không việc gì → lập lại mỗi 10 khung, quá 30 khung thì đi dạo
       const a3 = D.i3;
       if (real3 || !a3 || Math.abs(p.cx - a3.x) > 3 || Math.abs(p.cy - a3.y) > 3) D.i3 = { x: p.cx, y: p.cy, f };
       else if (f - a3.f > ((D.cl || D.hs || D.hk) ? 90 : (DEMO.IDLE3 || 45))) {
