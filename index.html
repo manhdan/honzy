@@ -23921,7 +23921,7 @@ DEMO.loot = function (D, p, L, f) {          // trả về phím (object) nếu 
     }
     D.holdT = 0; D.thA = false; D.thForce = false; if (D.rowTgt) { const o = B.tgtOverride; if (o && o.c === D.rowTgt.c && o.r === D.rowTgt.r) { B.tgtOverride = null; s.path = null; } D.rowTgt = null; }
     // 2) chọn đồ cần nhặt (vàng vừa nổ từ bom: ưu tiên cao nhất)
-    if (f % 15 === 0 && !(DEMO.off && DEMO.off.must)) { const fl0 = DEMO.floorOf(B.nodeOf(p).r); D.prio = D.prio || []; for (const e of game.entities) { if (!e.alive || e.holder || D.skip.has(e) || !DEMO.mustKind[e.kind] || (e.kind === 'heartdrop' && p.hp >= maxHpOf(p)) || (e.kind === 'gold' && !(e.age > 0.25)) || D.prio.includes(e) || DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) !== fl0) continue; D.prio.push(e); D.prioT = Math.max(D.prioT || 0, f + 60 * 8); } }          // v1.6-21 (Dan): MỌI đồ rơi ra (cá hồi / vàng rơi / mảnh tim…) là mục tiêu BẮT BUỘC nhặt nếu nhặt được (cùng tầng; không với tới thì D.skip tự bỏ)
+    if (f % 15 === 0 && !(DEMO.off && DEMO.off.must)) { const fl0 = DEMO.floorOf(B.nodeOf(p).r); D.prio = D.prio || []; for (const e of game.entities) { if (!e.alive || e.holder || D.skip.has(e) || !DEMO.mustKind[e.kind] || (e.kind === 'heartdrop' && p.hp >= maxHpOf(p)) || (e.kind === 'gold' && !(e.age > 0.25)) || D.prio.includes(e) || DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) !== fl0 || !DEMO.lootWorth(D, p, e, f, true)) continue; D.prio.push(e); D.prioT = Math.max(D.prioT || 0, f + 60 * 8); } }          // v1.6-21 (Dan): MỌI đồ rơi ra (cá hồi / vàng rơi / mảnh tim…) là mục tiêu BẮT BUỘC nhặt nếu nhặt được (cùng tầng; không với tới thì D.skip tự bỏ)
     D.prio = (D.prio || []).filter(e => e.alive && !e.holder && !D.skip.has(e) && f < D.prioT);
     if (D.prio.some(e => !(D.later && D.later.get(e) > f)) && D.loot && !D.lootPrio && !D.hk && nd > 55) { D.loot = null; B.tgtOverride = null; }          // đang đi nhặt đồ thường mà có vàng bom: đổi sang vàng bom
     if (!D.loot || !D.loot.alive || D.loot.holder || (f - D.lootF > 60 * 9 && !D.hk)) {
@@ -23946,7 +23946,7 @@ DEMO.loot = function (D, p, L, f) {          // trả về phím (object) nếu 
                 if (DEMO.behind(D, e.cx, p, 0.75)) continue;          // đã đi qua: không quay lại
                 if (kd === 'crate' && !e.openable) continue;
                 if (DEMO.floorOf(Math.floor((e.y + e.h - 0.5) / 16)) !== fl) continue;          // chỉ nhặt đồ cùng tầng
-                if (d > (isAmmo ? 70 : lootR * (kd === 'gold' ? 1.25 : 1)) || d >= bd) continue;          // tính cách: Stryker quét xa dọn sạch · Wizard mê vàng · Knight ít lo đồ
+                if (d > (isAmmo ? 70 : lootR * (kd === 'gold' ? 1.25 : 1)) || d >= bd) continue; if (isLoot && !DEMO.lootWorth(D, p, e, f, false)) continue;          // tính cách: Stryker quét xa dọn sạch · Wizard mê vàng · Knight ít lo đồ
                 bd = d; best = e;
             }
             if (best) DEMO.pickLoot(D, p, best, f);
@@ -24138,6 +24138,20 @@ DEMO.cellOf = function (e) {          // ô đứng được ở / dưới vật
     }
     for (let k = 0; k < 10 && r < L.h - 1 && !(T_IS_SOLID[L.tile(c, r + 1)] || L.tile(c, r + 1) === T_ONEWAY); k++) r++;
     return { c, r };
+};
+DEMO.lootWorth = function (D, p, e, f, prio) {          // v2.17 (Dan: «chạy 7–8 ô rồi quay lại nhặt 1 cục vàng»): đồ chỉ đáng nhặt nếu ĐƯỜNG ĐI THÊM (tới đồ + từ đồ về hố / cửa − đi thẳng tới hố / cửa) ≤ ngân sách theo giá trị. Vàng «bắt buộc» (prio) trước đây không giới hạn khoảng cách (có ván chạy 28 ô cho cục 50 vàng khi cửa chỉ cách 11 ô). Tắt: DEMO.off.lw = 1
+    if (DEMO.off && DEMO.off.lw) return true;
+    const B = BOT, kd = e.kind; D.lw = D.lw || new Map(); const m0 = D.lw.get(e); if (m0 && f - m0.f < 120) return m0.ok;
+    const n = B.nodeOf(p), cell = DEMO.cellOf(e), tg = (D.rt && D.rt.tgt) || game.level.exit, eu = Math.hypot(e.cx - p.cx, e.cy - p.cy) / 16; let ok = true, ex = null;
+    if (tg) {
+        const ab = Object.assign(B.abil(p.cls), { maxFall: 12 }), W = game.level.w, cost = (rc, c, r) => { for (let k = 0; k < 5; k++) { const i = (r + k) * W + c; if (rc.seen[i]) return rc.cost[i] + k; } return null; };
+        const rc1 = B.reach(n.c, n.r, ab, null), d1 = cost(rc1, cell.c, cell.r), d0 = cost(rc1, tg.c, tg.r), d2 = cost(B.reach(cell.c, cell.r, ab, null), tg.c, tg.r);
+        const val = e.value || 0, tl = Math.max(0.35, Math.min(1, (DEMO.T_EXIT * 60 - f) / (60 * 25)));
+        const base = kd === 'gold' ? 5 + val / 30 : (kd === 'heartdrop' || kd === 'salmon') ? (p.hp < maxHpOf(p) ? 45 : 0) : kd === 'relic' ? 40 : 6;
+        if (d1 === null || d2 === null || d0 === null) ok = eu <= 8;          // không tính được đường (đồ ở hố bom / thấp hơn): chỉ nhặt khi sát
+        else { ex = d1 + d2 - d0; ok = ex <= base * tl * (DEMO.LW || 1); }
+    }
+    D.lw.set(e, { f, ok }); if (!ok) B.stats.lootSkip = (B.stats.lootSkip | 0) + 1; return ok;
 };
 DEMO.pickLoot = function (D, p, e, f, prio) {          // chọn e làm đích nhặt; đường không có thì thử móc, không được thì bỏ
     const B = BOT, s = B.state, { c, r } = DEMO.cellOf(e);
@@ -24451,6 +24465,7 @@ DEMO.PERS = {
     hunt:  { loot: 340, lootD: 340, close: 80, closeD: 80, gold: 1.4, goldD: 1.4, bomb: 0, bombD: 2, hunt: 0,  huntD: 45, order: ['close', 'gold', 'loot'] },
     sword: { loot: 220, lootD: 220, close: 48, closeD: 48, gold: 1.2, goldD: 1.2, bomb: 2, bombD: 2, hunt: 45, order: ['gold', 'loot', 'close'] },
 };
+DEMO.LW = 1.4;          // v2.17: ngân sách đường đi thêm cho mỗi món đồ nhặt (xem DEMO.lootWorth); 1 = gốc, lớn hơn = nhặt xa hơn
 DEMO.chainAll = true;          // v2.15: giữ chuỗi KILL ×N cho cả Knight / Stryker (trước chỉ Wizard): có chuỗi thì quái kế tiếp được ưu tiên hơn nhặt đồ
 DEMO.revPenOn = true; DEMO.K_DET = 5;          // v2.14: bật phạt dẫm lại ô (giảm đi đi lại lại) · K_DET: số ô đi vòng chấp nhận cho mỗi điểm giá trị (7 → 5, bớt vòng để nhặt / săn)
 DEMO.T_EXIT = 48;          // giây: từ đây bỏ hết việc phụ, chỉ lo đủ quái + ra cửa
@@ -25067,6 +25082,7 @@ DEMO.route = function (D, p, L, f) {
             }
             ds.sort((a, b) => Math.abs(a.pc - n.c) - Math.abs(b.pc - n.c)); rt.ds = ds.slice(); rt.dsFl = fl;
             if (D.misEnd && !(DEMO.off && DEMO.off.rt2)) { const pi = ds.findIndex(d => d.key === D.misEnd); if (pi > 0) ds.unshift(ds.splice(pi, 1)[0]); }          // v1.6-66: xuống ở hố mà lộ trình cả tầng đã chọn (không nhất thiết hố gần điểm vào nhất)
+            if (rt.ck && rt.phase === 'down' && !(DEMO.off && DEMO.off.hys) && ds.length > 1 && !(D.misEnd && ds[0].key === D.misEnd)) { const pi = ds.findIndex(d => d.key === rt.ck && rt.dec.get(d.key) !== 'skip'); if (pi > 0 && Math.abs(ds[pi].pc - n.c) <= Math.abs(ds[0].pc - n.c) + 10) { ds.unshift(ds.splice(pi, 1)[0]); B.stats.holeStick = (B.stats.holeStick | 0) + 1; } }          // v2.17 (Dan: hết việc mà chạy đi chạy lại): BÁM hố đã chọn — danh sách hố sắp theo khoảng cách tới vị trí hiện tại nên đi qua điểm giữa hai hố là «hố gần nhất» đổi → quay đầu. Chỉ đổi khi hố mới gần hơn hẳn (> 10 cột). Tắt: DEMO.off.hys = 1
             const rxOf = (c) => Math.floor((c - 1) / LVL.roomW), cellAt = (e) => ({ c: Math.floor(e.cx / 16), r: Math.floor((e.y + e.h - 0.5) / 16) });
             const reachE = (e) => { const q = cellAt(e); if (DEMO.floorOf(q.r) !== fl) return false; for (let k = 0; k < 4; k++) if (rc.seen[(q.r + k) * w + q.c]) return true; return false; };
             const roomBusy = (d) => { const rk = DEMO.roomKey(d.pc, d.pr); for (const e of game.entities) { if (!e.alive || e.holder) continue; const q = cellAt(e); if (DEMO.roomKey(q.c, q.r) !== rk) continue; if (((e instanceof Enemy && e.creature && !e.harmless && e.kind !== 'ghost' && e.kind !== 'shopkeeper') || (DEMO.lootKind[e.kind] && !D.skip.has(e))) && reachE(e)) return true; } return false; };
